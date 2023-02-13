@@ -1,6 +1,6 @@
 micronaut:
   application:
-    name: acesRadio
+    name: Aces Radio Predictions
 datasources:
   default:
     driver-class-name: com.mysql.cj.jdbc.Driver
