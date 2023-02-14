@@ -1,12 +1,36 @@
-CREATE TABLE team(
-    id        MEDIUMINT   not null,
-    city      varchar(32) not null,
-    nickname  varchar(32) not null,
+CREATE TABLE team (
+    id        MEDIUMINT   NOT NULL AUTO_INCREMENT,
+    name      varchar(32) NOT NULL,
     PRIMARY KEY (id)
-)
+);
 
-INSERT INTO team (city, nickname) values
-  ('Columbus', 'Crewzers SC'),
-  ('Austin', 'Broccoli'),
-  ('Los Angeles', 'Football Craft'),
-  ('Philadelphia', 'Union');
+INSERT INTO team (name)
+    VALUES ('Columbus Crewzers SC'),
+           ('Atlanta United'),
+           ('Charlotte FC'),
+           ('Chicago Fire'),
+           ('Cincinnati Fusslads'),
+           ('DC United'),
+           ('Inter Miami'),
+           ('Club Foote Montreal'),
+           ('Nashville FC'),
+           ('New England Revolution'),
+           ('NYC FC'),
+           ('NY Red Bulls'),
+           ('Orlando City'),
+           ('Philadelphia Union'),
+           ('Toronto FC'),
+           ('Austin Broccoli'),
+           ('Colorado Rapids'),
+           ('FC Dallas'),
+           ('Houston Dynamo'),
+           ('LA Galaxy'),
+           ('LAFC'),
+           ('Minnesota United'),
+           ('Portland Timbers'),
+           ('Real Salt Lake'),
+           ('San Jose Natural Rivals'),
+           ('Seattle Sounders'),
+           ('Sporting KC'),
+           ('St Louis CITY'),
+           ('Vancouver Whitecaps');
