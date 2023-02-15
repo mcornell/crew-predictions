@@ -3,7 +3,7 @@ package org.acesradio.domain;
 public record Prediction(
     Long id,
     Game game,
-    User user,
+    Handle handle,
     Integer homeGoals,
     Integer awayGoals
 ) {

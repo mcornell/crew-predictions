@@ -1,6 +1,8 @@
 package org.acesradio.domain;
 
-public record User(
+public record Handle(
     Long id,
     String handle
-) {}
+) {
+
+}
