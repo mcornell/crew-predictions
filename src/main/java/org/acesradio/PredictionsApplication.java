@@ -1,8 +1,9 @@
-package org.aces.radio;
+package org.acesradio;
 
 import io.micronaut.runtime.Micronaut;
 import io.swagger.v3.oas.annotations.*;
 import io.swagger.v3.oas.annotations.info.*;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 
 @OpenAPIDefinition(
     info = @Info(
@@ -10,9 +11,12 @@ import io.swagger.v3.oas.annotations.info.*;
             version = "0.0"
     )
 )
-public class Application {
+public class PredictionsApplication {
 
     public static void main(String[] args) {
-        Micronaut.run(Application.class, args);
+        SLF4JBridgeHandler.removeHandlersForRootLogger();
+        SLF4JBridgeHandler.install();
+
+        Micronaut.run(PredictionsApplication.class, args);
     }
 }

@@ -2,7 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.aces.radio</groupId>
+  <groupId>org.acesradio</groupId>
   <artifactId>predictions</artifactId>
   <version>0.1</version>
   <packaging>${packaging}</packaging>
@@ -21,7 +21,7 @@
     <micronaut.runtime>netty</micronaut.runtime>
     <micronaut.data.version>3.9.6</micronaut.data.version>
     <micronaut.test.resources.enabled>true</micronaut.test.resources.enabled>
-    <exec.mainClass>org.aces.radio.Application</exec.mainClass>
+    <exec.mainClass>org.acesradio.PredictionsApplication</exec.mainClass>
   </properties>
 
   <repositories>
@@ -88,6 +88,11 @@
       <scope>runtime</scope>
     </dependency>
     <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jul-to-slf4j</artifactId>
+      <version>1.7.36</version>
+    </dependency>
+    <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
       <scope>runtime</scope>
@@ -116,6 +121,17 @@
         <artifactId>micronaut-maven-plugin</artifactId>
           <configuration>
           </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.liquibase</groupId>
+        <artifactId>liquibase-maven-plugin</artifactId>
+        <version>4.2.0</version>
+        <configuration>
+          <changeLogFile>src/main/resources/db/liquibase-changelog.xml</changeLogFile>
+          <url>jdbc:postgresql://localhost:5432/postgres</url>
+          <username>postgres</username>
+          <password>password</password>
+        </configuration>
       </plugin>
       
       <plugin>
@@ -158,7 +174,7 @@
             </path>
           </annotationProcessorPaths>
           <compilerArgs>
-            <arg>-Amicronaut.processing.group=org.aces.radio</arg>
+            <arg>-Amicronaut.processing.group=org.acesradio</arg>
             <arg>-Amicronaut.processing.module=predictions</arg>
           </compilerArgs>
         </configuration>

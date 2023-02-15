@@ -5,12 +5,10 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
     <changeSet id="1" author="mcornell">
-        <createTable catalogName="cat"
-                     remarks="MLS Teams"
-                     schemaName="public"
+        <createTable remarks="MLS Teams"
                      tableName="team">
             <column name="id" type="SMALLINT" autoIncrement="true">
-                <constraints primaryKey="true" nullable="false"/>
+                <constraints primaryKey="true" nullable="false" primaryKeyName="pk_team"/>
             </column>
             <column name="name" type="VARCHAR(32)">
                 <constraints nullable="false"/>
@@ -19,10 +17,37 @@
         <loadData catalogName="cat"
                   file="db/changelog/01-teams.csv"
                   quotchar="&quot;"
-                  schemaName="public"
-                  separator="separator"
+                  separator=","
                   tableName="team">
-            <column name="name" type="varchar(32)"/>
+            <column name="name" type="STRING"/>
+        </loadData>
+        <createTable remarks="Games to Predict"
+                     tableName="game">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false" primaryKeyName="pk_game"/>
+            </column>
+            <column name="home" type="SMALLINT">
+                <constraints nullable="false" foreignKeyName="fk_home_team" references="team(id)"/>
+            </column>
+            <column name="away" type="SMALLINT">
+                <constraints nullable="false" foreignKeyName="fk_away_team" references="team(id)"/>
+            </column>
+            <column name="homeGoals" type="SMALLINT" defaultValue="0">
+                <constraints nullable="false" />
+            </column>
+            <column name="awayGoals" type="SMALLINT" defaultValue="0">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+        <loadData catalogName="cat"
+                  file="db/changelog/01-games.csv"
+                  quotchar="&quot;"
+                  separator=","
+                  tableName="game">
+            <column name="home" type="NUMERIC"/>
+            <column name="away" type="NUMERIC"/>
+            <column name="homeGoals" type="NUMERIC"/>
+            <column name="awayGoals" type="NUMERIC"/>
         </loadData>
     </changeSet>
 </databaseChangeLog>

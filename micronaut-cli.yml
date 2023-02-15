@@ -1,5 +1,5 @@
 applicationType: default
-defaultPackage: org.aces.radio
+defaultPackage: org.acesradio
 testFramework: junit
 sourceLanguage: java
 buildTool: maven

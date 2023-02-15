@@ -1,4 +1,4 @@
-package org.aces.radio.domain;
+package org.acesradio.domain;
 
     
 public record Game(
