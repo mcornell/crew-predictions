@@ -1,6 +1,7 @@
 applicationType: default
-defaultPackage: aces.radio
+defaultPackage: org.aces.radio
 testFramework: junit
 sourceLanguage: java
 buildTool: maven
-features: [annotation-api, app-name, data, data-jdbc, flyway, http-client, jackson-databind, java, java-application, jdbc-hikari, junit, logback, maven, mysql, netty-server, openapi, readme, shade, test-resources, yaml]
+features: [annotation-api, app-name, data, data-jdbc, http-client, jackson-databind, java, java-application, jdbc-hikari, junit, liquibase, logback, maven, netty-server, openapi, postgres, readme, shade, test-resources, yaml]
+

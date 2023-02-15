@@ -18,8 +18,8 @@
     <jdk.version>17</jdk.version>
     <release.version>17</release.version>
     <micronaut.version>3.8.4</micronaut.version>
-    <micronaut.data.version>3.9.6</micronaut.data.version>
     <micronaut.runtime>netty</micronaut.runtime>
+    <micronaut.data.version>3.9.6</micronaut.data.version>
     <micronaut.test.resources.enabled>true</micronaut.test.resources.enabled>
     <exec.mainClass>org.aces.radio.Application</exec.mainClass>
   </properties>
@@ -63,8 +63,8 @@
       <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>io.micronaut.flyway</groupId>
-      <artifactId>micronaut-flyway</artifactId>
+      <groupId>io.micronaut.liquibase</groupId>
+      <artifactId>micronaut-liquibase</artifactId>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -88,13 +88,8 @@
       <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>mysql</groupId>
-      <artifactId>mysql-connector-java</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.flywaydb</groupId>
-      <artifactId>flyway-mysql</artifactId>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>
@@ -163,8 +158,8 @@
             </path>
           </annotationProcessorPaths>
           <compilerArgs>
-            <arg>-Amicronaut.processing.group=aces.radio</arg>
-            <arg>-Amicronaut.processing.module=aces-radio</arg>
+            <arg>-Amicronaut.processing.group=org.aces.radio</arg>
+            <arg>-Amicronaut.processing.module=predictions</arg>
           </compilerArgs>
         </configuration>
       </plugin>
