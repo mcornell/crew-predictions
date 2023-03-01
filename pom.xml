@@ -2,7 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.acesradio</groupId>
+  <groupId>com.acesradio</groupId>
   <artifactId>predictions</artifactId>
   <version>0.1</version>
   <packaging>${packaging}</packaging>
@@ -10,18 +10,18 @@
   <parent>
     <groupId>io.micronaut</groupId>
     <artifactId>micronaut-parent</artifactId>
-    <version>3.8.4</version>
+    <version>3.8.6</version>
   </parent>
 
   <properties>
     <packaging>jar</packaging>
     <jdk.version>17</jdk.version>
     <release.version>17</release.version>
-    <micronaut.version>3.8.4</micronaut.version>
+    <micronaut.version>3.8.6</micronaut.version>
     <micronaut.runtime>netty</micronaut.runtime>
     <micronaut.data.version>3.9.6</micronaut.data.version>
     <micronaut.test.resources.enabled>true</micronaut.test.resources.enabled>
-    <exec.mainClass>org.acesradio.PredictionsApplication</exec.mainClass>
+    <exec.mainClass>com.acesradio.Application</exec.mainClass>
   </properties>
 
   <repositories>
@@ -54,7 +54,7 @@
     </dependency>
     <dependency>
       <groupId>io.micronaut</groupId>
-      <artifactId>micronaut-jackson-databind</artifactId>
+      <artifactId>micronaut-runtime</artifactId>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -68,13 +68,18 @@
       <scope>compile</scope>
     </dependency>
     <dependency>
+      <groupId>io.micronaut.serde</groupId>
+      <artifactId>micronaut-serde-jackson</artifactId>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
       <groupId>io.micronaut.sql</groupId>
       <artifactId>micronaut-jdbc-hikari</artifactId>
       <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>io.swagger.core.v3</groupId>
-      <artifactId>swagger-annotations</artifactId>
+      <groupId>io.micronaut.views</groupId>
+      <artifactId>micronaut-views-thymeleaf</artifactId>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -86,11 +91,6 @@
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
       <scope>runtime</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>jul-to-slf4j</artifactId>
-      <version>1.7.36</version>
     </dependency>
     <dependency>
       <groupId>org.postgresql</groupId>
@@ -119,21 +119,10 @@
       <plugin>
         <groupId>io.micronaut.build</groupId>
         <artifactId>micronaut-maven-plugin</artifactId>
-          <configuration>
-          </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.liquibase</groupId>
-        <artifactId>liquibase-maven-plugin</artifactId>
-        <version>4.2.0</version>
         <configuration>
-          <changeLogFile>src/main/resources/db/liquibase-changelog.xml</changeLogFile>
-          <url>jdbc:postgresql://localhost:5432/postgres</url>
-          <username>postgres</username>
-          <password>password</password>
         </configuration>
       </plugin>
-      
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -168,13 +157,13 @@
               <version>${micronaut.version}</version>
             </path>
             <path>
-              <groupId>io.micronaut.openapi</groupId>
-              <artifactId>micronaut-openapi</artifactId>
-              <version>${micronaut.openapi.version}</version>
+              <groupId>io.micronaut.serde</groupId>
+              <artifactId>micronaut-serde-processor</artifactId>
+              <version>${micronaut.serialization.version}</version>
             </path>
           </annotationProcessorPaths>
           <compilerArgs>
-            <arg>-Amicronaut.processing.group=org.acesradio</arg>
+            <arg>-Amicronaut.processing.group=com.acesradio</arg>
             <arg>-Amicronaut.processing.module=predictions</arg>
           </compilerArgs>
         </configuration>
