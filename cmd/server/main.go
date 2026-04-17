@@ -5,10 +5,14 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/mcornell/crew-predictions/internal/handlers"
 )
 
 func main() {
+	// load .env in development; ignored if file doesn't exist (e.g. production)
+	godotenv.Load()
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -19,6 +23,7 @@ func main() {
 		http.Redirect(w, r, "/matches", http.StatusFound)
 	})
 	mux.HandleFunc("GET /matches", handlers.Matches)
+	mux.HandleFunc("GET /auth/login", handlers.Login)
 
 	log.Printf("listening on :%s", port)
 	if err := http.ListenAndServe(":"+port, mux); err != nil {
