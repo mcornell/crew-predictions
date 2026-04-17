@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"net/http"
 	"os"
 
@@ -22,8 +24,21 @@ func googleOAuthConfig() *oauth2.Config {
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
-	// state token prevents CSRF — in production use a signed random value stored in session
-	state := "crew-predictions-state"
+	state := randomState()
+	http.SetCookie(w, &http.Cookie{
+		Name:     "oauth_state",
+		Value:    state,
+		Path:     "/",
+		MaxAge:   600,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	})
 	url := googleOAuthConfig().AuthCodeURL(state, oauth2.AccessTypeOnline)
 	http.Redirect(w, r, url, http.StatusFound)
+}
+
+func randomState() string {
+	b := make([]byte, 16)
+	rand.Read(b)
+	return base64.URLEncoding.EncodeToString(b)
 }
