@@ -13,7 +13,22 @@ templ Layout(title string, handle string) {
 		</head>
 		<body>
 			<header>
-				<a class="site-title" href="/">Crew Predictions</a>
+				<a class="site-title" href="/">
+					<svg class="site-badge" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+						<circle cx="24" cy="24" r="22" stroke="#ffc20e" stroke-width="1.5"/>
+						<circle cx="24" cy="24" r="18" stroke="#ffc20e" stroke-width="0.75" stroke-dasharray="2 3"/>
+						<!-- soccer ball hexagon simplified -->
+						<polygon points="24,13 30,17 30,25 24,29 18,25 18,17" stroke="#ffc20e" stroke-width="1.2" fill="none"/>
+						<line x1="24" y1="13" x2="24" y2="8" stroke="#ffc20e" stroke-width="1"/>
+						<line x1="30" y1="17" x2="34" y2="14" stroke="#ffc20e" stroke-width="1"/>
+						<line x1="30" y1="25" x2="34" y2="28" stroke="#ffc20e" stroke-width="1"/>
+						<line x1="24" y1="29" x2="24" y2="34" stroke="#ffc20e" stroke-width="1"/>
+						<line x1="18" y1="25" x2="14" y2="28" stroke="#ffc20e" stroke-width="1"/>
+						<line x1="18" y1="17" x2="14" y2="14" stroke="#ffc20e" stroke-width="1"/>
+						<text x="24" y="42" text-anchor="middle" font-family="'Bebas Neue', sans-serif" font-size="5" fill="#ffc20e" letter-spacing="1">EST. 96</text>
+					</svg>
+					Crew Predictions
+				</a>
 				<nav>
 					if handle != "" {
 						<span class="handle">{ handle }</span>
@@ -26,6 +41,11 @@ templ Layout(title string, handle string) {
 			<main>
 				{ children... }
 			</main>
+			<footer>
+				<span>Crew Predictions</span>
+				<span class="footer-sep">·</span>
+				<span>For the faithful. Against everyone else.</span>
+			</footer>
 		</body>
 	</html>
 }

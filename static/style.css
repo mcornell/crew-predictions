@@ -62,6 +62,15 @@ header {
   letter-spacing: 0.08em;
   color: var(--gold);
   text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.site-badge {
+  width: 36px;
+  height: 36px;
+  opacity: 0.9;
+  flex-shrink: 0;
 }
 header nav { display: flex; align-items: center; gap: 1.25rem; }
 header nav .handle {
@@ -290,6 +299,21 @@ main {
 }
 .signin-nudge a { color: var(--gold); text-decoration: none; }
 .signin-nudge a:hover { text-decoration: underline; }
+
+/* ── Footer ─────────────────────────────────────────────────────── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 1.5rem 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  color: #333;
+  text-transform: uppercase;
+}
+.footer-sep { color: #2a2a2a; }
 
 /* ── Responsive ─────────────────────────────────────────────────── */
 @media (max-width: 540px) {
