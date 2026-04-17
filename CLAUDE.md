@@ -35,22 +35,19 @@ Every feature increment starts from a failing **Playwright** (browser) scenario 
 
 1. **Red** — Write one Gherkin scenario describing the next observable user behavior. Run `npm test`. Confirm it fails for the expected reason. Do not proceed until the failure matches intent.
 2. **Inner loop** — Repeat until the Playwright test passes:
-   - **Red** — Write the smallest failing Go unit test for the next missing piece. One test at a time. Run it. Confirm it fails. **No production code exists yet for this behavior.**
-   - **Green** — Write the minimum production code to pass that one test. Only what the test demands — nothing more. If the test only needs an auth check, write only the auth check. Stub everything else.
-   - **Refactor** — Clean up covered code only. All tests stay green. Commit.
-3. **Green (scenario)** — Re-run the Playwright test. Still failing? Identify the next missing piece and return to the inner loop.
-4. **Refactor (scenario)** — Refactor across modules if needed. All tests stay green. Commit.
-5. Run `go test ./... -cover`. Any uncovered branch in new code means you missed an inner-loop cycle — go back and write the missing test before moving on.
-6. Repeat from step 1.
+   - **Red** — Write the smallest failing Go unit test for the next missing piece. One test at a time. Run it. Confirm it fails. No production code exists yet for this behavior.
+   - **Green** — Write the minimum production code to pass that one test. Only what the test demands — nothing more. Run the test. **Commit.**
+   - **Refactor** — Clean up covered code only. All tests stay green. **Commit.**
+3. **Green (scenario)** — Re-run the Playwright test. Still failing? Identify the next missing piece and return to the inner loop. Passes? **Commit and push.**
+4. **Refactor (scenario)** — Refactor across modules if needed. All tests stay green. Commit and push.
+5. Repeat from step 1.
 
 #### Absolute rules
 
-- **No production code without a red test.** This is the only rule that cannot be overridden. Before writing or editing any production file, a failing test must already exist and have been run.
-- **One branch, one test, one commit.** Every error path, happy path, and edge case gets its own red-green-refactor cycle. Never write a whole function and test it afterward.
-- **The BDD green is not a substitute for unit coverage.** A passing browser test proves observable behavior only — it does not cover error branches.
+- **No production code without a red test.** This is absolute. A failing test must exist and have been run before any production file is created or edited.
+- **One branch, one test, one commit.** Every error path, happy path, and edge case is its own red-green-refactor cycle. Never write a whole function and test it afterward. If you do this correctly, coverage is never something to check at the end — it's guaranteed by construction.
 - **Never skip red.** If you cannot articulate exactly why the test fails, stop.
-- **Commit on every green** — unit green, scenario green, and after every refactor. Three commits per cycle minimum.
-- **Exception — external HTTP calls:** Handlers that make live HTTP calls (e.g. `Callback` → Google token endpoint) can't be fully unit-tested without injecting the HTTP client. Note the gap explicitly as tech debt; do not silently accept low coverage.
+- **Exception — external HTTP calls:** Handlers that make live HTTP calls can't be fully unit-tested without injecting the HTTP client. Note the gap explicitly as tech debt; do not silently accept low coverage.
 
 #### Test commands
 
