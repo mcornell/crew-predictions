@@ -30,9 +30,9 @@ func TestMatchList_ShowsSignInWhenLoggedOut(t *testing.T) {
 
 func TestMatchList_ShowsHandleWhenLoggedIn(t *testing.T) {
 	var buf bytes.Buffer
-	templates.MatchList([]models.Match{}, "BlackYellow@bsky.social").Render(context.Background(), &buf)
+	templates.MatchList([]models.Match{}, "BlackAndGold@bsky.mock").Render(context.Background(), &buf)
 	body := buf.String()
-	if !strings.Contains(body, "BlackYellow@bsky.social") {
+	if !strings.Contains(body, "BlackAndGold@bsky.mock") {
 		t.Errorf("expected handle in output")
 	}
 	if strings.Contains(body, "Sign in with Google") {
@@ -60,7 +60,7 @@ func TestMatchList_ShowsPredictionFormWhenLoggedIn(t *testing.T) {
 		{ID: "1", HomeTeam: "Columbus Crew", AwayTeam: "Atlanta United", Kickoff: time.Now(), Status: "scheduled"},
 	}
 	var buf bytes.Buffer
-	templates.MatchList(matches, "BlackYellow@bsky.social").Render(context.Background(), &buf)
+	templates.MatchList(matches, "BlackAndGold@bsky.mock").Render(context.Background(), &buf)
 	body := buf.String()
 	if !strings.Contains(body, "Lock In") {
 		t.Errorf("expected prediction form for authenticated user")

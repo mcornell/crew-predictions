@@ -32,10 +32,10 @@ func TestUserFromSession_InvalidJSON(t *testing.T) {
 }
 
 func TestUserFromSession_ReturnsHandle(t *testing.T) {
-	data, _ := json.Marshal(map[string]string{"handle": "BlackYellow@bsky.social"})
+	data, _ := json.Marshal(map[string]string{"handle": "BlackAndGold@bsky.mock"})
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.AddCookie(&http.Cookie{Name: "session", Value: base64.StdEncoding.EncodeToString(data)})
-	if got := userFromSession(req); got != "BlackYellow@bsky.social" {
+	if got := userFromSession(req); got != "BlackAndGold@bsky.mock" {
 		t.Errorf("expected handle, got %q", got)
 	}
 }
