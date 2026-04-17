@@ -40,6 +40,36 @@ func TestMatchList_ShowsHandleWhenLoggedIn(t *testing.T) {
 	}
 }
 
+func TestMatchList_ShowsSigninNudgeWhenLoggedOutWithMatches(t *testing.T) {
+	matches := []models.Match{
+		{ID: "1", HomeTeam: "Columbus Crew", AwayTeam: "Atlanta United", Kickoff: time.Now(), Status: "scheduled"},
+	}
+	var buf bytes.Buffer
+	templates.MatchList(matches, "").Render(context.Background(), &buf)
+	body := buf.String()
+	if !strings.Contains(body, "Sign in") {
+		t.Errorf("expected sign-in nudge for unauthenticated user with matches")
+	}
+	if strings.Contains(body, "Lock In") {
+		t.Errorf("prediction form should not appear for unauthenticated user")
+	}
+}
+
+func TestMatchList_ShowsPredictionFormWhenLoggedIn(t *testing.T) {
+	matches := []models.Match{
+		{ID: "1", HomeTeam: "Columbus Crew", AwayTeam: "Atlanta United", Kickoff: time.Now(), Status: "scheduled"},
+	}
+	var buf bytes.Buffer
+	templates.MatchList(matches, "BlackYellow@bsky.social").Render(context.Background(), &buf)
+	body := buf.String()
+	if !strings.Contains(body, "Lock In") {
+		t.Errorf("expected prediction form for authenticated user")
+	}
+	if strings.Contains(body, "Sign in") {
+		t.Errorf("sign-in nudge should not appear for authenticated user")
+	}
+}
+
 func TestMatchList_RendersMatchCards(t *testing.T) {
 	matches := []models.Match{
 		{ID: "1", HomeTeam: "Columbus Crew", AwayTeam: "Atlanta United", Kickoff: time.Now(), Status: "scheduled"},
