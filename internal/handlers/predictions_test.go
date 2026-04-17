@@ -43,6 +43,20 @@ func TestSubmitPrediction_RejectsNonIntegerGoals(t *testing.T) {
 	}
 }
 
+func TestSubmitPrediction_RejectsNonIntegerAwayGoals(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPost, "/predictions",
+		strings.NewReader("match_id=abc&home_goals=2&away_goals=one"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(sessionCookie("BlackAndGold@bsky.mock"))
+	w := httptest.NewRecorder()
+
+	handlers.SubmitPrediction(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", w.Code)
+	}
+}
+
 func TestSubmitPrediction_AcceptsValidRequest(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/predictions",
 		strings.NewReader("match_id=match1&home_goals=3&away_goals=1"))

@@ -24,6 +24,7 @@ func main() {
 	})
 	mux.HandleFunc("GET /matches", handlers.Matches)
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	mux.HandleFunc("POST /predictions", handlers.SubmitPrediction)
 	mux.HandleFunc("GET /auth/login", handlers.Login)
 	mux.HandleFunc("GET /auth/callback", handlers.Callback)
 	mux.HandleFunc("GET /auth/logout", handlers.Logout)
