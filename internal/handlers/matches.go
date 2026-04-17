@@ -4,14 +4,20 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/mcornell/crew-predictions/internal/espn"
 	"github.com/mcornell/crew-predictions/internal/models"
 )
 
 func Matches(w http.ResponseWriter, r *http.Request) {
-	MatchesWithData(w, r, []models.Match{})
+	matches, err := espn.FetchCrewMatches()
+	if err != nil {
+		http.Error(w, "couldn't fetch matches, try again", http.StatusInternalServerError)
+		return
+	}
+	renderMatches(w, matches)
 }
 
-func MatchesWithData(w http.ResponseWriter, r *http.Request, matches []models.Match) {
+func renderMatches(w http.ResponseWriter, matches []models.Match) {
 	w.Header().Set("Content-Type", "text/html")
 	fmt.Fprint(w, "<h1>Upcoming Matches</h1>")
 	for _, m := range matches {
