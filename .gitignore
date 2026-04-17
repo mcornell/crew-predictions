@@ -36,6 +36,10 @@ Thumbs.db
 # Node (Playwright / BDD)
 node_modules/
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+.pnpm-debug.log*
 playwright-report/
 test-results/
 .features-gen/
