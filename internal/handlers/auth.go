@@ -39,7 +39,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func Callback(w http.ResponseWriter, r *http.Request) {
-	// Validate CSRF state
 	stateCookie, err := r.Cookie("oauth_state")
 	if err != nil {
 		http.Error(w, "missing state cookie", http.StatusBadRequest)
@@ -50,17 +49,14 @@ func Callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Exchange code for token
-	code := r.URL.Query().Get("code")
-	token, err := googleOAuthConfig().Exchange(r.Context(), code)
+	cfg := googleOAuthConfig()
+	token, err := cfg.Exchange(r.Context(), r.URL.Query().Get("code"))
 	if err != nil {
 		http.Error(w, "failed to exchange token", http.StatusInternalServerError)
 		return
 	}
 
-	// Fetch user info from Google
-	client := googleOAuthConfig().Client(r.Context(), token)
-	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
+	resp, err := cfg.Client(r.Context(), token).Get("https://www.googleapis.com/oauth2/v2/userinfo")
 	if err != nil {
 		http.Error(w, "failed to get user info", http.StatusInternalServerError)
 		return
@@ -76,7 +72,6 @@ func Callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Store user in session cookie
 	sessionData, _ := json.Marshal(map[string]string{
 		"handle": userInfo.Email,
 		"name":   userInfo.Name,
@@ -111,7 +106,6 @@ func randomState() string {
 	return base64.URLEncoding.EncodeToString(b)
 }
 
-// userFromSession reads the session cookie and returns the user's handle, or empty string.
 func userFromSession(r *http.Request) string {
 	cookie, err := r.Cookie("session")
 	if err != nil {
