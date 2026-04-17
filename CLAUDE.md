@@ -34,13 +34,14 @@ Every feature increment starts from a failing **Playwright** (browser) scenario 
 #### Outer loop
 
 1. **Red** — Write one Gherkin scenario describing the next observable user behavior. Run `npm test`. Confirm it fails for the expected reason. Do not proceed until the failure matches intent.
-2. **Inner loop** — Repeat until the Playwright test passes:
+2. **Inner loop** — Repeat until you believe the scenario can pass:
    - **Red** — Write the smallest failing Go unit test for the next missing piece. One test at a time. Run it. Confirm it fails. No production code exists yet for this behavior.
    - **Green** — Write the minimum production code to pass that one test. Only what the test demands — nothing more. Run the test. **Commit.**
    - **Refactor** — Clean up covered code only. All tests stay green. **Commit.**
-3. **Green (scenario)** — Re-run the Playwright test. Still failing? Identify the next missing piece and return to the inner loop. Passes? **Commit and push.**
-4. **Refactor (scenario)** — Refactor across modules if needed. All tests stay green. Commit and push.
-5. Repeat from step 1.
+3. **Coverage gate** — Run `go test ./... -cover`. Any uncovered branch means production code was written without a test — go back to the inner loop. Do not proceed until coverage is clean.
+4. **Green (scenario)** — Run the Playwright test. Still failing? Identify the next missing piece and return to the inner loop. Passes? **Commit and push.**
+5. **Refactor (scenario)** — Refactor across modules if needed. All tests stay green. Commit and push.
+6. Repeat from step 1.
 
 #### Absolute rules
 
