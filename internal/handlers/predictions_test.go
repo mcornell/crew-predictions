@@ -29,6 +29,20 @@ func TestSubmitPrediction_RejectsMissingFields(t *testing.T) {
 	}
 }
 
+func TestSubmitPrediction_RejectsNonIntegerGoals(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPost, "/predictions",
+		strings.NewReader("match_id=abc&home_goals=two&away_goals=one"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(sessionCookie("BlackAndGold@bsky.mock"))
+	w := httptest.NewRecorder()
+
+	handlers.SubmitPrediction(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", w.Code)
+	}
+}
+
 func TestSubmitPrediction_RejectsUnauthenticated(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/predictions", nil)
 	w := httptest.NewRecorder()
