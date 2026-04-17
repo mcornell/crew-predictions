@@ -56,7 +56,8 @@ templ generate         # must run before go build if .templ files changed
 - **One test at a time.** Never write multiple tests before running them.
 - **Minimum code.** Only write production code demanded by the current failing test. Stub everything else.
 - **Ask before assuming.** If a design decision is unclear, ask the user before writing code.
-- **Commit on every green step** (unit or scenario).
+- **Commit on every green step** — unit green, scenario green, AND after every refactor. Three distinct commits per cycle, not one.
+- **Never skip the refactor commit.** Refactor → run full suite → commit. Do not proceed to the next red until this is done.
 - **Run only the relevant test** after each green step; run the full suite before committing.
 
 ## Explaining Things to the User
