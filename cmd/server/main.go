@@ -23,6 +23,7 @@ func main() {
 		http.Redirect(w, r, "/matches", http.StatusFound)
 	})
 	mux.HandleFunc("GET /matches", handlers.Matches)
+	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	mux.HandleFunc("GET /auth/login", handlers.Login)
 	mux.HandleFunc("GET /auth/callback", handlers.Callback)
 	mux.HandleFunc("GET /auth/logout", handlers.Logout)

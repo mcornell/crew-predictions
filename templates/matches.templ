@@ -4,11 +4,55 @@ import "github.com/mcornell/crew-predictions/internal/models"
 
 templ MatchList(matches []models.Match, handle string) {
 	@Layout("Crew Predictions", handle) {
-		<h1>Upcoming Matches</h1>
-		for _, m := range matches {
-			<div data-testid="match-card">
-				{ m.HomeTeam } vs { m.AwayTeam }
+		<div class="page-heading">
+			<h1>Upcoming<br/><span>Fixtures</span></h1>
+			<p>Pick your scores. Be wrong in public. It&#39;s tradition.</p>
+		</div>
+		if len(matches) == 0 {
+			<div style="padding:4rem 2rem;text-align:center;border:1px dashed var(--border);">
+				<p style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;color:var(--muted);letter-spacing:0.06em;">No fixtures found</p>
+				<small style="display:block;margin-top:0.5rem;font-size:0.8rem;color:#3a3a3a;font-style:italic;">ESPN probably broke something. Not our fault.</small>
 			</div>
+		} else {
+			<div class="section-label">Upcoming</div>
+			for _, m := range matches {
+				<div class="match-card" data-testid="match-card">
+					<div class="match-card-inner">
+						<div class="fixture">
+							<div class="fixture-meta">{ m.Kickoff.Format("Mon 2 Jan · 3:04 PM ET") } · { m.Status }</div>
+							<div class="fixture-teams">
+								if m.HomeTeam == "Columbus Crew" {
+									<span class="crew">{ m.HomeTeam }</span>
+								} else {
+									{ m.HomeTeam }
+								}
+								<span class="vs">vs</span>
+								if m.AwayTeam == "Columbus Crew" {
+									<span class="crew">{ m.AwayTeam }</span>
+								} else {
+									{ m.AwayTeam }
+								}
+							</div>
+						</div>
+						<div class="prediction">
+							if handle == "" {
+								<p class="signin-nudge"><a href="/auth/login">Sign in</a> to make your pick</p>
+							} else {
+								<div class="score-inputs">
+									<input class="score-input" type="number" min="0" max="99" placeholder="–"/>
+									<span class="score-divider">–</span>
+									<input class="score-input" type="number" min="0" max="99" placeholder="–"/>
+								</div>
+								<div class="score-labels">
+									<span>HME</span>
+									<span>AWY</span>
+								</div>
+								<button class="predict-btn">Lock In</button>
+							}
+						</div>
+					</div>
+				</div>
+			}
 		}
 	}
 }

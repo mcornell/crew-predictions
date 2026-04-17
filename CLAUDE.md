@@ -78,6 +78,35 @@ Create a predictions ranking system for fans of Columbus Crew. Sarcastic tone, l
 
 Scoring rules come in two flavors matching podcast formats: Aces Radio and Upper 90. Confirm full point tables before implementing `internal/scoring/`.
 
+## Design Language
+
+**Theme:** Industrial Black & Gold Brutalism — matchday program crossed with a construction-site bulletin board.
+
+| Token | Value | Use |
+|---|---|---|
+| `--black` | `#0c0c0c` | Page background |
+| `--dark` | `#141414` | Header, input backgrounds |
+| `--card` | `#1a1a1a` | Match card backgrounds |
+| `--border` | `#2a2a2a` | Card/input borders |
+| `--gold` | `#ffc20e` | Primary accent — Crew name, CTAs, active states |
+| `--muted` | `#555` | Secondary text, metadata |
+| `--danger` | `#e03c3c` | Locked/error states |
+
+**Typography:**
+- `Bebas Neue` — headings, team names, buttons (condensed, stadium-board energy)
+- `DM Mono` — scores, timestamps, metadata (scoreboard digits)
+- `Barlow` — body copy
+
+**Key patterns:**
+- 3px gold left border on hovered/predicted match cards
+- Score inputs: 52×52px, `DM Mono`, gold text, dark background, focus glows gold
+- Locked state: blinking `▊` indicator in `--danger` red
+- Noise texture overlay via inline SVG `feTurbulence` filter on `body::before`
+- Gold stripe on `body::after` (top of viewport, `position: fixed`)
+- CSS lives in `static/style.css`; served via Go's `http.FileServer`
+
+**Tone in copy:** Sarcastic #Crew96 fandom. "Pick your scores. Be wrong in public. It's tradition."
+
 ## Sources
 
 Always provide sources when responding.

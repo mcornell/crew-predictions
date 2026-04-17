@@ -7,18 +7,19 @@ templ Layout(title string, handle string) {
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 			<title>{ title }</title>
+			<link rel="stylesheet" href="/static/style.css"/>
 			<script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
 			<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 		</head>
 		<body>
 			<header>
-				<a href="/">Crew Predictions</a>
+				<a class="site-title" href="/">Crew Predictions</a>
 				<nav>
 					if handle != "" {
-						<span>{ handle }</span>
-						<a href="/auth/logout">Sign out</a>
+						<span class="handle">{ handle }</span>
+						<a href="/auth/logout">Sign Out</a>
 					} else {
-						<a href="/auth/login">Sign in with Google</a>
+						<a class="sign-in" href="/auth/login">Sign in with Google</a>
 					}
 				</nav>
 			</header>
