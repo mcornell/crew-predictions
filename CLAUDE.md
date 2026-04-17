@@ -31,31 +31,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Every feature increment starts from a failing **Playwright** (browser) scenario and is driven inward through unit-level red-green-refactor cycles.
 
-#### Outer loop (Playwright/BDD scenario)
+#### Outer loop
 
-1. **Red** — Write one Gherkin scenario in a `.feature` file under `e2e/features/` describing the next observable user behavior. Run `npm test`. Confirm it fails for the expected reason (missing step definition = red, wrong behavior = red). Do not proceed until the failure matches intent.
-2. **Inner loop** — Repeat until the Playwright test can pass:
-   - **Red** — Write the smallest Go unit test for the next missing piece the scenario needs. One test at a time. Run it. Confirm it fails.
-   - **Green** — Write the **minimum** production code to make that unit test pass. No speculative code. No implementing more than the test demands.
-   - **Refactor** — Clean up only covered code. All unit tests must stay green.
-3. **Green (scenario)** — Re-run the Playwright test. If still failing, identify the missing piece and return to the inner loop.
-4. **Refactor (scenario)** — Refactor across modules if needed. All tests must stay green.
-5. Repeat from step 1.
+1. **Red** — Write one Gherkin scenario describing the next observable user behavior. Run `npm test`. Confirm it fails for the expected reason. Do not proceed until the failure matches intent.
+2. **Inner loop** — Repeat until the Playwright test passes:
+   - **Red** — Write the smallest failing Go unit test for the next missing piece. One test at a time. Run it. Confirm it fails. **No production code exists yet for this behavior.**
+   - **Green** — Write the minimum production code to pass that one test. Only what the test demands — nothing more. If the test only needs an auth check, write only the auth check. Stub everything else.
+   - **Refactor** — Clean up covered code only. All tests stay green. Commit.
+3. **Green (scenario)** — Re-run the Playwright test. Still failing? Identify the next missing piece and return to the inner loop.
+4. **Refactor (scenario)** — Refactor across modules if needed. All tests stay green. Commit.
+5. Run `go test ./... -cover`. Any uncovered branch in new code means you missed an inner-loop cycle — go back and write the missing test before moving on.
+6. Repeat from step 1.
 
-#### Discipline rules
+#### Absolute rules
 
-- **No production code without a failing test.** This is absolute. Before creating or editing any production file, a failing unit test for that specific behavior must already exist and have been run. If there is no red test, do not write production code — write the test first.
-- **Never skip red.** If you cannot articulate why a test fails, stop and re-read the requirement.
-- **One test at a time.** Never write multiple tests before running them.
-- **Minimum code.** Only write production code demanded by the current failing test. If the test only demands an auth check, write only the auth check — not the next logical thing. Stub everything else.
-- **Ask before assuming.** If a design decision is unclear, ask the user before writing code.
-- **Commit on every green step** — unit green, scenario green, AND after every refactor. Three distinct commits per cycle, not one.
-- **Never skip the refactor commit.** Refactor → run full suite → commit. Do not proceed to the next red until this is done.
-- **Run only the relevant test** after each green step; run the full suite before committing.
-- **The BDD green is not a substitute for inner-loop coverage.** A passing browser test proves observable behavior only. Every branch of every function written during the cycle must have its own failing unit test written before the production code for that branch exists. Do not move to the next BDD scenario until `go test -cover` shows no uncovered branches in new code.
-- **One branch, one test, one commit.** Each error path, happy path, and edge case in a function is a separate inner-loop cycle. Writing `userFromSession` means separate red-green-refactor cycles for: missing cookie, invalid base64, invalid JSON, valid session. Do not write the whole function and then test it.
-- **Check coverage before declaring a scenario done.** After the BDD scenario goes green, run `go test ./... -cover`. If any function written during this cycle has uncovered lines, stay in the inner loop — do not proceed to the scenario-level refactor commit.
-- **Exception: external HTTP calls in handlers.** Functions that make live HTTP calls (e.g. `Callback` calling Google's token endpoint) cannot be fully unit-tested without injecting the HTTP client or OAuth config. These require a refactor to be testable. Track as tech debt; do not silently accept low coverage — note the gap and the required refactor explicitly.
+- **No production code without a red test.** This is the only rule that cannot be overridden. Before writing or editing any production file, a failing test must already exist and have been run.
+- **One branch, one test, one commit.** Every error path, happy path, and edge case gets its own red-green-refactor cycle. Never write a whole function and test it afterward.
+- **The BDD green is not a substitute for unit coverage.** A passing browser test proves observable behavior only — it does not cover error branches.
+- **Never skip red.** If you cannot articulate exactly why the test fails, stop.
+- **Commit on every green** — unit green, scenario green, and after every refactor. Three commits per cycle minimum.
+- **Exception — external HTTP calls:** Handlers that make live HTTP calls (e.g. `Callback` → Google token endpoint) can't be fully unit-tested without injecting the HTTP client. Note the gap explicitly as tech debt; do not silently accept low coverage.
 
 #### Test commands
 
