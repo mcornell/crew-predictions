@@ -1,0 +1,23 @@
+{
+  "name": "crew-predictions",
+  "version": "1.0.0",
+  "description": "This is another nearly decade old idea.  The idea of this project is to allow for public humiliation of the various Columbus Crew prediction challenges that #Crew96 podcasts offer",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mcornell/crew-predictions.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mcornell/crew-predictions/issues"
+  },
+  "homepage": "https://github.com/mcornell/crew-predictions#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.59.1"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "hosting": {
+    "public": "static",
+    "ignore": ["firebase.json", "**/.*"],
+    "rewrites": [
+      {
+        "source": "**",
+        "run": {
+          "serviceId": "crew-predictions",
+          "region": "us-central1"
+        }
+      }
+    ]
+  }
+}
