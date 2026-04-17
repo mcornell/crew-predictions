@@ -7,6 +7,17 @@ import (
 	"github.com/mcornell/crew-predictions/internal/repository"
 )
 
+func TestMemoryPredictionStore_ReturnsNilWhenNotFound(t *testing.T) {
+	store := repository.NewMemoryPredictionStore()
+	got, err := store.GetByMatchAndHandle(context.Background(), "no-match", "nobody")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != nil {
+		t.Errorf("expected nil for missing prediction, got %+v", got)
+	}
+}
+
 func TestMemoryPredictionStore_SaveAndRetrieve(t *testing.T) {
 	store := repository.NewMemoryPredictionStore()
 	ctx := context.Background()
