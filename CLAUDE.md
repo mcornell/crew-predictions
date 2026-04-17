@@ -63,6 +63,10 @@ Always run `bddgen` after editing a `.feature` file — it generates the `.featu
 - **Commit on every green step** — unit green, scenario green, AND after every refactor. Three distinct commits per cycle, not one.
 - **Never skip the refactor commit.** Refactor → run full suite → commit. Do not proceed to the next red until this is done.
 - **Run only the relevant test** after each green step; run the full suite before committing.
+- **The BDD green is not a substitute for inner-loop coverage.** A passing browser test proves observable behavior only. Every branch of every function written during the cycle must have its own failing unit test written before the production code for that branch exists. Do not move to the next BDD scenario until `go test -cover` shows no uncovered branches in new code.
+- **One branch, one test, one commit.** Each error path, happy path, and edge case in a function is a separate inner-loop cycle. Writing `userFromSession` means separate red-green-refactor cycles for: missing cookie, invalid base64, invalid JSON, valid session. Do not write the whole function and then test it.
+- **Check coverage before declaring a scenario done.** After the BDD scenario goes green, run `go test ./... -cover`. If any function written during this cycle has uncovered lines, stay in the inner loop — do not proceed to the scenario-level refactor commit.
+- **Exception: external HTTP calls in handlers.** Functions that make live HTTP calls (e.g. `Callback` calling Google's token endpoint) cannot be fully unit-tested without injecting the HTTP client or OAuth config. These require a refactor to be testable. Track as tech debt; do not silently accept low coverage — note the gap and the required refactor explicitly.
 
 ## Explaining Things to the User
 
