@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/mcornell/crew-predictions/internal/handlers"
+	"github.com/mcornell/crew-predictions/internal/repository"
 )
 
 func sessionCookie(handle string) *http.Cookie {
@@ -54,6 +55,29 @@ func TestSubmitPrediction_RejectsNonIntegerAwayGoals(t *testing.T) {
 
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("expected 400, got %d", w.Code)
+	}
+}
+
+func TestSubmitPrediction_SavesPredictionToStore(t *testing.T) {
+	store := repository.NewMemoryPredictionStore()
+	req := httptest.NewRequest(http.MethodPost, "/predictions",
+		strings.NewReader("match_id=match1&home_goals=3&away_goals=1"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("HX-Request", "true")
+	req.AddCookie(sessionCookie("BlackAndGold@bsky.mock"))
+	w := httptest.NewRecorder()
+
+	handlers.NewPredictionsHandler(store).Submit(w, req)
+
+	got, err := store.GetByMatchAndHandle(req.Context(), "match1", "BlackAndGold@bsky.mock")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got == nil {
+		t.Fatal("expected prediction to be saved, got nil")
+	}
+	if got.HomeGoals != 3 || got.AwayGoals != 1 {
+		t.Errorf("expected 3-1, got %d-%d", got.HomeGoals, got.AwayGoals)
 	}
 }
 
