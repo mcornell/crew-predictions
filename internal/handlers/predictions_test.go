@@ -57,6 +57,25 @@ func TestSubmitPrediction_RejectsNonIntegerAwayGoals(t *testing.T) {
 	}
 }
 
+func TestSubmitPrediction_ReturnsMatchCardWithSavedScore(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPost, "/predictions",
+		strings.NewReader("match_id=match1&home_goals=3&away_goals=1"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("HX-Request", "true")
+	req.AddCookie(sessionCookie("BlackAndGold@bsky.mock"))
+	w := httptest.NewRecorder()
+
+	handlers.SubmitPrediction(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", w.Code)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "3") || !strings.Contains(body, "1") {
+		t.Errorf("expected saved score in response, got: %s", body)
+	}
+}
+
 func TestSubmitPrediction_AcceptsValidRequest(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/predictions",
 		strings.NewReader("match_id=match1&home_goals=3&away_goals=1"))
