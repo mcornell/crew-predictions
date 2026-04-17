@@ -11,6 +11,10 @@ When('I visit the matches page', async ({ page }) => {
   await page.goto('/matches');
 });
 
+When('I revisit the matches page', async ({ page }) => {
+  await page.goto('/matches');
+});
+
 Then('I should see the {string} heading', async ({ page }, heading: string) => {
   await expect(page.getByRole('heading', { name: heading })).toBeVisible();
 });
