@@ -4,7 +4,8 @@
   "description": "This is another nearly decade old idea.  The idea of this project is to allow for public humiliation of the various Columbus Crew prediction challenges that #Crew96 podcasts offer",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "bddgen && playwright test",
+    "test:gen": "bddgen"
   },
   "repository": {
     "type": "git",
@@ -18,6 +19,7 @@
   },
   "homepage": "https://github.com/mcornell/crew-predictions#readme",
   "devDependencies": {
-    "@playwright/test": "^1.59.1"
+    "@playwright/test": "^1.59.1",
+    "playwright-bdd": "^8.5.0"
   }
 }

@@ -33,11 +33,12 @@ firestore-debug.log
 .DS_Store
 Thumbs.db
 
-# Node (Playwright)
+# Node (Playwright / BDD)
 node_modules/
 npm-debug.log*
 playwright-report/
 test-results/
+.features-gen/
 
 # Misc
 *.log

@@ -46,9 +46,13 @@ Every feature increment starts from a failing **Playwright** (browser) scenario 
 
 ```bash
 go test ./...          # unit tests (Go testing package)
-npx playwright test    # e2e BDD outer loop
+npm test               # e2e BDD outer loop (bddgen + playwright)
+npx bddgen             # regenerate specs from .feature files only
 templ generate         # must run before go build if .templ files changed
 ```
+
+Feature files live in `e2e/features/`. Step definitions live in `e2e/steps/`.
+Always run `bddgen` after editing a `.feature` file — it generates the `.features-gen/` specs that Playwright actually executes.
 
 #### Discipline rules
 
