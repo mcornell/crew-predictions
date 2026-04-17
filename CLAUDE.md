@@ -44,9 +44,10 @@ Every feature increment starts from a failing **Playwright** (browser) scenario 
 
 #### Discipline rules
 
+- **No production code without a failing test.** This is absolute. Before creating or editing any production file, a failing unit test for that specific behavior must already exist and have been run. If there is no red test, do not write production code — write the test first.
 - **Never skip red.** If you cannot articulate why a test fails, stop and re-read the requirement.
 - **One test at a time.** Never write multiple tests before running them.
-- **Minimum code.** Only write production code demanded by the current failing test. Stub everything else.
+- **Minimum code.** Only write production code demanded by the current failing test. If the test only demands an auth check, write only the auth check — not the next logical thing. Stub everything else.
 - **Ask before assuming.** If a design decision is unclear, ask the user before writing code.
 - **Commit on every green step** — unit green, scenario green, AND after every refactor. Three distinct commits per cycle, not one.
 - **Never skip the refactor commit.** Refactor → run full suite → commit. Do not proceed to the next red until this is done.
