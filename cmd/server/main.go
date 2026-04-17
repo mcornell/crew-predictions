@@ -24,6 +24,8 @@ func main() {
 	})
 	mux.HandleFunc("GET /matches", handlers.Matches)
 	mux.HandleFunc("GET /auth/login", handlers.Login)
+	mux.HandleFunc("GET /auth/callback", handlers.Callback)
+	mux.HandleFunc("GET /auth/logout", handlers.Logout)
 
 	log.Printf("listening on :%s", port)
 	if err := http.ListenAndServe(":"+port, mux); err != nil {

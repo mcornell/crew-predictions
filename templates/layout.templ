@@ -1,6 +1,6 @@
 package templates
 
-templ Layout(title string) {
+templ Layout(title string, handle string) {
 	<!DOCTYPE html>
 	<html lang="en">
 		<head>
@@ -14,7 +14,12 @@ templ Layout(title string) {
 			<header>
 				<a href="/">Crew Predictions</a>
 				<nav>
-					<a href="/auth/login">Sign in with Google</a>
+					if handle != "" {
+						<span>{ handle }</span>
+						<a href="/auth/logout">Sign out</a>
+					} else {
+						<a href="/auth/login">Sign in with Google</a>
+					}
 				</nav>
 			</header>
 			<main>

@@ -2,8 +2,8 @@ package templates
 
 import "github.com/mcornell/crew-predictions/internal/models"
 
-templ MatchList(matches []models.Match) {
-	@Layout("Crew Predictions") {
+templ MatchList(matches []models.Match, handle string) {
+	@Layout("Crew Predictions", handle) {
 		<h1>Upcoming Matches</h1>
 		for _, m := range matches {
 			<div data-testid="match-card">

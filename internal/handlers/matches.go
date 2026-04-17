@@ -13,5 +13,6 @@ func Matches(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "couldn't fetch matches, try again", http.StatusInternalServerError)
 		return
 	}
-	templates.MatchList(matches).Render(r.Context(), w)
+	handle := userFromSession(r)
+	templates.MatchList(matches, handle).Render(r.Context(), w)
 }

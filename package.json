@@ -5,6 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "bddgen && playwright test",
+    "test:ui": "bddgen && playwright test --ui",
+    "test:report": "playwright show-report",
     "test:gen": "bddgen"
   },
   "repository": {
