@@ -1,40 +1,9 @@
-## Micronaut 3.8.6 Documentation
+# Crew Predictions
 
-- [User Guide](https://docs.micronaut.io/3.8.6/guide/index.html)
-- [API Reference](https://docs.micronaut.io/3.8.6/api/index.html)
-- [Configuration Reference](https://docs.micronaut.io/3.8.6/guide/configurationreference.html)
-- [Micronaut Guides](https://guides.micronaut.io/index.html)
----
+This is another nearly decade old idea.  The idea of this project is to allow for public humiliation of the various Columbus Crew prediction challenges that #Crew96 podcasts offer
 
-## Feature views-thymeleaf documentation
+The idea is that we would use some sort of publicly available login, definately bluesky, perhaps instagram, never Twitter/X, and use that for folks to register and make predictions right up until published match time. Meaning if MLS says they kick off at 7:30, the deadline is 7:30 not, 7:39 when the ball is actually kicked.  Users can predict a score of the match. They then will be automagically entered into the various "podcast" rules.  So for example, in Aces Radio, if you predict it correct, but the score is wrong, you get 5 points, but exactly right is 10, exactly wrong in opposite (you predict 2-1, but Crew lose 1-2), you get -15 points, etc.  I need to actually look up the rules. I don't remeber them.  
 
-- [Micronaut Thymeleaf Views documentation](https://micronaut-projects.github.io/micronaut-views/latest/guide/index.html#thymeleaf)
+Either way, this will at least do Aces and Upper 90 and will be completely unofficial until those podcasts decide they want to use it.
 
-- [https://www.thymeleaf.org/](https://www.thymeleaf.org/)
-
-
-## Feature http-client documentation
-
-- [Micronaut HTTP Client documentation](https://docs.micronaut.io/latest/guide/index.html#httpClient)
-
-
-## Feature liquibase documentation
-
-- [Micronaut Liquibase Database Migration documentation](https://micronaut-projects.github.io/micronaut-liquibase/latest/guide/index.html)
-
-- [https://www.liquibase.org/](https://www.liquibase.org/)
-
-
-## Feature jdbc-hikari documentation
-
-- [Micronaut Hikari JDBC Connection Pool documentation](https://micronaut-projects.github.io/micronaut-sql/latest/guide/index.html#jdbc)
-
-
-## Feature data-jdbc documentation
-
-- [Micronaut Data JDBC documentation](https://micronaut-projects.github.io/micronaut-data/latest/guide/index.html#jdbc)
-
-
-## Feature test-resources documentation
-
-- [Micronaut Test Resources documentation](https://micronaut-projects.github.io/micronaut-test-resources/latest/guide/)
+I _might_ need to offer admin access to folks from the podcasts, but for now...not important. For now, this is for fun and to learn and see what happens
