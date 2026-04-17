@@ -4,7 +4,11 @@
 *.out
 /bin/
 /tmp/
+/server
 vendor/
+
+# Claude Code
+.claude/
 
 # templ generated files
 *_templ.go
