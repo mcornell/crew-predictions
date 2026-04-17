@@ -70,6 +70,24 @@ func TestMatchList_ShowsPredictionFormWhenLoggedIn(t *testing.T) {
 	}
 }
 
+func TestMatchList_PredictionFormHasNameAttributes(t *testing.T) {
+	matches := []models.Match{
+		{ID: "match1", HomeTeam: "Columbus Crew", AwayTeam: "Atlanta United", Kickoff: time.Now(), Status: "scheduled"},
+	}
+	var buf bytes.Buffer
+	templates.MatchList(matches, "BlackAndGold@bsky.mock").Render(context.Background(), &buf)
+	body := buf.String()
+	if !strings.Contains(body, `name="home_goals"`) {
+		t.Errorf("expected home_goals input name")
+	}
+	if !strings.Contains(body, `name="away_goals"`) {
+		t.Errorf("expected away_goals input name")
+	}
+	if !strings.Contains(body, `name="match_id"`) {
+		t.Errorf("expected match_id hidden input")
+	}
+}
+
 func TestMatchList_RendersMatchCards(t *testing.T) {
 	matches := []models.Match{
 		{ID: "1", HomeTeam: "Columbus Crew", AwayTeam: "Atlanta United", Kickoff: time.Now(), Status: "scheduled"},

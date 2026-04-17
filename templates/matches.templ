@@ -38,16 +38,19 @@ templ MatchList(matches []models.Match, handle string) {
 							if handle == "" {
 								<p class="signin-nudge"><a href="/auth/login">Sign in</a> to make your pick</p>
 							} else {
-								<div class="score-inputs">
-									<input class="score-input" type="number" min="0" max="99" placeholder="–"/>
-									<span class="score-divider">–</span>
-									<input class="score-input" type="number" min="0" max="99" placeholder="–"/>
-								</div>
-								<div class="score-labels">
-									<span>HME</span>
-									<span>AWY</span>
-								</div>
-								<button class="predict-btn">Lock In</button>
+								<form hx-post="/predictions" hx-target="closest [data-testid='match-card']" hx-swap="outerHTML">
+									<input type="hidden" name="match_id" value={ m.ID }/>
+									<div class="score-inputs">
+										<input class="score-input" type="number" name="home_goals" min="0" max="99" placeholder="–"/>
+										<span class="score-divider">–</span>
+										<input class="score-input" type="number" name="away_goals" min="0" max="99" placeholder="–"/>
+									</div>
+									<div class="score-labels">
+										<span>HME</span>
+										<span>AWY</span>
+									</div>
+									<button class="predict-btn" type="submit">Lock In</button>
+								</form>
 							}
 						</div>
 					</div>
