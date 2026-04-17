@@ -16,10 +16,6 @@ func SubmitPrediction(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing fields", http.StatusBadRequest)
 		return
 	}
-	if _, err := strconv.Atoi(r.FormValue("home_goals")); err != nil {
-		http.Error(w, "goals must be integers", http.StatusBadRequest)
-		return
-	}
 	home, err := strconv.Atoi(r.FormValue("home_goals"))
 	if err != nil {
 		http.Error(w, "goals must be integers", http.StatusBadRequest)
