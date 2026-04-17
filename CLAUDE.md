@@ -42,18 +42,6 @@ Every feature increment starts from a failing **Playwright** (browser) scenario 
 4. **Refactor (scenario)** — Refactor across modules if needed. All tests must stay green.
 5. Repeat from step 1.
 
-#### Test commands
-
-```bash
-go test ./...          # unit tests (Go testing package)
-npm test               # e2e BDD outer loop (bddgen + playwright)
-npx bddgen             # regenerate specs from .feature files only
-templ generate         # must run before go build if .templ files changed
-```
-
-Feature files live in `e2e/features/`. Step definitions live in `e2e/steps/`.
-Always run `bddgen` after editing a `.feature` file — it generates the `.features-gen/` specs that Playwright actually executes.
-
 #### Discipline rules
 
 - **Never skip red.** If you cannot articulate why a test fails, stop and re-read the requirement.
@@ -67,6 +55,18 @@ Always run `bddgen` after editing a `.feature` file — it generates the `.featu
 - **One branch, one test, one commit.** Each error path, happy path, and edge case in a function is a separate inner-loop cycle. Writing `userFromSession` means separate red-green-refactor cycles for: missing cookie, invalid base64, invalid JSON, valid session. Do not write the whole function and then test it.
 - **Check coverage before declaring a scenario done.** After the BDD scenario goes green, run `go test ./... -cover`. If any function written during this cycle has uncovered lines, stay in the inner loop — do not proceed to the scenario-level refactor commit.
 - **Exception: external HTTP calls in handlers.** Functions that make live HTTP calls (e.g. `Callback` calling Google's token endpoint) cannot be fully unit-tested without injecting the HTTP client or OAuth config. These require a refactor to be testable. Track as tech debt; do not silently accept low coverage — note the gap and the required refactor explicitly.
+
+#### Test commands
+
+```bash
+go test ./...          # unit tests (Go testing package)
+npm test               # e2e BDD outer loop (bddgen + playwright)
+npx bddgen             # regenerate specs from .feature files only
+templ generate         # must run before go build if .templ files changed
+```
+
+Feature files live in `e2e/features/`. Step definitions live in `e2e/steps/`.
+Always run `bddgen` after editing a `.feature` file — it generates the `.features-gen/` specs that Playwright actually executes.
 
 ## Explaining Things to the User
 
