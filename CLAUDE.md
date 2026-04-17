@@ -31,9 +31,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Every feature increment starts from a failing **Playwright** (browser) scenario and is driven inward through unit-level red-green-refactor cycles.
 
-#### Outer loop (Playwright scenario)
+#### Outer loop (Playwright/BDD scenario)
 
-1. **Red** — Write one Playwright test describing the next observable user behavior. Run it. Confirm it fails for the expected reason. Do not proceed until the failure matches intent.
+1. **Red** — Write one Gherkin scenario in a `.feature` file under `e2e/features/` describing the next observable user behavior. Run `npm test`. Confirm it fails for the expected reason (missing step definition = red, wrong behavior = red). Do not proceed until the failure matches intent.
 2. **Inner loop** — Repeat until the Playwright test can pass:
    - **Red** — Write the smallest Go unit test for the next missing piece the scenario needs. One test at a time. Run it. Confirm it fails.
    - **Green** — Write the **minimum** production code to make that unit test pass. No speculative code. No implementing more than the test demands.
@@ -87,6 +87,6 @@ Always provide sources when responding.
 ```bash
 go run ./cmd/server                                          # local dev
 firebase emulators:start --only firestore                    # local Firestore
-gcloud run deploy crew-predictions --source . --region us-central1
+gcloud run deploy crew-predictions --source . --region us-east5
 firebase deploy --only hosting
 ```
