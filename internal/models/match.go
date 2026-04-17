@@ -1,0 +1,11 @@
+package models
+
+import "time"
+
+type Match struct {
+	ID       string
+	HomeTeam string
+	AwayTeam string
+	Kickoff  time.Time
+	Status   string
+}
