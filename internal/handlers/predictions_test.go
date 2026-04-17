@@ -43,6 +43,23 @@ func TestSubmitPrediction_RejectsNonIntegerGoals(t *testing.T) {
 	}
 }
 
+func TestSubmitPrediction_AcceptsValidRequest(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPost, "/predictions",
+		strings.NewReader("match_id=match1&home_goals=3&away_goals=1"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(sessionCookie("BlackAndGold@bsky.mock"))
+	w := httptest.NewRecorder()
+
+	handlers.SubmitPrediction(w, req)
+
+	if w.Code != http.StatusFound {
+		t.Errorf("expected 302 redirect, got %d", w.Code)
+	}
+	if w.Header().Get("Location") != "/matches" {
+		t.Errorf("expected redirect to /matches, got %s", w.Header().Get("Location"))
+	}
+}
+
 func TestSubmitPrediction_RejectsUnauthenticated(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/predictions", nil)
 	w := httptest.NewRecorder()

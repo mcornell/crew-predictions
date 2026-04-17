@@ -23,4 +23,5 @@ func SubmitPrediction(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "goals must be integers", http.StatusBadRequest)
 		return
 	}
+	http.Redirect(w, r, "/matches", http.StatusFound)
 }
