@@ -13,9 +13,16 @@ func TestUpper90Club_ExactScore(t *testing.T) {
 	}
 }
 
-func TestUpper90Club_ZeroForAnythingElse(t *testing.T) {
+func TestUpper90Club_CorrectWinner(t *testing.T) {
 	got := scoring.Upper90Club(scoring.Result{Home: 2, Away: 0}, scoring.Prediction{Home: 3, Away: 1})
+	if got != 1 {
+		t.Errorf("expected 1 for correct winner, got %d", got)
+	}
+}
+
+func TestUpper90Club_ZeroForAnythingElse(t *testing.T) {
+	got := scoring.Upper90Club(scoring.Result{Home: 2, Away: 0}, scoring.Prediction{Home: 0, Away: 1})
 	if got != 0 {
-		t.Errorf("expected 0 for non-exact prediction, got %d", got)
+		t.Errorf("expected 0 for wrong winner, got %d", got)
 	}
 }
