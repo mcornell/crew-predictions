@@ -40,13 +40,14 @@ Every feature increment starts from a failing **Playwright** (browser) scenario 
    - **Refactor** — Clean up covered code only. All tests stay green. **Commit.**
 3. **Coverage gate** — Run `go test ./... -cover`. Any uncovered branch means production code was written without a test — go back to the inner loop. Do not proceed until coverage is clean.
 4. **Green (scenario)** — Run the Playwright test. Still failing? Identify the next missing piece and return to the inner loop. Passes? **Commit and push.**
-5. **Refactor (scenario)** — Refactor across modules if needed. All tests stay green. Commit and push.
+5. **Refactor (scenario)** — Refactor across modules if needed. All tests stay green. **Commit and push.**
 6. Repeat from step 1.
 
 #### Absolute rules
 
-- **No production code without a red test.** This is absolute. A failing test must exist and have been run before any production file is created or edited.
+- **No production code without a red test.** This is absolute. A failing test must exist and have been run before any production file is created or edited. This means every `if`, every `return`, every error branch — each one must be driven by its own failing test first.
 - **One branch, one test, one commit.** Every error path, happy path, and edge case is its own red-green-refactor cycle. Never write a whole function and test it afterward. If you do this correctly, coverage is never something to check at the end — it's guaranteed by construction.
+- **Always run `go test ./...` (full suite).** Never run a subset of packages. Run the full suite at every red, green, and refactor step.
 - **Never skip red.** If you cannot articulate exactly why the test fails, stop.
 - **Exception — external HTTP calls:** Handlers that make live HTTP calls can't be fully unit-tested without injecting the HTTP client. Note the gap explicitly as tech debt; do not silently accept low coverage.
 

@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
+	"github.com/mcornell/crew-predictions/internal/espn"
 	"github.com/mcornell/crew-predictions/internal/handlers"
 	"github.com/mcornell/crew-predictions/internal/repository"
 )
@@ -23,9 +24,11 @@ func main() {
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/matches", http.StatusFound)
 	})
-	mux.HandleFunc("GET /matches", handlers.Matches)
+	store := repository.NewMemoryPredictionStore()
+	mh := handlers.NewMatchesHandler(store, espn.FetchCrewMatches)
+	mux.HandleFunc("GET /matches", mh.List)
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-	ph := handlers.NewPredictionsHandler(repository.NewMemoryPredictionStore())
+	ph := handlers.NewPredictionsHandler(store)
 	mux.HandleFunc("POST /predictions", ph.Submit)
 	mux.HandleFunc("GET /auth/login", handlers.Login)
 	mux.HandleFunc("GET /auth/callback", handlers.Callback)
