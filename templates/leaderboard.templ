@@ -1,0 +1,35 @@
+package templates
+
+import "fmt"
+
+type LeaderboardEntry struct {
+	Handle string
+	Points int
+}
+
+templ Leaderboard(entries []LeaderboardEntry, handle string) {
+	@Layout("Leaderboard · Crew Predictions", handle) {
+		<div class="page-heading">
+			<h1>Leaderboard</h1>
+			<p>Who's been right, who's been wrong, and who owes everyone an apology.</p>
+		</div>
+		<table class="leaderboard">
+			<thead>
+				<tr>
+					<th>#</th>
+					<th>Predictor</th>
+					<th>Points</th>
+				</tr>
+			</thead>
+			<tbody>
+				for i, e := range entries {
+					<tr data-testid="leaderboard-row">
+						<td>{ fmt.Sprintf("%d", i+1) }</td>
+						<td>{ e.Handle }</td>
+						<td>{ fmt.Sprintf("%d", e.Points) }</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	}
+}

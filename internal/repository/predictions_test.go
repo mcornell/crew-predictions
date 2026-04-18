@@ -18,6 +18,22 @@ func TestMemoryPredictionStore_ReturnsNilWhenNotFound(t *testing.T) {
 	}
 }
 
+func TestMemoryPredictionStore_GetAllReturnsAllSaved(t *testing.T) {
+	store := repository.NewMemoryPredictionStore()
+	ctx := context.Background()
+
+	store.Save(ctx, repository.Prediction{MatchID: "m1", Handle: "a@bsky.mock", HomeGoals: 1, AwayGoals: 0})
+	store.Save(ctx, repository.Prediction{MatchID: "m2", Handle: "b@bsky.mock", HomeGoals: 2, AwayGoals: 1})
+
+	all, err := store.GetAll(ctx)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(all) != 2 {
+		t.Errorf("expected 2 predictions, got %d", len(all))
+	}
+}
+
 func TestMemoryPredictionStore_SaveAndRetrieve(t *testing.T) {
 	store := repository.NewMemoryPredictionStore()
 	ctx := context.Background()

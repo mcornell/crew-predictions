@@ -31,6 +31,22 @@ func (s *FirestorePredictionStore) Save(ctx context.Context, p Prediction) error
 	return err
 }
 
+func (s *FirestorePredictionStore) GetAll(ctx context.Context) ([]Prediction, error) {
+	docs, err := s.client.Collection("predictions").Documents(ctx).GetAll()
+	if err != nil {
+		return nil, err
+	}
+	all := make([]Prediction, 0, len(docs))
+	for _, doc := range docs {
+		var p Prediction
+		if err := doc.DataTo(&p); err != nil {
+			return nil, err
+		}
+		all = append(all, p)
+	}
+	return all, nil
+}
+
 func (s *FirestorePredictionStore) GetByMatchAndHandle(ctx context.Context, matchID, handle string) (*Prediction, error) {
 	doc := s.client.Collection("predictions").Doc(matchID + "|" + handle)
 	snap, err := doc.Get(ctx)
