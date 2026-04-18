@@ -7,5 +7,19 @@ func AcesRadio(result Result, prediction Prediction) int {
 	if prediction == Prediction(result) {
 		return 15
 	}
+	if outcome(result.Home, result.Away) == outcome(prediction.Home, prediction.Away) {
+		return 10
+	}
 	return 0
+}
+
+func outcome(home, away int) int {
+	switch {
+	case home > away:
+		return 1
+	case away > home:
+		return -1
+	default:
+		return 0
+	}
 }
