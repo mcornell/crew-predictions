@@ -21,28 +21,34 @@ func main() {
 		port = "8080"
 	}
 
-	var store repository.PredictionStore
+	var predStore repository.PredictionStore
 	if project := os.Getenv("GOOGLE_CLOUD_PROJECT"); project != "" {
 		fs, err := repository.NewFirestorePredictionStore(context.Background(), project)
 		if err != nil {
 			log.Fatalf("failed to connect to Firestore: %v", err)
 		}
-		store = fs
+		predStore = fs
 		log.Printf("using Firestore (project: %s)", project)
 	} else {
-		store = repository.NewMemoryPredictionStore()
+		predStore = repository.NewMemoryPredictionStore()
 		log.Printf("using in-memory store (set GOOGLE_CLOUD_PROJECT to use Firestore)")
 	}
+
+	resultStore := repository.NewMemoryResultStore()
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/matches", http.StatusFound)
 	})
-	mh := handlers.NewMatchesHandler(store, espn.FetchCrewMatches)
+	mh := handlers.NewMatchesHandler(predStore, espn.FetchCrewMatches)
 	mux.HandleFunc("GET /matches", mh.List)
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-	ph := handlers.NewPredictionsHandler(store)
+	ph := handlers.NewPredictionsHandler(predStore)
 	mux.HandleFunc("POST /predictions", ph.Submit)
+	lh := handlers.NewLeaderboardHandler(predStore, resultStore)
+	mux.HandleFunc("GET /leaderboard", lh.List)
+	rh := handlers.NewResultsHandler(resultStore)
+	mux.HandleFunc("POST /admin/results", rh.Submit)
 	mux.HandleFunc("GET /auth/login", handlers.Login)
 	mux.HandleFunc("GET /auth/callback", handlers.Callback)
 	mux.HandleFunc("GET /auth/logout", handlers.Logout)
