@@ -19,3 +19,11 @@ func TestAcesRadio_CorrectWinner(t *testing.T) {
 		t.Errorf("expected 10 for correct winner, got %d", got)
 	}
 }
+
+func TestAcesRadio_FlippedSameScore(t *testing.T) {
+	// Predict Crew 3-2 Portland, actual Portland 3-2 Crew
+	got := scoring.AcesRadio(scoring.Result{Home: 3, Away: 2}, scoring.Prediction{Home: 2, Away: 3})
+	if got != -15 {
+		t.Errorf("expected -15 for flipped same scoreline, got %d", got)
+	}
+}

@@ -7,6 +7,9 @@ func AcesRadio(result Result, prediction Prediction) int {
 	if prediction == Prediction(result) {
 		return 15
 	}
+	if prediction.Home == result.Away && prediction.Away == result.Home {
+		return -15
+	}
 	if outcome(result.Home, result.Away) == outcome(prediction.Home, prediction.Away) {
 		return 10
 	}
