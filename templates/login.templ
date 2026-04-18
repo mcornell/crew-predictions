@@ -1,0 +1,39 @@
+package templates
+
+templ Login() {
+	@Layout("Sign In · Crew Predictions", "") {
+		<div class="login-page">
+			<div class="page-heading">
+				<h1>Sign In</h1>
+				<p>Pick your scores. Be wrong in public. It's tradition.</p>
+			</div>
+			<link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth.css"/>
+			<div id="firebaseui-auth-container"></div>
+			<script src="/auth/config.js"></script>
+			<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+			<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+			<script src="https://www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth.js"></script>
+			<script>
+				firebase.initializeApp(window.__firebaseConfig || {});
+				const ui = new firebaseui.auth.AuthUI(firebase.auth());
+				ui.start('#firebaseui-auth-container', {
+					signInOptions: [
+						firebase.auth.GoogleAuthProvider.PROVIDER_ID,
+						firebase.auth.EmailAuthProvider.PROVIDER_ID,
+					],
+					callbacks: {
+						signInSuccessWithAuthResult: async function(result) {
+							const idToken = await result.user.getIdToken();
+							await fetch('/auth/session', {
+								method: 'POST',
+								body: new URLSearchParams({ idToken }),
+							});
+							window.location.href = '/matches';
+							return false;
+						},
+					},
+				});
+			</script>
+		</div>
+	}
+}

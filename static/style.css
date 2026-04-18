@@ -93,6 +93,10 @@ header nav a:hover { border-color: var(--gold); color: var(--gold); }
 header nav a.sign-in { border-color: var(--gold); color: var(--gold); }
 header nav a.sign-in:hover { background: var(--gold); color: var(--black); }
 
+/* ── Login page ──────────────────────────────────────────────────── */
+.login-page { max-width: 400px; margin: 0 auto; }
+.login-page #firebaseui-auth-container { margin-top: 1.5rem; }
+
 /* ── Main wrapper ───────────────────────────────────────────────── */
 main {
   max-width: 860px;

@@ -49,7 +49,11 @@ func (h *LeaderboardHandler) List(w http.ResponseWriter, r *http.Request) {
 	acesEntries := rankEntries(handles, acesTotals)
 	u90Entries := rankEntries(handles, u90Totals)
 
-	handle := userFromSession(r)
+	user := UserFromSession(r)
+	handle := ""
+	if user != nil {
+		handle = user.Handle
+	}
 	templates.Leaderboard(acesEntries, u90Entries, handle).Render(ctx, w)
 }
 

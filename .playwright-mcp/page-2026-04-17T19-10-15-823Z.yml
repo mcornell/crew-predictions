@@ -1,0 +1,77 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - link "Crew Predictions" [ref=e3] [cursor=pointer]:
+      - /url: /
+      - img [ref=e4]:
+        - generic [ref=e12]: EST. 96
+      - text: Crew Predictions
+    - navigation [ref=e13]:
+      - link "Sign in with Google" [ref=e14] [cursor=pointer]:
+        - /url: /auth/login
+  - main [ref=e15]:
+    - generic [ref=e16]:
+      - heading "Upcoming Fixtures" [level=1] [ref=e17]:
+        - text: Upcoming
+        - text: Fixtures
+      - paragraph [ref=e18]: Pick your scores. Be wrong in public. It's tradition.
+    - generic [ref=e19]: Upcoming
+    - generic [ref=e21]:
+      - generic [ref=e22]:
+        - generic [ref=e23]: Mon 1 Jan · 12:00 AM ET · STATUS_FULL_TIME
+        - generic [ref=e24]: Columbus Crew vs Orlando City SC
+      - paragraph [ref=e26]:
+        - link "Sign in" [ref=e27] [cursor=pointer]:
+          - /url: /auth/login
+        - text: to make your pick
+    - generic [ref=e29]:
+      - generic [ref=e30]:
+        - generic [ref=e31]: Mon 1 Jan · 12:00 AM ET · STATUS_FULL_TIME
+        - generic [ref=e32]: Atlanta United FC vs Columbus Crew
+      - paragraph [ref=e34]:
+        - link "Sign in" [ref=e35] [cursor=pointer]:
+          - /url: /auth/login
+        - text: to make your pick
+    - generic [ref=e37]:
+      - generic [ref=e38]:
+        - generic [ref=e39]: Mon 1 Jan · 12:00 AM ET · STATUS_FULL_TIME
+        - generic [ref=e40]: Toronto FC vs Columbus Crew
+      - paragraph [ref=e42]:
+        - link "Sign in" [ref=e43] [cursor=pointer]:
+          - /url: /auth/login
+        - text: to make your pick
+    - generic [ref=e45]:
+      - generic [ref=e46]:
+        - generic [ref=e47]: Mon 1 Jan · 12:00 AM ET · STATUS_FULL_TIME
+        - generic [ref=e48]: Columbus Crew vs Nashville SC
+      - paragraph [ref=e50]:
+        - link "Sign in" [ref=e51] [cursor=pointer]:
+          - /url: /auth/login
+        - text: to make your pick
+    - generic [ref=e53]:
+      - generic [ref=e54]:
+        - generic [ref=e55]: Mon 1 Jan · 12:00 AM ET · STATUS_FULL_TIME
+        - generic [ref=e56]: Columbus Crew vs Chicago Fire FC
+      - paragraph [ref=e58]:
+        - link "Sign in" [ref=e59] [cursor=pointer]:
+          - /url: /auth/login
+        - text: to make your pick
+    - generic [ref=e61]:
+      - generic [ref=e62]:
+        - generic [ref=e63]: Mon 1 Jan · 12:00 AM ET · STATUS_FULL_TIME
+        - generic [ref=e64]: Sporting Kansas City vs Columbus Crew
+      - paragraph [ref=e66]:
+        - link "Sign in" [ref=e67] [cursor=pointer]:
+          - /url: /auth/login
+        - text: to make your pick
+    - generic [ref=e69]:
+      - generic [ref=e70]:
+        - generic [ref=e71]: Mon 1 Jan · 12:00 AM ET · STATUS_FULL_TIME
+        - generic [ref=e72]: Portland Timbers vs Columbus Crew
+      - paragraph [ref=e74]:
+        - link "Sign in" [ref=e75] [cursor=pointer]:
+          - /url: /auth/login
+        - text: to make your pick
+  - contentinfo [ref=e76]:
+    - generic [ref=e77]: Crew Predictions
+    - generic [ref=e78]: ·
+    - generic [ref=e79]: For the faithful. Against everyone else.

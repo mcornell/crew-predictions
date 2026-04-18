@@ -26,7 +26,7 @@ func TestMatchList_ShowsSignInWhenLoggedOut(t *testing.T) {
 	var buf bytes.Buffer
 	templates.MatchList([]models.Match{}, "", noPredictions).Render(context.Background(), &buf)
 	body := buf.String()
-	if !strings.Contains(body, "Sign in with Google") {
+	if !strings.Contains(body, "Sign In") {
 		t.Errorf("expected sign-in link for unauthenticated user")
 	}
 }
@@ -38,7 +38,7 @@ func TestMatchList_ShowsHandleWhenLoggedIn(t *testing.T) {
 	if !strings.Contains(body, "BlackAndGold@bsky.mock") {
 		t.Errorf("expected handle in output")
 	}
-	if strings.Contains(body, "Sign in with Google") {
+	if strings.Contains(body, "Sign In") {
 		t.Errorf("sign-in link should be hidden for authenticated user")
 	}
 }

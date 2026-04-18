@@ -17,8 +17,8 @@ func NewPredictionsHandler(store repository.PredictionStore) *PredictionsHandler
 }
 
 func (h *PredictionsHandler) Submit(w http.ResponseWriter, r *http.Request) {
-	handle := userFromSession(r)
-	if handle == "" {
+	user := UserFromSession(r)
+	if user == nil {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -39,7 +39,8 @@ func (h *PredictionsHandler) Submit(w http.ResponseWriter, r *http.Request) {
 	}
 	h.store.Save(r.Context(), repository.Prediction{
 		MatchID:   r.FormValue("match_id"),
-		Handle:    handle,
+		Handle:    user.Handle,
+		UserID:    user.UserID,
 		HomeGoals: home,
 		AwayGoals: away,
 	})
