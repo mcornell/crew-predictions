@@ -7,7 +7,7 @@ Given('{string} predicted {int}-{int} for match {string}', async ({ request }, h
   await request.post('/predictions', {
     form: { match_id: matchID, home_goals: String(home), away_goals: String(away) },
     headers: {
-      Cookie: `session=${Buffer.from(JSON.stringify({ handle })).toString('base64')}`,
+      Cookie: `session=${Buffer.from(JSON.stringify({ userID: `google:${handle}`, handle })).toString('base64')}`,
     },
   });
 });
@@ -24,10 +24,10 @@ When('I visit the leaderboard', async ({ page }) => {
 
 Then('I should see {string} with {int} Aces Radio points', async ({ page }, handle: string, points: number) => {
   const row = page.locator('[data-testid="leaderboard-row"]').filter({ hasText: handle }).first();
-  await expect(row.getByText(String(points))).toBeVisible();
+  await expect(row.locator('[data-testid="leaderboard-points"]')).toHaveText(String(points));
 });
 
 Then('I should see {string} with {int} Upper90Club points', async ({ page }, handle: string, points: number) => {
   const row = page.locator('[data-testid="leaderboard-row"]').filter({ hasText: handle }).last();
-  await expect(row.getByText(String(points))).toBeVisible();
+  await expect(row.locator('[data-testid="leaderboard-points"]')).toHaveText(String(points));
 });

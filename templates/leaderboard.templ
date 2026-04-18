@@ -34,7 +34,7 @@ templ leaderboardTable(entries []LeaderboardEntry) {
 				<tr data-testid="leaderboard-row">
 					<td>{ fmt.Sprintf("%d", i+1) }</td>
 					<td>{ e.Handle }</td>
-					<td>{ fmt.Sprintf("%d", e.Points) }</td>
+					<td data-testid="leaderboard-points">{ fmt.Sprintf("%d", e.Points) }</td>
 				</tr>
 			}
 		</tbody>

@@ -12,4 +12,4 @@ Feature: Leaderboard
     And "ColumbusNordecke@bsky.mock" predicted 1-0 for match "match-scoring-2"
     And the final score for match "match-scoring-2" was 3-0 with Columbus away
     When I visit the leaderboard
-    Then I should see "ColumbusNordecke@bsky.mock" with 1 Upper90Club points
+    Then I should see "ColumbusNordecke@bsky.mock" with 2 Upper90Club points
