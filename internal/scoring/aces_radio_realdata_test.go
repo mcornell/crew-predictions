@@ -6,7 +6,7 @@ import (
 	"github.com/mcornell/crew-predictions/internal/scoring"
 )
 
-// Real match data from the 2025 Columbus Crew season.
+// Real match data from the 2026 Columbus Crew season.
 // Match 1: Portland (H) vs Columbus (A) — final 3-2 Portland
 // Match 2: Kansas City (H) vs Columbus (A) — final 2-2 draw
 
