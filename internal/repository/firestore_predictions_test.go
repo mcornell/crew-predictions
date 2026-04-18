@@ -48,6 +48,22 @@ func TestFirestorePredictionStore_SaveAndRetrieve(t *testing.T) {
 	}
 }
 
+func TestFirestorePredictionStore_GetAllReturnsSaved(t *testing.T) {
+	store := firestoreOrSkip(t)
+	ctx := context.Background()
+
+	store.Save(ctx, repository.Prediction{MatchID: "getall-m1", UserID: "google:user-ga1", Handle: "a@mock", HomeGoals: 1, AwayGoals: 0})
+	store.Save(ctx, repository.Prediction{MatchID: "getall-m2", UserID: "google:user-ga2", Handle: "b@mock", HomeGoals: 2, AwayGoals: 1})
+
+	all, err := store.GetAll(ctx)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(all) < 2 {
+		t.Errorf("expected at least 2 predictions, got %d", len(all))
+	}
+}
+
 func TestFirestorePredictionStore_ReturnsNilWhenNotFound(t *testing.T) {
 	store := firestoreOrSkip(t)
 	got, err := store.GetByMatchAndUser(context.Background(), "no-such-match", "google:nobody")
