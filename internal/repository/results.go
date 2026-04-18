@@ -4,6 +4,8 @@ import "context"
 
 type Result struct {
 	MatchID   string
+	HomeTeam  string
+	AwayTeam  string
 	HomeGoals int
 	AwayGoals int
 }

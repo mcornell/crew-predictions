@@ -45,7 +45,7 @@ func main() {
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	ph := handlers.NewPredictionsHandler(predStore)
 	mux.HandleFunc("POST /predictions", ph.Submit)
-	lh := handlers.NewLeaderboardHandler(predStore, resultStore)
+	lh := handlers.NewLeaderboardHandler(predStore, resultStore, "Columbus Crew")
 	mux.HandleFunc("GET /leaderboard", lh.List)
 	rh := handlers.NewResultsHandler(resultStore)
 	mux.HandleFunc("POST /admin/results", rh.Submit)

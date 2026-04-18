@@ -12,10 +12,11 @@ import (
 type LeaderboardHandler struct {
 	predictions repository.PredictionStore
 	results     repository.ResultStore
+	targetTeam  string
 }
 
-func NewLeaderboardHandler(predictions repository.PredictionStore, results repository.ResultStore) *LeaderboardHandler {
-	return &LeaderboardHandler{predictions: predictions, results: results}
+func NewLeaderboardHandler(predictions repository.PredictionStore, results repository.ResultStore, targetTeam string) *LeaderboardHandler {
+	return &LeaderboardHandler{predictions: predictions, results: results, targetTeam: targetTeam}
 }
 
 func (h *LeaderboardHandler) List(w http.ResponseWriter, r *http.Request) {
@@ -27,25 +28,50 @@ func (h *LeaderboardHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	totals := map[string]int{}
+	acesTotals := map[string]int{}
+	u90Totals := map[string]int{}
+
 	for _, p := range allPredictions {
 		result, err := h.results.GetResult(ctx, p.MatchID)
 		if err != nil || result == nil {
 			continue
 		}
-		pts := scoring.AcesRadio(
-			scoring.Result{Home: result.HomeGoals, Away: result.AwayGoals},
-			scoring.Prediction{Home: p.HomeGoals, Away: p.AwayGoals},
-		)
-		totals[p.Handle] += pts
+		pred := scoring.Prediction{Home: p.HomeGoals, Away: p.AwayGoals}
+		res := scoring.Result{Home: result.HomeGoals, Away: result.AwayGoals}
+		targetIsHome := result.HomeTeam == h.targetTeam
+
+		acesTotals[p.Handle] += scoring.AcesRadio(res, pred)
+		u90Totals[p.Handle] += scoring.Upper90Club(res, pred, targetIsHome)
 	}
 
-	entries := make([]templates.LeaderboardEntry, 0, len(totals))
-	for handle, pts := range totals {
-		entries = append(entries, templates.LeaderboardEntry{Handle: handle, Points: pts})
-	}
-	sort.Slice(entries, func(i, j int) bool { return entries[i].Points > entries[j].Points })
+	handles := allHandles(acesTotals, u90Totals)
+
+	acesEntries := rankEntries(handles, acesTotals)
+	u90Entries := rankEntries(handles, u90Totals)
 
 	handle := userFromSession(r)
-	templates.Leaderboard(entries, handle).Render(ctx, w)
+	templates.Leaderboard(acesEntries, u90Entries, handle).Render(ctx, w)
+}
+
+func allHandles(maps ...map[string]int) []string {
+	seen := map[string]struct{}{}
+	for _, m := range maps {
+		for k := range m {
+			seen[k] = struct{}{}
+		}
+	}
+	handles := make([]string, 0, len(seen))
+	for k := range seen {
+		handles = append(handles, k)
+	}
+	return handles
+}
+
+func rankEntries(handles []string, totals map[string]int) []templates.LeaderboardEntry {
+	entries := make([]templates.LeaderboardEntry, 0, len(handles))
+	for _, h := range handles {
+		entries = append(entries, templates.LeaderboardEntry{Handle: h, Points: totals[h]})
+	}
+	sort.Slice(entries, func(i, j int) bool { return entries[i].Points > entries[j].Points })
+	return entries
 }
