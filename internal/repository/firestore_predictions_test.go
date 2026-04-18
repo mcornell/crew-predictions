@@ -26,6 +26,7 @@ func TestFirestorePredictionStore_SaveAndRetrieve(t *testing.T) {
 
 	pred := repository.Prediction{
 		MatchID:   "firestore-match-1",
+		UserID:    "google:nordecke123",
 		Handle:    "ColumbusNordecke@bsky.mock",
 		HomeGoals: 2,
 		AwayGoals: 0,
@@ -35,7 +36,7 @@ func TestFirestorePredictionStore_SaveAndRetrieve(t *testing.T) {
 		t.Fatalf("unexpected error saving: %v", err)
 	}
 
-	got, err := store.GetByMatchAndHandle(ctx, "firestore-match-1", "ColumbusNordecke@bsky.mock")
+	got, err := store.GetByMatchAndUser(ctx, "firestore-match-1", "google:nordecke123")
 	if err != nil {
 		t.Fatalf("unexpected error retrieving: %v", err)
 	}
@@ -49,7 +50,7 @@ func TestFirestorePredictionStore_SaveAndRetrieve(t *testing.T) {
 
 func TestFirestorePredictionStore_ReturnsNilWhenNotFound(t *testing.T) {
 	store := firestoreOrSkip(t)
-	got, err := store.GetByMatchAndHandle(context.Background(), "no-such-match", "nobody@bsky.mock")
+	got, err := store.GetByMatchAndUser(context.Background(), "no-such-match", "google:nobody")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

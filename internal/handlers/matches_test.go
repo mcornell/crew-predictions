@@ -64,11 +64,11 @@ func TestMatchesHandler_ReturnsInternalErrorWhenFetchFails(t *testing.T) {
 func TestMatchesHandler_ShowsSavedPrediction(t *testing.T) {
 	store := repository.NewMemoryPredictionStore()
 	store.Save(context.Background(), repository.Prediction{
-		MatchID: "match-99", Handle: "BlackAndGold@bsky.mock", HomeGoals: 3, AwayGoals: 1,
+		MatchID: "match-99", UserID: "google:abc123", Handle: "BlackAndGold@bsky.mock", HomeGoals: 3, AwayGoals: 1,
 	})
 	mh := handlers.NewMatchesHandler(store, stubFetcher(oneMatch()))
 	req := httptest.NewRequest(http.MethodGet, "/matches", nil)
-	req.AddCookie(sessionCookie("BlackAndGold@bsky.mock"))
+	req.AddCookie(sessionCookie("google:abc123", "BlackAndGold@bsky.mock"))
 	w := httptest.NewRecorder()
 
 	mh.List(w, req)

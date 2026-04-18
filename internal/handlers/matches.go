@@ -23,11 +23,13 @@ func (h *MatchesHandler) List(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "couldn't fetch matches, try again", http.StatusInternalServerError)
 		return
 	}
-	handle := userFromSession(r)
+	user := userFromSession(r)
+	handle := ""
 	predictions := map[string]*repository.Prediction{}
-	if handle != "" {
+	if user != nil {
+		handle = user.Handle
 		for _, m := range matches {
-			p, _ := h.store.GetByMatchAndHandle(r.Context(), m.ID, handle)
+			p, _ := h.store.GetByMatchAndUser(r.Context(), m.ID, user.UserID)
 			if p != nil {
 				predictions[m.ID] = p
 			}

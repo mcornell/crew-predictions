@@ -9,7 +9,7 @@ import (
 
 func TestMemoryPredictionStore_ReturnsNilWhenNotFound(t *testing.T) {
 	store := repository.NewMemoryPredictionStore()
-	got, err := store.GetByMatchAndHandle(context.Background(), "no-match", "nobody")
+	got, err := store.GetByMatchAndUser(context.Background(), "no-match", "nobody")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -22,8 +22,8 @@ func TestMemoryPredictionStore_GetAllReturnsAllSaved(t *testing.T) {
 	store := repository.NewMemoryPredictionStore()
 	ctx := context.Background()
 
-	store.Save(ctx, repository.Prediction{MatchID: "m1", Handle: "a@bsky.mock", HomeGoals: 1, AwayGoals: 0})
-	store.Save(ctx, repository.Prediction{MatchID: "m2", Handle: "b@bsky.mock", HomeGoals: 2, AwayGoals: 1})
+	store.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "google:user1", Handle: "a@bsky.mock", HomeGoals: 1, AwayGoals: 0})
+	store.Save(ctx, repository.Prediction{MatchID: "m2", UserID: "google:user2", Handle: "b@bsky.mock", HomeGoals: 2, AwayGoals: 1})
 
 	all, err := store.GetAll(ctx)
 	if err != nil {
@@ -40,6 +40,7 @@ func TestMemoryPredictionStore_SaveAndRetrieve(t *testing.T) {
 
 	pred := repository.Prediction{
 		MatchID:   "match1",
+		UserID:    "google:abc123",
 		Handle:    "BlackAndGold@bsky.mock",
 		HomeGoals: 3,
 		AwayGoals: 1,
@@ -49,7 +50,7 @@ func TestMemoryPredictionStore_SaveAndRetrieve(t *testing.T) {
 		t.Fatalf("unexpected error saving: %v", err)
 	}
 
-	got, err := store.GetByMatchAndHandle(ctx, "match1", "BlackAndGold@bsky.mock")
+	got, err := store.GetByMatchAndUser(ctx, "match1", "google:abc123")
 	if err != nil {
 		t.Fatalf("unexpected error retrieving: %v", err)
 	}

@@ -4,6 +4,7 @@ import "context"
 
 type Prediction struct {
 	MatchID   string
+	UserID    string
 	Handle    string
 	HomeGoals int
 	AwayGoals int
@@ -11,7 +12,7 @@ type Prediction struct {
 
 type PredictionStore interface {
 	Save(ctx context.Context, p Prediction) error
-	GetByMatchAndHandle(ctx context.Context, matchID, handle string) (*Prediction, error)
+	GetByMatchAndUser(ctx context.Context, matchID, userID string) (*Prediction, error)
 	GetAll(ctx context.Context) ([]Prediction, error)
 }
 
@@ -24,12 +25,12 @@ func NewMemoryPredictionStore() *MemoryPredictionStore {
 }
 
 func (s *MemoryPredictionStore) Save(ctx context.Context, p Prediction) error {
-	s.data[p.MatchID+"|"+p.Handle] = p
+	s.data[p.MatchID+"|"+p.UserID] = p
 	return nil
 }
 
-func (s *MemoryPredictionStore) GetByMatchAndHandle(ctx context.Context, matchID, handle string) (*Prediction, error) {
-	p, ok := s.data[matchID+"|"+handle]
+func (s *MemoryPredictionStore) GetByMatchAndUser(ctx context.Context, matchID, userID string) (*Prediction, error) {
+	p, ok := s.data[matchID+"|"+userID]
 	if !ok {
 		return nil, nil
 	}

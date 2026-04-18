@@ -12,8 +12,8 @@ import (
 	"github.com/mcornell/crew-predictions/internal/repository"
 )
 
-func sessionCookie(handle string) *http.Cookie {
-	data, _ := json.Marshal(map[string]string{"handle": handle})
+func sessionCookie(userID, handle string) *http.Cookie {
+	data, _ := json.Marshal(map[string]string{"userID": userID, "handle": handle})
 	return &http.Cookie{Name: "session", Value: base64.StdEncoding.EncodeToString(data)}
 }
 
@@ -33,7 +33,7 @@ func TestSubmitPrediction_RejectsUnauthenticated(t *testing.T) {
 func TestSubmitPrediction_RejectsMissingFields(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/predictions", strings.NewReader(""))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.AddCookie(sessionCookie("BlackAndGold@bsky.mock"))
+	req.AddCookie(sessionCookie("google:abc123", "BlackAndGold@bsky.mock"))
 	w := httptest.NewRecorder()
 	newHandler().Submit(w, req)
 	if w.Code != http.StatusBadRequest {
@@ -45,7 +45,7 @@ func TestSubmitPrediction_RejectsNonIntegerGoals(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/predictions",
 		strings.NewReader("match_id=abc&home_goals=two&away_goals=one"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.AddCookie(sessionCookie("BlackAndGold@bsky.mock"))
+	req.AddCookie(sessionCookie("google:abc123", "BlackAndGold@bsky.mock"))
 	w := httptest.NewRecorder()
 	newHandler().Submit(w, req)
 	if w.Code != http.StatusBadRequest {
@@ -57,7 +57,7 @@ func TestSubmitPrediction_RejectsNonIntegerAwayGoals(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/predictions",
 		strings.NewReader("match_id=abc&home_goals=2&away_goals=one"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.AddCookie(sessionCookie("BlackAndGold@bsky.mock"))
+	req.AddCookie(sessionCookie("google:abc123", "BlackAndGold@bsky.mock"))
 	w := httptest.NewRecorder()
 	newHandler().Submit(w, req)
 	if w.Code != http.StatusBadRequest {
@@ -70,7 +70,7 @@ func TestSubmitPrediction_ReturnsMatchCardWithSavedScore(t *testing.T) {
 		strings.NewReader("match_id=match1&home_goals=3&away_goals=1"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("HX-Request", "true")
-	req.AddCookie(sessionCookie("BlackAndGold@bsky.mock"))
+	req.AddCookie(sessionCookie("google:abc123", "BlackAndGold@bsky.mock"))
 	w := httptest.NewRecorder()
 	newHandler().Submit(w, req)
 	if w.Code != http.StatusOK {
@@ -85,7 +85,7 @@ func TestSubmitPrediction_RedirectsOnNonHTMX(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/predictions",
 		strings.NewReader("match_id=match1&home_goals=3&away_goals=1"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.AddCookie(sessionCookie("BlackAndGold@bsky.mock"))
+	req.AddCookie(sessionCookie("google:abc123", "BlackAndGold@bsky.mock"))
 	w := httptest.NewRecorder()
 	newHandler().Submit(w, req)
 	if w.Code != http.StatusFound {
@@ -102,10 +102,10 @@ func TestSubmitPrediction_SavesPredictionToStore(t *testing.T) {
 		strings.NewReader("match_id=match1&home_goals=3&away_goals=1"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("HX-Request", "true")
-	req.AddCookie(sessionCookie("BlackAndGold@bsky.mock"))
+	req.AddCookie(sessionCookie("google:abc123", "BlackAndGold@bsky.mock"))
 	w := httptest.NewRecorder()
 	handlers.NewPredictionsHandler(store).Submit(w, req)
-	got, err := store.GetByMatchAndHandle(req.Context(), "match1", "BlackAndGold@bsky.mock")
+	got, err := store.GetByMatchAndUser(req.Context(), "match1", "google:abc123")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

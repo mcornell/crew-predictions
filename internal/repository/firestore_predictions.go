@@ -21,9 +21,10 @@ func NewFirestorePredictionStore(ctx context.Context, projectID string) (*Firest
 }
 
 func (s *FirestorePredictionStore) Save(ctx context.Context, p Prediction) error {
-	doc := s.client.Collection("predictions").Doc(p.MatchID + "|" + p.Handle)
+	doc := s.client.Collection("predictions").Doc(p.MatchID + "|" + p.UserID)
 	_, err := doc.Set(ctx, map[string]any{
 		"MatchID":   p.MatchID,
+		"UserID":    p.UserID,
 		"Handle":    p.Handle,
 		"HomeGoals": p.HomeGoals,
 		"AwayGoals": p.AwayGoals,
@@ -47,8 +48,8 @@ func (s *FirestorePredictionStore) GetAll(ctx context.Context) ([]Prediction, er
 	return all, nil
 }
 
-func (s *FirestorePredictionStore) GetByMatchAndHandle(ctx context.Context, matchID, handle string) (*Prediction, error) {
-	doc := s.client.Collection("predictions").Doc(matchID + "|" + handle)
+func (s *FirestorePredictionStore) GetByMatchAndUser(ctx context.Context, matchID, userID string) (*Prediction, error) {
+	doc := s.client.Collection("predictions").Doc(matchID + "|" + userID)
 	snap, err := doc.Get(ctx)
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
