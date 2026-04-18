@@ -85,7 +85,7 @@ Scoring rules come in two flavors matching podcast formats:
 | Predicted wrong team wins by the exact same scoreline (e.g. predict Crew 3–2 Portland, actual Portland 3–2 Crew) | −15 |
 | Anything else | 0 |
 
-**Upper 90** (provisional — confirm before implementing):
+**Upper 90 Club** (provisional — confirm before implementing):
 | Outcome | Points |
 |---|---|
 | Exact score | +1 |
