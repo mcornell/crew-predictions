@@ -34,3 +34,10 @@ func TestAcesRadio_ZeroForOtherPredictions(t *testing.T) {
 		t.Errorf("expected 0 for wrong winner wrong score, got %d", got)
 	}
 }
+
+func TestAcesRadio_CorrectDrawPrediction(t *testing.T) {
+	got := scoring.AcesRadio(scoring.Result{Home: 1, Away: 1}, scoring.Prediction{Home: 2, Away: 2})
+	if got != 10 {
+		t.Errorf("expected 10 for correct draw prediction, got %d", got)
+	}
+}
