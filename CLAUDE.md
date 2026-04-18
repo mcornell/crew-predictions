@@ -75,7 +75,17 @@ The user is learning Go, HTMX, Alpine.js, and the GCP/Firebase ecosystem as we b
 
 Create a predictions ranking system for fans of Columbus Crew. Sarcastic tone, like #Crew96 fandom. Only Crew — everyone else can pound sand.
 
-Scoring rules come in two flavors matching podcast formats: Aces Radio and Upper 90. Confirm full point tables before implementing `internal/scoring/`.
+Scoring rules come in two flavors matching podcast formats:
+
+**Aces Radio** (confirmed):
+| Outcome | Points |
+|---|---|
+| Exact score | +15 |
+| Correct winner (wrong score) | +10 |
+| Predicted wrong team wins by the exact same scoreline (e.g. predict Crew 3–2 Portland, actual Portland 3–2 Crew) | −15 |
+| Anything else | 0 |
+
+**Upper 90** — rules TBD, confirm before implementing.
 
 ## Design Language
 
