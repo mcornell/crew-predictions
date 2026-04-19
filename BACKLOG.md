@@ -21,6 +21,8 @@
 - [x] Seed endpoints (`/admin/seed-match`, `/admin/seed-prediction`) — deterministic e2e fixtures, no ESPN dependency in tests
 - [x] Thread-safe in-memory stores — `sync.RWMutex` on prediction and result stores
 - [x] E2e test isolation — `Before` hook resets all stores per scenario; serial workers prevent shared-state races
+- [x] Remove templ — deleted `templates/` package and dead HTML-rendering `List` handlers after Vue SPA migration
+- [x] Patch CVE-2026-34986 — upgraded `go-jose/v4` to 4.1.4 (transitive dep via Firebase → gRPC → SPIFFE)
 
 ---
 
@@ -36,8 +38,8 @@
 
 ## Post-Launch
 
+- [ ] **GitHub Actions CI/CD** — push to `main` → test + deploy via Workload Identity Federation (keyless GCP auth, no stored service account keys).
 - [ ] **Real-data scoring accuracy test** — e2e scenario using actual 2025 Columbus Crew match results to validate the scoring engine against real outcomes. Get match data from user before writing.
-- [ ] **GitHub Actions CI/CD** — push to `main` → test + deploy. Deferred until first successful manual deploy establishes the baseline.
 - [ ] **Firestore match cache** — cache ESPN results in Firestore daily instead of fetching live on every request
 
 ---
@@ -53,5 +55,6 @@
 - **Match result entry UI** — admin page not needed; `POST /admin/results` API is sufficient for now.
 - **Bluesky AT Protocol auth** — dropped for v1. Complex, adds no value for first release.
 - **FirebaseUI** — dropped. Incompatible with `firebase@11` (requires `^9||^10`).
-- **templ/HTMX/Alpine.js** — replaced by Vue 3 SPA. The `templates/` package still exists for the leaderboard HTML handler but is effectively legacy.
+- **templ/HTMX/Alpine.js** — replaced by Vue 3 SPA; `templates/` package deleted.
+- **GCP Cloud Build** — GitHub Actions preferred; simpler config, already where the code lives, Workload Identity Federation handles GCP auth without stored keys.
 - **Frontend subdirectory** — kept as single project root (`package.json` at root, `src/` for Vue).

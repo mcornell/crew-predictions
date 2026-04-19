@@ -9,7 +9,7 @@ declare global {
 
 let emulatorConnected = false
 
-export function getFirebaseAuth() {
+function getFirebaseAuth() {
   const app = getApps().length ? getApps()[0] : initializeApp(window.__firebaseConfig ?? {})
   const auth = getAuth(app)
   if (!emulatorConnected && window.__firebaseConfig?.authEmulatorHost) {
