@@ -107,6 +107,9 @@ func main() {
 				w.WriteHeader(http.StatusNoContent)
 			})
 			log.Printf("test reset endpoint registered at DELETE /admin/reset")
+			seedH := handlers.NewSeedPredictionHandler(predStore)
+			mux.HandleFunc("POST /admin/seed-prediction", seedH.Submit)
+			log.Printf("test seed endpoint registered at POST /admin/seed-prediction")
 		}
 	}
 

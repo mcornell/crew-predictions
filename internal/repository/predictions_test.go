@@ -2,6 +2,7 @@ package repository_test
 
 import (
 	"context"
+	"sync"
 	"testing"
 
 	"github.com/mcornell/crew-predictions/internal/repository"
@@ -43,6 +44,20 @@ func TestMemoryPredictionStore_GetAllReturnsAllSaved(t *testing.T) {
 	if len(all) != 2 {
 		t.Errorf("expected 2 predictions, got %d", len(all))
 	}
+}
+
+func TestMemoryPredictionStore_ConcurrentSave(t *testing.T) {
+	store := repository.NewMemoryPredictionStore()
+	ctx := context.Background()
+	var wg sync.WaitGroup
+	for i := 0; i < 50; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			store.Save(ctx, repository.Prediction{MatchID: "m", UserID: "u", HomeGoals: i})
+		}(i)
+	}
+	wg.Wait()
 }
 
 func TestMemoryPredictionStore_SaveAndRetrieve(t *testing.T) {
