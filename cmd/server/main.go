@@ -77,7 +77,7 @@ func main() {
 	mh := handlers.NewMatchesHandler(predStore, espn.FetchCrewMatches)
 	mux.HandleFunc("GET /api/matches", mh.APIList)
 	mux.HandleFunc("GET /api/me", handlers.Me)
-	ph := handlers.NewPredictionsHandler(predStore)
+	ph := handlers.NewPredictionsHandler(predStore, espn.FetchCrewMatches)
 	mux.HandleFunc("POST /api/predictions", ph.Submit)
 	lh := handlers.NewLeaderboardHandler(predStore, resultStore, "Columbus Crew")
 	mux.HandleFunc("GET /api/leaderboard", lh.APIList)

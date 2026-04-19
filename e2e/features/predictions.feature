@@ -4,5 +4,10 @@ Feature: Score predictions
     Given I am logged in as "BlackAndGold@bsky.mock"
     When I visit the matches page
     And I enter a home score of 3 and away score of 1 for the first match
-    And I click "Lock In"
-    Then I should see my prediction of "3 – 1" on the first match card
+    And I click "Predict"
+    Then I should see my prediction of "3" on the first match card
+
+  Scenario: Prediction is rejected after kickoff
+    Given I am logged in as "BlackAndGold@bsky.mock"
+    When I submit a prediction via API for a match that has already kicked off
+    Then the server should reject it with 403

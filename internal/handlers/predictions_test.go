@@ -7,8 +7,10 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/mcornell/crew-predictions/internal/handlers"
+	"github.com/mcornell/crew-predictions/internal/models"
 	"github.com/mcornell/crew-predictions/internal/repository"
 )
 
@@ -17,8 +19,15 @@ func sessionCookie(userID, handle string) *http.Cookie {
 	return &http.Cookie{Name: "session", Value: base64.StdEncoding.EncodeToString(data)}
 }
 
+func fetcherWithMatch(id string, kickoff time.Time) func() ([]models.Match, error) {
+	return func() ([]models.Match, error) {
+		return []models.Match{{ID: id, Kickoff: kickoff, Status: "STATUS_SCHEDULED"}}, nil
+	}
+}
+
 func newHandler() *handlers.PredictionsHandler {
-	return handlers.NewPredictionsHandler(repository.NewMemoryPredictionStore())
+	future := time.Now().Add(24 * time.Hour)
+	return handlers.NewPredictionsHandler(repository.NewMemoryPredictionStore(), fetcherWithMatch("match1", future))
 }
 
 func TestSubmitPrediction_RejectsUnauthenticated(t *testing.T) {
@@ -96,6 +105,40 @@ func TestSubmitPrediction_RedirectsOnNonHTMX(t *testing.T) {
 	}
 }
 
+func TestSubmitPrediction_RejectsAfterKickoff(t *testing.T) {
+	past := time.Now().Add(-1 * time.Hour)
+	handler := handlers.NewPredictionsHandler(
+		repository.NewMemoryPredictionStore(),
+		fetcherWithMatch("match1", past),
+	)
+	req := httptest.NewRequest(http.MethodPost, "/predictions",
+		strings.NewReader("match_id=match1&home_goals=3&away_goals=1"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(sessionCookie("google:abc123", "BlackAndGold@bsky.mock"))
+	w := httptest.NewRecorder()
+	handler.Submit(w, req)
+	if w.Code != http.StatusForbidden {
+		t.Errorf("expected 403, got %d", w.Code)
+	}
+}
+
+func TestSubmitPrediction_RejectsUnknownMatch(t *testing.T) {
+	future := time.Now().Add(24 * time.Hour)
+	handler := handlers.NewPredictionsHandler(
+		repository.NewMemoryPredictionStore(),
+		fetcherWithMatch("other-match", future),
+	)
+	req := httptest.NewRequest(http.MethodPost, "/predictions",
+		strings.NewReader("match_id=unknown&home_goals=3&away_goals=1"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(sessionCookie("google:abc123", "BlackAndGold@bsky.mock"))
+	w := httptest.NewRecorder()
+	handler.Submit(w, req)
+	if w.Code != http.StatusNotFound {
+		t.Errorf("expected 404, got %d", w.Code)
+	}
+}
+
 func TestSubmitPrediction_SavesPredictionToStore(t *testing.T) {
 	store := repository.NewMemoryPredictionStore()
 	req := httptest.NewRequest(http.MethodPost, "/predictions",
@@ -104,7 +147,7 @@ func TestSubmitPrediction_SavesPredictionToStore(t *testing.T) {
 	req.Header.Set("HX-Request", "true")
 	req.AddCookie(sessionCookie("google:abc123", "BlackAndGold@bsky.mock"))
 	w := httptest.NewRecorder()
-	handlers.NewPredictionsHandler(store).Submit(w, req)
+	handlers.NewPredictionsHandler(store, fetcherWithMatch("match1", time.Now().Add(24*time.Hour))).Submit(w, req)
 	got, err := store.GetByMatchAndUser(req.Context(), "match1", "google:abc123")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
