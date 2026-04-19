@@ -2,6 +2,7 @@ package handlers_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -58,6 +59,64 @@ func TestMatchesHandler_ReturnsInternalErrorWhenFetchFails(t *testing.T) {
 
 	if w.Code != http.StatusInternalServerError {
 		t.Errorf("expected 500, got %d", w.Code)
+	}
+}
+
+func TestAPIMatchesHandler_ReturnsJSON(t *testing.T) {
+	mh := handlers.NewMatchesHandler(repository.NewMemoryPredictionStore(), stubFetcher(oneMatch()))
+	req := httptest.NewRequest(http.MethodGet, "/api/matches", nil)
+	w := httptest.NewRecorder()
+
+	mh.APIList(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", w.Code)
+	}
+	if ct := w.Header().Get("Content-Type"); !strings.Contains(ct, "application/json") {
+		t.Errorf("expected application/json, got %s", ct)
+	}
+	var body struct {
+		Matches []struct {
+			ID       string `json:"id"`
+			HomeTeam string `json:"homeTeam"`
+			AwayTeam string `json:"awayTeam"`
+		} `json:"matches"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+		t.Fatalf("invalid JSON: %v", err)
+	}
+	if len(body.Matches) != 1 || body.Matches[0].HomeTeam != "Columbus Crew" {
+		t.Errorf("unexpected matches: %+v", body.Matches)
+	}
+}
+
+func TestAPIMatchesHandler_IncludesPredictionForLoggedInUser(t *testing.T) {
+	store := repository.NewMemoryPredictionStore()
+	store.Save(context.Background(), repository.Prediction{
+		MatchID: "match-99", UserID: "google:abc123", HomeGoals: 2, AwayGoals: 1,
+	})
+	mh := handlers.NewMatchesHandler(store, stubFetcher(oneMatch()))
+	req := httptest.NewRequest(http.MethodGet, "/api/matches", nil)
+	req.AddCookie(sessionCookie("google:abc123", "BlackAndGold@bsky.mock"))
+	w := httptest.NewRecorder()
+
+	mh.APIList(w, req)
+
+	var body struct {
+		Predictions map[string]struct {
+			HomeGoals int `json:"homeGoals"`
+			AwayGoals int `json:"awayGoals"`
+		} `json:"predictions"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+		t.Fatalf("invalid JSON: %v", err)
+	}
+	p, ok := body.Predictions["match-99"]
+	if !ok {
+		t.Fatal("expected prediction for match-99 in response")
+	}
+	if p.HomeGoals != 2 || p.AwayGoals != 1 {
+		t.Errorf("expected 2-1, got %d-%d", p.HomeGoals, p.AwayGoals)
 	}
 }
 
