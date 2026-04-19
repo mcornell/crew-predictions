@@ -186,7 +186,11 @@ body::after {
   font-family: 'Bebas Neue', sans-serif;
   font-size: 1.3rem;
   letter-spacing: 0.06em;
+  flex: 1;
 }
+
+.team-home { text-align: right; }
+.team-away { text-align: left; }
 
 .match-meta {
   font-family: 'DM Mono', monospace;

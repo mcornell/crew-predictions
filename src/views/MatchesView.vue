@@ -23,11 +23,11 @@
             </template>
             <template v-else>
               <div class="matchup matchup--input" data-testid="matchup">
-                <span class="team-name">{{ match.homeTeam }}</span>
+                <span class="team-name team-home">{{ match.homeTeam }}</span>
                 <input class="score-input" name="home_goals" type="number" min="0" max="99" v-model="inputs[match.id].home" placeholder="0" />
                 <span class="vs">vs</span>
                 <input class="score-input" name="away_goals" type="number" min="0" max="99" v-model="inputs[match.id].away" placeholder="0" />
-                <span class="team-name">{{ match.awayTeam }}</span>
+                <span class="team-name team-away">{{ match.awayTeam }}</span>
                 <button class="btn-lock" @click="submit(match.id)">Predict</button>
               </div>
               <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
@@ -48,11 +48,11 @@
         >
           <div class="match-info">
             <div class="matchup matchup--input" data-testid="matchup">
-              <span class="team-name">{{ match.homeTeam }}</span>
+              <span class="team-name team-home">{{ match.homeTeam }}</span>
               <span class="inline-score">{{ match.homeScore || '–' }}</span>
               <span class="vs">vs</span>
               <span class="inline-score">{{ match.awayScore || '–' }}</span>
-              <span class="team-name">{{ match.awayTeam }}</span>
+              <span class="team-name team-away">{{ match.awayTeam }}</span>
             </div>
             <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
             <div v-if="savedPredictions[match.id]" class="match-meta">
