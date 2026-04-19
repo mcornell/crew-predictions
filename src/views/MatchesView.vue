@@ -59,6 +59,7 @@
               Your pick: {{ savedPredictions[match.id]!.homeGoals }} – {{ savedPredictions[match.id]!.awayGoals }}
             </div>
           </div>
+          <div class="btn-spacer"></div>
         </div>
       </div>
     </section>

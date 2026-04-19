@@ -255,8 +255,16 @@ body::after {
   padding: 0.5rem 1.1rem 0.35rem;
   cursor: pointer;
   height: 52px;
+  width: 110px;
+  flex-shrink: 0;
   transition: opacity 0.15s;
   white-space: nowrap;
+}
+
+.btn-spacer {
+  width: 110px;
+  flex-shrink: 0;
+  visibility: hidden;
 }
 .btn-lock:hover { opacity: 0.88; }
 
