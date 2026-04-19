@@ -81,9 +81,14 @@ const matches = ref<Match[]>([])
 const savedPredictions = reactive<Record<string, Prediction | null>>({})
 const inputs = reactive<Record<string, { home: string; away: string }>>({})
 
-const upcomingMatches = computed(() =>
-  matches.value.filter(m => m.status === 'STATUS_SCHEDULED' || m.status === 'STATUS_IN_PROGRESS')
-)
+const upcomingMatches = computed(() => {
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() + 7)
+  return matches.value.filter(m => {
+    if (m.status !== 'STATUS_SCHEDULED' && m.status !== 'STATUS_IN_PROGRESS') return false
+    return new Date(m.kickoff) <= cutoff
+  })
+})
 
 const completedMatches = computed(() =>
   matches.value.filter(m => m.status !== 'STATUS_SCHEDULED' && m.status !== 'STATUS_IN_PROGRESS')

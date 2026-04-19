@@ -95,4 +95,17 @@ describe('MatchesView', () => {
     const resultsSection = wrapper.find('[data-testid="results-section"]')
     expect(resultsSection.text()).not.toContain('LA Galaxy')
   })
+
+  it('match more than 7 days away is not shown in upcoming', async () => {
+    const farFuture = new Date()
+    farFuture.setDate(farFuture.getDate() + 10)
+    const farMatch = { id: 'far', homeTeam: 'Columbus Crew', awayTeam: 'Inter Miami', kickoff: farFuture.toISOString(), status: 'STATUS_SCHEDULED' }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ matches: [farMatch], predictions: {} }),
+    }))
+    const wrapper = mount(MatchesView)
+    await flushPromises()
+    expect(wrapper.findAll('[data-testid="match-card"]')).toHaveLength(0)
+  })
 })

@@ -10,7 +10,17 @@ import (
 	"github.com/mcornell/crew-predictions/internal/models"
 )
 
-const scheduleURL = "https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/teams/183/schedule"
+// leagueSlugs are the ESPN league identifiers to check for Columbus Crew matches.
+// Friendlies are excluded by omission.
+var leagueSlugs = []string{
+	"usa.1",              // MLS
+	"usa.open",           // US Open Cup
+	"concacaf.leagues.cup", // Leagues Cup
+	"concacaf.champions", // CONCACAF Champions Cup
+}
+
+const teamID = "183"
+const espnBase = "https://site.api.espn.com/apis/site/v2/sports/soccer"
 
 type espnResponse struct {
 	Events []struct {
@@ -47,10 +57,15 @@ func parseKickoff(s string) (time.Time, error) {
 	return time.Parse("2006-01-02T15:04Z07:00", s)
 }
 
-func upcomingURL(from time.Time) string {
-	end := from.AddDate(1, 0, 0)
+func scheduleURL(league string) string {
+	return fmt.Sprintf("%s/%s/teams/%s/schedule", espnBase, league, teamID)
+}
+
+func upcomingURL(league string, from time.Time) string {
+	end := from.AddDate(0, 0, 7)
 	return fmt.Sprintf(
-		"https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/scoreboard?dates=%s-%s&limit=500",
+		"%s/%s/scoreboard?dates=%s-%s&limit=500",
+		espnBase, league,
 		from.Format("20060102"),
 		end.Format("20060102"),
 	)
@@ -101,6 +116,9 @@ func fetchAndParse(url string) ([]matchRecord, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, nil // league may not have data; skip silently
+	}
 	var data espnResponse
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
 		return nil, err
@@ -108,26 +126,37 @@ func fetchAndParse(url string) ([]matchRecord, error) {
 	return parseEvents(data), nil
 }
 
+func isCrewMatch(r matchRecord) bool {
+	return r.home == "Columbus Crew" || r.away == "Columbus Crew"
+}
+
 func FetchCrewMatches() ([]models.Match, error) {
-	past, err := fetchAndParse(scheduleURL)
-	if err != nil {
-		return nil, fmt.Errorf("espn schedule fetch: %w", err)
-	}
+	now := time.Now().UTC()
+	var all []matchRecord
 
-	upcoming, err := fetchAndParse(upcomingURL(time.Now().UTC()))
-	if err != nil {
-		return nil, fmt.Errorf("espn scoreboard fetch: %w", err)
-	}
+	for _, league := range leagueSlugs {
+		past, err := fetchAndParse(scheduleURL(league))
+		if err != nil {
+			return nil, fmt.Errorf("espn schedule fetch (%s): %w", league, err)
+		}
+		for _, r := range past {
+			if isCrewMatch(r) {
+				all = append(all, r)
+			}
+		}
 
-	// Filter scoreboard to Columbus Crew matches only
-	crewUpcoming := make([]matchRecord, 0, len(upcoming))
-	for _, r := range upcoming {
-		if r.home == "Columbus Crew" || r.away == "Columbus Crew" {
-			crewUpcoming = append(crewUpcoming, r)
+		upcoming, err := fetchAndParse(upcomingURL(league, now))
+		if err != nil {
+			return nil, fmt.Errorf("espn scoreboard fetch (%s): %w", league, err)
+		}
+		for _, r := range upcoming {
+			if isCrewMatch(r) {
+				all = append(all, r)
+			}
 		}
 	}
 
-	all := dedupeByID(append(past, crewUpcoming...))
+	all = dedupeByID(all)
 	sort.Slice(all, func(i, j int) bool {
 		return all[i].kickoff.Before(all[j].kickoff)
 	})

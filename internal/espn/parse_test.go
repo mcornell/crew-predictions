@@ -35,7 +35,7 @@ func TestParseKickoff_InvalidReturnsError(t *testing.T) {
 
 func TestUpcomingURL_ContainsStartDate(t *testing.T) {
 	from := time.Date(2026, 4, 19, 0, 0, 0, 0, time.UTC)
-	url := upcomingURL(from)
+	url := upcomingURL("usa.1", from)
 	if !strings.Contains(url, "20260419") {
 		t.Errorf("upcomingURL %q missing start date 20260419", url)
 	}
@@ -43,9 +43,17 @@ func TestUpcomingURL_ContainsStartDate(t *testing.T) {
 
 func TestUpcomingURL_ContainsScoreboard(t *testing.T) {
 	from := time.Date(2026, 4, 19, 0, 0, 0, 0, time.UTC)
-	url := upcomingURL(from)
+	url := upcomingURL("usa.1", from)
 	if !strings.Contains(url, "scoreboard") {
 		t.Errorf("upcomingURL %q not pointing at scoreboard endpoint", url)
+	}
+}
+
+func TestUpcomingURL_EndDate7DaysAhead(t *testing.T) {
+	from := time.Date(2026, 4, 19, 0, 0, 0, 0, time.UTC)
+	url := upcomingURL("usa.1", from)
+	if !strings.Contains(url, "20260426") {
+		t.Errorf("upcomingURL %q missing end date 7 days ahead (20260426)", url)
 	}
 }
 
@@ -58,5 +66,37 @@ func TestDedupeByID_RemovesDuplicate(t *testing.T) {
 	})
 	if len(matches) != 2 {
 		t.Errorf("expected 2 matches after dedupe, got %d", len(matches))
+	}
+}
+
+func TestLeagueSlugs_ContainsMLS(t *testing.T) {
+	found := false
+	for _, s := range leagueSlugs {
+		if s == "usa.1" {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("leagueSlugs must include usa.1 (MLS)")
+	}
+}
+
+func TestLeagueSlugs_ContainsOpenCup(t *testing.T) {
+	found := false
+	for _, s := range leagueSlugs {
+		if s == "usa.open" {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("leagueSlugs must include usa.open (US Open Cup)")
+	}
+}
+
+func TestLeagueSlugs_DoesNotContainFriendly(t *testing.T) {
+	for _, s := range leagueSlugs {
+		if strings.Contains(s, "friendly") {
+			t.Errorf("leagueSlugs must not include friendlies, found %q", s)
+		}
 	}
 }
