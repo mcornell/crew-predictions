@@ -12,12 +12,12 @@
         >
           <div class="match-info">
             <template v-if="savedPredictions[match.id]">
-              <div class="matchup" data-testid="matchup">
-                {{ match.homeTeam }}
+              <div class="matchup matchup--input" data-testid="matchup">
+                <span class="team-name team-home">{{ match.homeTeam }}</span>
                 <span class="inline-score">{{ savedPredictions[match.id]!.homeGoals }}</span>
                 <span class="vs">vs</span>
                 <span class="inline-score">{{ savedPredictions[match.id]!.awayGoals }}</span>
-                {{ match.awayTeam }}
+                <span class="team-name team-away">{{ match.awayTeam }}</span>
               </div>
               <div class="match-meta">{{ formatKickoff(match.kickoff) }} — <span class="saved-label">Locked in</span></div>
             </template>
@@ -28,11 +28,11 @@
                 <span class="vs">vs</span>
                 <input class="score-input" name="away_goals" type="number" min="0" max="99" v-model="inputs[match.id].away" placeholder="0" />
                 <span class="team-name team-away">{{ match.awayTeam }}</span>
-                <button class="btn-lock" @click="submit(match.id)">Predict</button>
               </div>
               <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
             </template>
           </div>
+          <button v-if="!savedPredictions[match.id]" class="btn-lock" @click="submit(match.id)">Predict</button>
         </div>
       </div>
     </section>

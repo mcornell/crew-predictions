@@ -140,6 +140,9 @@ body::after {
   border-left: 3px solid transparent;
   padding: 1.25rem 1.5rem;
   transition: border-left-color 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 .match-card:hover,
@@ -256,7 +259,6 @@ body::after {
   white-space: nowrap;
 }
 .btn-lock:hover { opacity: 0.88; }
-.matchup .btn-lock { margin-left: auto; }
 
 /* ── Saved prediction ────────────────────────────────────────────────────── */
 .saved-score {
