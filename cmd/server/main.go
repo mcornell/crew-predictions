@@ -39,7 +39,16 @@ func main() {
 		log.Printf("using in-memory store (set GOOGLE_CLOUD_PROJECT to use Firestore)")
 	}
 
-	resultStore := repository.NewMemoryResultStore()
+	var resultStore repository.ResultStore
+	if project := os.Getenv("GOOGLE_CLOUD_PROJECT"); project != "" {
+		fs, err := repository.NewFirestoreResultStore(ctx, project)
+		if err != nil {
+			log.Fatalf("failed to connect to Firestore results: %v", err)
+		}
+		resultStore = fs
+	} else {
+		resultStore = repository.NewMemoryResultStore()
+	}
 
 	var verifier handlers.TokenVerifier = handlers.NoopTokenVerifier{}
 	projectID := os.Getenv("FIREBASE_PROJECT_ID")
@@ -92,7 +101,9 @@ func main() {
 		if memPred, ok := predStore.(*repository.MemoryPredictionStore); ok {
 			mux.HandleFunc("DELETE /admin/reset", func(w http.ResponseWriter, r *http.Request) {
 				memPred.Reset()
-				resultStore.Reset()
+				if memResult, ok := resultStore.(*repository.MemoryResultStore); ok {
+					memResult.Reset()
+				}
 				w.WriteHeader(http.StatusNoContent)
 			})
 			log.Printf("test reset endpoint registered at DELETE /admin/reset")
