@@ -1,6 +1,8 @@
 module github.com/mcornell/crew-predictions
 
-go 1.25.0
+go 1.26.2
+
+require github.com/a-h/templ v0.3.1001
 
 require (
 	cel.dev/expr v0.25.1 // indirect
@@ -18,7 +20,6 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.53.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.53.0 // indirect
 	github.com/MicahParks/keyfunc v1.9.0 // indirect
-	github.com/a-h/templ v0.3.1001 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20251210132809-ee656c7534f5 // indirect
 	github.com/envoyproxy/go-control-plane/envoy v1.36.0 // indirect
@@ -29,13 +30,16 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
+	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.14 // indirect
 	github.com/googleapis/gax-go/v2 v2.21.0 // indirect
+	github.com/gorilla/securecookie v1.1.2 // indirect
+	github.com/gorilla/sessions v1.4.0 // indirect
+	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.6.0 // indirect
-	github.com/zeebo/errs v1.4.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/detectors/gcp v1.39.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.61.0 // indirect

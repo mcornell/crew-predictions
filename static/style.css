@@ -1,0 +1,328 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=Barlow:ital,wght@0,400;0,600;1,400&display=swap');
+
+/* ── Variables ─────────────────────────────────────────────────── */
+:root {
+  --black:    #0c0c0c;
+  --dark:     #141414;
+  --card:     #1a1a1a;
+  --border:   #2a2a2a;
+  --gold:     #ffc20e;
+  --muted:    #555;
+  --text:     #e8e8e8;
+  --danger:   #e03c3c;
+}
+
+/* ── Reset ──────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Noise texture + gold stripe ────────────────────────────────── */
+body {
+  background-color: var(--black);
+  color: var(--text);
+  font-family: 'Barlow', sans-serif;
+  font-size: 1rem;
+  line-height: 1.5;
+  min-height: 100vh;
+  position: relative;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.6;
+}
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--gold);
+  z-index: 100;
+}
+
+/* ── Header ─────────────────────────────────────────────────────── */
+header {
+  border-bottom: 1px solid var(--border);
+  background: var(--dark);
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.site-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.6rem;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.site-badge {
+  width: 36px;
+  height: 36px;
+  opacity: 0.9;
+  flex-shrink: 0;
+}
+header nav { display: flex; align-items: center; gap: 1.25rem; }
+header nav .handle {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+header nav a {
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--text);
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--border);
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+header nav a:hover { border-color: var(--gold); color: var(--gold); }
+header nav a.sign-in { border-color: var(--gold); color: var(--gold); }
+header nav a.sign-in:hover { background: var(--gold); color: var(--black); }
+
+/* ── Login page ──────────────────────────────────────────────────── */
+.login-page { max-width: 400px; margin: 0 auto; }
+.login-page #firebaseui-auth-container { margin-top: 1.5rem; }
+
+/* ── Main wrapper ───────────────────────────────────────────────── */
+main {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 5rem;
+}
+
+/* ── Page heading ───────────────────────────────────────────────── */
+.page-heading { margin-bottom: 2.5rem; }
+.page-heading h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(2.8rem, 6vw, 4.5rem);
+  letter-spacing: 0.04em;
+  line-height: 0.95;
+  color: var(--text);
+}
+.page-heading h1 span { color: var(--gold); }
+.page-heading p {
+  margin-top: 0.6rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* ── Section label ──────────────────────────────────────────────── */
+.section-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── Match card ─────────────────────────────────────────────────── */
+.match-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  margin-bottom: 1px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+.match-card:hover { border-color: #333; }
+.match-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--border);
+  transition: background 0.2s;
+}
+.match-card:hover::before,
+.match-card.predicted::before { background: var(--gold); }
+
+.match-card-inner {
+  padding: 1.25rem 1.5rem 1.25rem 1.75rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+/* ── Fixture info ───────────────────────────────────────────────── */
+.fixture { display: flex; flex-direction: column; gap: 0.35rem; }
+.fixture-meta {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.fixture-teams {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.55rem;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  color: var(--text);
+}
+.fixture-teams .crew { color: var(--gold); }
+.fixture-teams .vs {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 0 0.3em;
+}
+.fixture-competition { font-size: 0.75rem; color: var(--muted); }
+
+/* ── Score inputs ───────────────────────────────────────────────── */
+.prediction {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  min-width: 160px;
+}
+.score-inputs { display: flex; align-items: center; gap: 0.4rem; }
+.score-input {
+  width: 52px;
+  height: 52px;
+  background: var(--dark);
+  border: 1px solid var(--border);
+  color: var(--gold);
+  font-family: 'DM Mono', monospace;
+  font-size: 1.6rem;
+  font-weight: 500;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+  -moz-appearance: textfield;
+  border-radius: 1px;
+}
+.score-input::-webkit-outer-spin-button,
+.score-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+.score-input:focus { border-color: var(--gold); background: #1f1a00; }
+.score-input::placeholder { color: var(--border); }
+.score-divider {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.4rem;
+  color: var(--muted);
+  line-height: 1;
+  user-select: none;
+}
+.score-labels {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  width: 100%;
+  padding: 0 4px;
+}
+.predict-btn {
+  background: var(--gold);
+  color: var(--black);
+  border: none;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 0.95rem;
+  letter-spacing: 0.12em;
+  padding: 0.45rem 1.1rem;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.15s, transform 0.1s;
+  border-radius: 1px;
+}
+.predict-btn:hover { background: #ffd04d; }
+.predict-btn:active { transform: scale(0.98); }
+
+/* ── Saved prediction ───────────────────────────────────────────── */
+.saved-prediction {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.3rem;
+}
+.saved-score {
+  font-family: 'DM Mono', monospace;
+  font-size: 2rem;
+  font-weight: 500;
+  color: var(--gold);
+  letter-spacing: 0.05em;
+  line-height: 1;
+}
+.saved-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+/* ── Locked state ───────────────────────────────────────────────── */
+.locked-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  color: var(--danger);
+  text-transform: uppercase;
+}
+.locked-badge::before {
+  content: '▊';
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+/* ── Sign-in nudge ──────────────────────────────────────────────── */
+.signin-nudge {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-style: italic;
+  text-align: right;
+}
+.signin-nudge a { color: var(--gold); text-decoration: none; }
+.signin-nudge a:hover { text-decoration: underline; }
+
+/* ── Footer ─────────────────────────────────────────────────────── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 1.5rem 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  color: #333;
+  text-transform: uppercase;
+}
+.footer-sep { color: #2a2a2a; }
+
+/* ── Responsive ─────────────────────────────────────────────────── */
+@media (max-width: 540px) {
+  .match-card-inner { grid-template-columns: 1fr; gap: 1rem; }
+  .prediction { align-items: flex-start; }
+  .predict-btn { width: auto; }
+  .saved-prediction { align-items: flex-start; }
+}

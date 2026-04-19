@@ -1,0 +1,16 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - link "Crew Predictions" [ref=e3] [cursor=pointer]:
+      - /url: /
+    - navigation [ref=e4]:
+      - link "Sign in with Google" [ref=e5] [cursor=pointer]:
+        - /url: /auth/login
+  - main [ref=e6]:
+    - heading "Upcoming Matches" [level=1] [ref=e7]
+    - generic [ref=e8]: Columbus Crew vs Orlando City SC
+    - generic [ref=e9]: Atlanta United FC vs Columbus Crew
+    - generic [ref=e10]: Toronto FC vs Columbus Crew
+    - generic [ref=e11]: Columbus Crew vs Nashville SC
+    - generic [ref=e12]: Columbus Crew vs Chicago Fire FC
+    - generic [ref=e13]: Sporting Kansas City vs Columbus Crew
+    - generic [ref=e14]: Portland Timbers vs Columbus Crew

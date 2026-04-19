@@ -1,0 +1,42 @@
+package templates
+
+import "fmt"
+
+type LeaderboardEntry struct {
+	Handle string
+	Points int
+}
+
+templ Leaderboard(acesEntries []LeaderboardEntry, u90Entries []LeaderboardEntry, handle string) {
+	@Layout("Leaderboard · Crew Predictions", handle) {
+		<div class="page-heading">
+			<h1>Leaderboards</h1>
+			<p>Everyone is wrong, but some are more wrong than others.</p>
+		</div>
+		<div class="section-label">Aces Radio</div>
+		@leaderboardTable(acesEntries)
+		<div class="section-label" style="margin-top:2rem;">Upper 90 Club</div>
+		@leaderboardTable(u90Entries)
+	}
+}
+
+templ leaderboardTable(entries []LeaderboardEntry) {
+	<table class="leaderboard">
+		<thead>
+			<tr>
+				<th>#</th>
+				<th>Predictor</th>
+				<th>Points</th>
+			</tr>
+		</thead>
+		<tbody>
+			for i, e := range entries {
+				<tr data-testid="leaderboard-row">
+					<td>{ fmt.Sprintf("%d", i+1) }</td>
+					<td>{ e.Handle }</td>
+					<td data-testid="leaderboard-points">{ fmt.Sprintf("%d", e.Points) }</td>
+				</tr>
+			}
+		</tbody>
+	</table>
+}

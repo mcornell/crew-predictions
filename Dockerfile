@@ -1,12 +1,13 @@
-FROM golang:1.25-alpine AS builder
+FROM golang:latest AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
+RUN go install github.com/a-h/templ/cmd/templ@latest
 COPY . .
-RUN go build -o server ./cmd/server
+RUN templ generate && go build -o server ./cmd/server
 
-FROM alpine:latest
-RUN apk --no-cache add ca-certificates
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=builder /app/server .
 EXPOSE 8080

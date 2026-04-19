@@ -1,0 +1,10 @@
+{
+  "extends": "@vue/tsconfig/tsconfig.dom.json",
+  "compilerOptions": {
+    "moduleResolution": "bundler",
+    "target": "ESNext",
+    "module": "ESNext",
+    "strict": true
+  },
+  "include": ["src/**/*", "vite.config.ts", "vitest.config.ts"]
+}

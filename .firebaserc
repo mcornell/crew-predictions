@@ -1,5 +1,6 @@
 {
   "projects": {
-    "default": "crew-predictions"
+    "default": "crew-predictions",
+    "production": "crew-predictions"
   }
 }

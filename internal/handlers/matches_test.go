@@ -1,0 +1,138 @@
+package handlers_test
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/mcornell/crew-predictions/internal/handlers"
+	"github.com/mcornell/crew-predictions/internal/models"
+	"github.com/mcornell/crew-predictions/internal/repository"
+)
+
+func stubFetcher(matches []models.Match) func() ([]models.Match, error) {
+	return func() ([]models.Match, error) { return matches, nil }
+}
+
+func oneMatch() []models.Match {
+	return []models.Match{{ID: "match-99", HomeTeam: "Portland Timbers", AwayTeam: "Columbus Crew", Kickoff: time.Now()}}
+}
+
+func TestMatchesHandler_ReturnsOK(t *testing.T) {
+	mh := handlers.NewMatchesHandler(repository.NewMemoryPredictionStore(), stubFetcher(oneMatch()))
+	req := httptest.NewRequest(http.MethodGet, "/matches", nil)
+	w := httptest.NewRecorder()
+
+	mh.List(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", w.Code)
+	}
+}
+
+func TestMatchesHandler_ReturnsHTML(t *testing.T) {
+	mh := handlers.NewMatchesHandler(repository.NewMemoryPredictionStore(), stubFetcher(oneMatch()))
+	req := httptest.NewRequest(http.MethodGet, "/matches", nil)
+	w := httptest.NewRecorder()
+
+	mh.List(w, req)
+
+	ct := w.Header().Get("Content-Type")
+	if !strings.Contains(ct, "text/html") {
+		t.Errorf("expected text/html content-type, got %s", ct)
+	}
+}
+
+func TestMatchesHandler_ReturnsInternalErrorWhenFetchFails(t *testing.T) {
+	mh := handlers.NewMatchesHandler(repository.NewMemoryPredictionStore(), func() ([]models.Match, error) {
+		return nil, fmt.Errorf("espn is down")
+	})
+	req := httptest.NewRequest(http.MethodGet, "/matches", nil)
+	w := httptest.NewRecorder()
+
+	mh.List(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("expected 500, got %d", w.Code)
+	}
+}
+
+func TestAPIMatchesHandler_ReturnsJSON(t *testing.T) {
+	mh := handlers.NewMatchesHandler(repository.NewMemoryPredictionStore(), stubFetcher(oneMatch()))
+	req := httptest.NewRequest(http.MethodGet, "/api/matches", nil)
+	w := httptest.NewRecorder()
+
+	mh.APIList(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", w.Code)
+	}
+	if ct := w.Header().Get("Content-Type"); !strings.Contains(ct, "application/json") {
+		t.Errorf("expected application/json, got %s", ct)
+	}
+	var body struct {
+		Matches []struct {
+			ID       string `json:"id"`
+			HomeTeam string `json:"homeTeam"`
+			AwayTeam string `json:"awayTeam"`
+		} `json:"matches"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+		t.Fatalf("invalid JSON: %v", err)
+	}
+	if len(body.Matches) != 1 || body.Matches[0].AwayTeam != "Columbus Crew" {
+		t.Errorf("unexpected matches: %+v", body.Matches)
+	}
+}
+
+func TestAPIMatchesHandler_IncludesPredictionForLoggedInUser(t *testing.T) {
+	store := repository.NewMemoryPredictionStore()
+	store.Save(context.Background(), repository.Prediction{
+		MatchID: "match-99", UserID: "google:abc123", HomeGoals: 2, AwayGoals: 1,
+	})
+	mh := handlers.NewMatchesHandler(store, stubFetcher(oneMatch()))
+	req := httptest.NewRequest(http.MethodGet, "/api/matches", nil)
+	req.AddCookie(sessionCookie("google:abc123", "BlackAndGold@bsky.mock"))
+	w := httptest.NewRecorder()
+
+	mh.APIList(w, req)
+
+	var body struct {
+		Predictions map[string]struct {
+			HomeGoals int `json:"homeGoals"`
+			AwayGoals int `json:"awayGoals"`
+		} `json:"predictions"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+		t.Fatalf("invalid JSON: %v", err)
+	}
+	p, ok := body.Predictions["match-99"]
+	if !ok {
+		t.Fatal("expected prediction for match-99 in response")
+	}
+	if p.HomeGoals != 2 || p.AwayGoals != 1 {
+		t.Errorf("expected 2-1, got %d-%d", p.HomeGoals, p.AwayGoals)
+	}
+}
+
+func TestMatchesHandler_ShowsSavedPrediction(t *testing.T) {
+	store := repository.NewMemoryPredictionStore()
+	store.Save(context.Background(), repository.Prediction{
+		MatchID: "match-99", UserID: "google:abc123", Handle: "BlackAndGold@bsky.mock", HomeGoals: 3, AwayGoals: 1,
+	})
+	mh := handlers.NewMatchesHandler(store, stubFetcher(oneMatch()))
+	req := httptest.NewRequest(http.MethodGet, "/matches", nil)
+	req.AddCookie(sessionCookie("google:abc123", "BlackAndGold@bsky.mock"))
+	w := httptest.NewRecorder()
+
+	mh.List(w, req)
+
+	if !strings.Contains(w.Body.String(), "3") || !strings.Contains(w.Body.String(), "Your Pick") {
+		t.Errorf("expected saved score in response, got: %s", w.Body.String())
+	}
+}

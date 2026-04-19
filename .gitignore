@@ -4,7 +4,11 @@
 *.out
 /bin/
 /tmp/
+/server
 vendor/
+
+# Claude Code
+.claude/
 
 # templ generated files
 *_templ.go
@@ -22,18 +26,23 @@ firestore-debug.log
 
 # IDE
 .idea/
-.vscode/
+.vscode/settings.json
 *.iml
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Node (Playwright)
+# Node (Playwright / BDD)
 node_modules/
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+.pnpm-debug.log*
 playwright-report/
 test-results/
+.features-gen/
 
 # Misc
 *.log

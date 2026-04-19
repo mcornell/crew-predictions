@@ -1,15 +1,26 @@
 {
   "hosting": {
     "public": "static",
-    "ignore": ["firebase.json", "**/.*"],
-    "rewrites": [
-      {
-        "source": "**",
-        "run": {
-          "serviceId": "crew-predictions",
-          "region": "us-central1"
-        }
-      }
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
     ]
+  },
+  "emulators": {
+    "auth": {
+      "port": 9099
+    },
+    "firestore": {
+      "port": 8081
+    },
+    "hosting": {
+      "port": 5000
+    },
+    "ui": {
+      "enabled": true,
+      "port": 4000
+    },
+    "singleProjectMode": true
   }
 }

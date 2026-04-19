@@ -1,0 +1,57 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - link "Crew Predictions" [ref=e3] [cursor=pointer]:
+      - /url: /
+    - navigation [ref=e4]:
+      - generic [ref=e5]: BlackYellow@bsky.social
+      - link "Sign Out" [ref=e6] [cursor=pointer]:
+        - /url: /auth/logout
+  - main [ref=e7]:
+    - generic [ref=e8]:
+      - heading "Upcoming Fixtures" [level=1] [ref=e9]:
+        - text: Upcoming
+        - text: Fixtures
+      - paragraph [ref=e10]: Pick your scores. Be wrong in public. It's tradition.
+    - generic [ref=e11]: This Week
+    - generic [ref=e13]:
+      - generic [ref=e14]:
+        - generic [ref=e15]: Sat 19 Apr · 7:30 PM ET · Lower.com Field
+        - generic [ref=e16]: Columbus Crew vs Atlanta United
+        - generic [ref=e17]: MLS Regular Season · Match 9
+      - generic [ref=e18]:
+        - generic [ref=e19]:
+          - spinbutton [ref=e20]
+          - generic [ref=e21]: –
+          - spinbutton [ref=e22]
+        - generic [ref=e23]:
+          - generic [ref=e24]: CLB
+          - generic [ref=e25]: ATL
+        - button "Lock In" [ref=e26] [cursor=pointer]
+    - generic [ref=e28]:
+      - generic [ref=e29]:
+        - generic [ref=e30]: Wed 23 Apr · 7:30 PM ET · TQL Stadium
+        - generic [ref=e31]: FC Cincinnati vs Columbus Crew
+        - generic [ref=e32]: MLS Regular Season · Match 10
+      - generic [ref=e33]:
+        - generic [ref=e34]: 1 – 3
+        - generic [ref=e35]: Your Pick
+        - button "change it" [ref=e36] [cursor=pointer]
+    - generic [ref=e38]:
+      - generic [ref=e39]:
+        - generic [ref=e40]: Sat 12 Apr · 7:30 PM ET · Lower.com Field
+        - generic [ref=e41]: Columbus Crew vs NY Red Bulls
+        - generic [ref=e42]: MLS Regular Season · Match 8
+      - generic [ref=e43]:
+        - generic [ref=e44]: ▊ Locked
+        - generic [ref=e45]: 2 – 1
+        - generic [ref=e46]: Your Pick
+    - generic [ref=e47]: Upcoming
+    - generic [ref=e49]:
+      - generic [ref=e50]:
+        - generic [ref=e51]: Sat 26 Apr · 3:00 PM ET · Lower.com Field
+        - generic [ref=e52]: Columbus Crew vs Inter Miami
+        - generic [ref=e53]: MLS Regular Season · Match 11
+      - paragraph [ref=e55]:
+        - link "Sign in" [ref=e56] [cursor=pointer]:
+          - /url: /auth/login
+        - text: to make your pick
