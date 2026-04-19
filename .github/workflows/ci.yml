@@ -22,11 +22,17 @@ jobs:
           node-version: '22'
           cache: npm
 
-      # Firebase Auth emulator requires Java 21+
+      # Firebase Auth emulator requires Java 25 (latest LTS)
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '25'
+
+      # Cache Firebase emulator binaries (Firestore jar is ~100MB)
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firebase-emulators-${{ runner.os }}
 
       - run: npm ci
 
@@ -39,10 +45,21 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: E2e tests
-        run: npx firebase-tools@latest emulators:exec --only auth,firestore --project crew-predictions "npm test"
+      - name: Start Firebase emulators
+        run: npx firebase-tools@latest emulators:start --only auth,firestore --project crew-predictions &
         env:
           FIREBASE_PROJECT_ID: crew-predictions
+
+      - name: Wait for Firebase emulators
+        run: |
+          timeout 30 bash -c 'until curl -sf http://localhost:9099; do sleep 1; done'
+          timeout 30 bash -c 'until curl -sf http://localhost:8081; do sleep 1; done'
+
+      - name: E2e tests
+        run: npm test
+        env:
+          FIREBASE_PROJECT_ID: crew-predictions
+          FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
 
   deploy:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
