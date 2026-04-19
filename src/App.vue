@@ -4,16 +4,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import AppHeader from './components/AppHeader.vue'
 
+const route = useRoute()
 const currentUser = ref<{ handle: string } | null>(null)
 
-onMounted(async () => {
+async function fetchUser() {
   const res = await fetch('/api/me')
-  if (res.ok) {
-    const data = await res.json()
-    currentUser.value = { handle: data.handle }
-  }
-})
+  currentUser.value = res.ok ? await res.json() : null
+}
+
+onMounted(fetchUser)
+watch(() => route.path, fetchUser)
 </script>
