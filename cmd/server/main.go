@@ -67,6 +67,7 @@ func main() {
 	// API endpoints (JSON)
 	mh := handlers.NewMatchesHandler(predStore, espn.FetchCrewMatches)
 	mux.HandleFunc("GET /api/matches", mh.APIList)
+	mux.HandleFunc("GET /api/me", handlers.Me)
 	ph := handlers.NewPredictionsHandler(predStore)
 	mux.HandleFunc("POST /api/predictions", ph.Submit)
 	lh := handlers.NewLeaderboardHandler(predStore, resultStore, "Columbus Crew")
