@@ -5,4 +5,3 @@ Feature: Page layout
     When I visit the matches page
     Then the page title should be "Crew Predictions"
     And I should see a site header with "Crew Predictions"
-    And the page should load HTMX

@@ -16,7 +16,7 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   webServer: {
-    command: 'PATH=/usr/local/go/bin:/home/mcornell/go/bin:$PATH go run ./cmd/server',
+    command: 'vite build --logLevel silent && go run ./cmd/server',
     port: 8080,
     reuseExistingServer: !process.env.CI,
     env: {

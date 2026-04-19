@@ -20,7 +20,7 @@ func stubFetcher(matches []models.Match) func() ([]models.Match, error) {
 }
 
 func oneMatch() []models.Match {
-	return []models.Match{{ID: "match-99", HomeTeam: "Columbus Crew", AwayTeam: "FC Cincinnati", Kickoff: time.Now()}}
+	return []models.Match{{ID: "match-99", HomeTeam: "Portland Timbers", AwayTeam: "Columbus Crew", Kickoff: time.Now()}}
 }
 
 func TestMatchesHandler_ReturnsOK(t *testing.T) {
@@ -85,7 +85,7 @@ func TestAPIMatchesHandler_ReturnsJSON(t *testing.T) {
 	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
 		t.Fatalf("invalid JSON: %v", err)
 	}
-	if len(body.Matches) != 1 || body.Matches[0].HomeTeam != "Columbus Crew" {
+	if len(body.Matches) != 1 || body.Matches[0].AwayTeam != "Columbus Crew" {
 		t.Errorf("unexpected matches: %+v", body.Matches)
 	}
 }
