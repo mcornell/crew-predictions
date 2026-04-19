@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
-# Kill anything already on port 8080
-kill $(lsof -ti :8080) 2>/dev/null || true
+# Kill anything already on these ports (emulators + Go server)
+kill $(lsof -ti :8080 :8081 :9099 :4000 :4400 :4500) 2>/dev/null || true
 
 # Start Firestore + Auth emulators in background
 firebase emulators:start --only firestore,auth &
