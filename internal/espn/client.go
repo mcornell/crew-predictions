@@ -10,6 +10,22 @@ import (
 	"github.com/mcornell/crew-predictions/internal/models"
 )
 
+// scoreField handles ESPN's polymorphic score value: either an integer (upcoming)
+// or an object with displayValue (completed matches).
+type scoreField struct {
+	Display string
+}
+
+func (s *scoreField) UnmarshalJSON(data []byte) error {
+	var obj struct {
+		DisplayValue string `json:"displayValue"`
+	}
+	if err := json.Unmarshal(data, &obj); err == nil && obj.DisplayValue != "" {
+		s.Display = obj.DisplayValue
+	}
+	return nil
+}
+
 // leagueSlugs are the ESPN league identifiers to check for Columbus Crew matches.
 // Friendlies are excluded by omission.
 var leagueSlugs = []string{
@@ -28,7 +44,8 @@ type espnResponse struct {
 		Date         string `json:"date"`
 		Competitions []struct {
 			Competitors []struct {
-				HomeAway string `json:"homeAway"`
+				HomeAway string     `json:"homeAway"`
+				Score    scoreField `json:"score"`
 				Team     struct {
 					DisplayName string `json:"displayName"`
 				} `json:"team"`
@@ -43,11 +60,13 @@ type espnResponse struct {
 }
 
 type matchRecord struct {
-	id      string
-	kickoff time.Time
-	home    string
-	away    string
-	status  string
+	id        string
+	kickoff   time.Time
+	home      string
+	away      string
+	homeScore string
+	awayScore string
+	status    string
 }
 
 func parseKickoff(s string) (time.Time, error) {
@@ -90,21 +109,25 @@ func parseEvents(data espnResponse) []matchRecord {
 			continue
 		}
 		comp := event.Competitions[0]
-		var home, away string
+		var home, away, homeScore, awayScore string
 		for _, c := range comp.Competitors {
 			if c.HomeAway == "home" {
 				home = c.Team.DisplayName
+				homeScore = c.Score.Display
 			} else {
 				away = c.Team.DisplayName
+				awayScore = c.Score.Display
 			}
 		}
 		kickoff, _ := parseKickoff(event.Date)
 		records = append(records, matchRecord{
-			id:      event.ID,
-			kickoff: kickoff,
-			home:    home,
-			away:    away,
-			status:  comp.Status.Type.Name,
+			id:        event.ID,
+			kickoff:   kickoff,
+			home:      home,
+			away:      away,
+			homeScore: homeScore,
+			awayScore: awayScore,
+			status:    comp.Status.Type.Name,
 		})
 	}
 	return records
@@ -164,11 +187,13 @@ func FetchCrewMatches() ([]models.Match, error) {
 	matches := make([]models.Match, len(all))
 	for i, r := range all {
 		matches[i] = models.Match{
-			ID:       r.id,
-			HomeTeam: r.home,
-			AwayTeam: r.away,
-			Kickoff:  r.kickoff,
-			Status:   r.status,
+			ID:        r.id,
+			HomeTeam:  r.home,
+			AwayTeam:  r.away,
+			Kickoff:   r.kickoff,
+			Status:    r.status,
+			HomeScore: r.homeScore,
+			AwayScore: r.awayScore,
 		}
 	}
 	return matches, nil

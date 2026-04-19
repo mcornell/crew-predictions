@@ -1,6 +1,7 @@
 package espn
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 	"time"
@@ -98,5 +99,25 @@ func TestLeagueSlugs_DoesNotContainFriendly(t *testing.T) {
 		if strings.Contains(s, "friendly") {
 			t.Errorf("leagueSlugs must not include friendlies, found %q", s)
 		}
+	}
+}
+
+func TestScoreField_ParsesObjectForm(t *testing.T) {
+	var s scoreField
+	if err := json.Unmarshal([]byte(`{"displayValue":"2","value":2.0}`), &s); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if s.Display != "2" {
+		t.Errorf("expected display '2', got %q", s.Display)
+	}
+}
+
+func TestScoreField_ParsesIntegerForm(t *testing.T) {
+	var s scoreField
+	if err := json.Unmarshal([]byte(`0`), &s); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if s.Display != "" {
+		t.Errorf("expected empty display for zero integer, got %q", s.Display)
 	}
 }

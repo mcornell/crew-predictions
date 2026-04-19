@@ -3,9 +3,9 @@ import { mount, flushPromises } from '@vue/test-utils'
 import MatchesView from '../MatchesView.vue'
 
 const mockMatches = [
-  { id: 'match-past', homeTeam: 'New England Revolution', awayTeam: 'Columbus Crew', kickoff: '2026-04-18T23:30:00Z', status: 'STATUS_FULL_TIME' },
-  { id: 'match-1', homeTeam: 'Columbus Crew', awayTeam: 'LA Galaxy', kickoff: '2026-04-22T23:30:00Z', status: 'STATUS_SCHEDULED' },
-  { id: 'match-2', homeTeam: 'Columbus Crew', awayTeam: 'Philadelphia Union', kickoff: '2026-04-25T23:30:00Z', status: 'STATUS_SCHEDULED' },
+  { id: 'match-past', homeTeam: 'New England Revolution', awayTeam: 'Columbus Crew', kickoff: '2026-04-18T23:30:00Z', status: 'STATUS_FULL_TIME', homeScore: '2', awayScore: '1' },
+  { id: 'match-1', homeTeam: 'Columbus Crew', awayTeam: 'LA Galaxy', kickoff: '2026-04-22T23:30:00Z', status: 'STATUS_SCHEDULED', homeScore: '', awayScore: '' },
+  { id: 'match-2', homeTeam: 'Columbus Crew', awayTeam: 'Philadelphia Union', kickoff: '2026-04-25T23:30:00Z', status: 'STATUS_SCHEDULED', homeScore: '', awayScore: '' },
 ]
 
 beforeEach(() => {
@@ -94,6 +94,13 @@ describe('MatchesView', () => {
     await flushPromises()
     const resultsSection = wrapper.find('[data-testid="results-section"]')
     expect(resultsSection.text()).not.toContain('LA Galaxy')
+  })
+
+  it('shows final score on result cards', async () => {
+    const wrapper = mount(MatchesView)
+    await flushPromises()
+    const resultsSection = wrapper.find('[data-testid="results-section"]')
+    expect(resultsSection.text()).toContain('2 – 1')
   })
 
   it('match more than 7 days away is not shown in upcoming', async () => {

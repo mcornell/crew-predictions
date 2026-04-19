@@ -47,6 +47,9 @@
             <div class="matchup">{{ match.homeTeam }} <span style="color:var(--muted)">vs</span> {{ match.awayTeam }}</div>
             <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
           </div>
+          <div class="result-score" v-if="match.homeScore && match.awayScore">
+            <span class="score-display">{{ match.homeScore }} – {{ match.awayScore }}</span>
+          </div>
           <div class="prediction" v-if="savedPredictions[match.id]">
             <div class="saved-score">
               <span class="score-display">{{ savedPredictions[match.id]!.homeGoals }} – {{ savedPredictions[match.id]!.awayGoals }}</span>
@@ -70,6 +73,8 @@ interface Match {
   awayTeam: string
   kickoff: string
   status: string
+  homeScore: string
+  awayScore: string
 }
 
 interface Prediction {
