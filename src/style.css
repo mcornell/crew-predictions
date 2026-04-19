@@ -247,7 +247,6 @@ body::after {
   white-space: nowrap;
 }
 .btn-lock:hover { opacity: 0.88; }
-.match-info .btn-lock { margin-top: 0.75rem; }
 
 /* ── Saved prediction ────────────────────────────────────────────────────── */
 .saved-score {

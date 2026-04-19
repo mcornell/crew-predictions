@@ -28,9 +28,9 @@
                 <span class="vs">vs</span>
                 <input class="score-input" name="away_goals" type="number" min="0" max="99" v-model="inputs[match.id].away" placeholder="0" />
                 <span class="team-name">{{ match.awayTeam }}</span>
+                <button class="btn-lock" @click="submit(match.id)">Predict</button>
               </div>
               <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
-              <button class="btn-lock" @click="submit(match.id)">Lock In</button>
             </template>
           </div>
         </div>

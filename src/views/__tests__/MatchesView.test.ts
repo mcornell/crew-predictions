@@ -40,7 +40,7 @@ describe('MatchesView', () => {
     const card = wrapper.findAll('[data-testid="match-card"]')[0]
     expect(card.find('input[name="home_goals"]').exists()).toBe(true)
     expect(card.find('input[name="away_goals"]').exists()).toBe(true)
-    expect(card.find('button').text()).toBe('Lock In')
+    expect(card.find('button').text()).toBe('Predict')
   })
 
   it('shows saved prediction score after submitting', async () => {
