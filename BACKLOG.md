@@ -12,12 +12,15 @@
 - [x] Vue 3 SPA: MatchesView, LoginView, LeaderboardView, AppHeader
 - [x] BDD e2e suite — 10/10 Playwright scenarios green
 - [x] Vite dev proxy for local development
+- [x] Industrial Black & Gold Brutalism design applied
+- [x] ESPN date parsing fix (`2026-04-12T23:00Z` no-seconds format)
+- [x] Match listings — upcoming (next 7 days) + results with scores inline
+- [x] Multi-competition support — MLS, US Open Cup, Leagues Cup, CONCACAF Champions
 
 ---
 
 ## Before First Deploy
 
-- [ ] **Apply design language** — Industrial Black & Gold Brutalism CSS to all Vue components (see Design Language section in CLAUDE.md)
 - [ ] **FirestoreResultStore** — results currently in-memory only; don't persist across restarts. Implement alongside MemoryResultStore.
 - [ ] **GCP/Firebase env vars** — add `FIREBASE_API_KEY`, `FIREBASE_AUTH_DOMAIN`, `FIREBASE_PROJECT_ID` to `.env` and Cloud Run service env
 - [ ] **Cloud Run deploy** — first manual `gcloud run deploy crew-predictions --source . --region us-east5`
@@ -32,7 +35,6 @@
 - [ ] **Google OAuth** — add as second sign-in option alongside email/password
 - [ ] **Match result entry UI** — admin page for podcast hosts to enter final scores (currently API-only via `POST /admin/results`)
 - [ ] **Prediction locking** — enforce kickoff time deadline server-side (currently no lock)
-- [ ] **ESPN date parsing fix** — ESPN returns `2026-04-12T23:00Z` (no seconds), fails `time.RFC3339`. Fix in `internal/espn/client.go`: try `"2006-01-02T15:04Z07:00"` as fallback. All kickoff times currently parse to zero value.
 - [ ] **Firestore match cache** — cache ESPN results in Firestore daily instead of fetching live on every request
 
 ---
