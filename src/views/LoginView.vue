@@ -1,10 +1,16 @@
 <template>
-  <form data-testid="login-form" @submit.prevent="handleSubmit">
-    <input v-model="email" type="email" placeholder="Email" required />
-    <input v-model="password" type="password" placeholder="Password" required />
-    <p v-if="error">{{ error }}</p>
-    <button type="submit">Sign In</button>
-  </form>
+  <div class="login-page">
+    <div class="login-card">
+      <h1 class="login-title">Sign In</h1>
+      <p class="login-sub">Pick your scores. Be wrong in public. It's tradition.</p>
+      <form class="login-form" data-testid="login-form" @submit.prevent="handleSubmit">
+        <input class="form-input" v-model="email" type="email" placeholder="Email" required />
+        <input class="form-input" v-model="password" type="password" placeholder="Password" required />
+        <p v-if="error" class="form-error">{{ error }}</p>
+        <button class="btn-submit" type="submit">Sign In</button>
+      </form>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">

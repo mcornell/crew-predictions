@@ -1,12 +1,12 @@
 <template>
-  <header>
-    <span>Crew Predictions</span>
-    <nav>
+  <header class="site-header">
+    <a class="brand" href="/">Crew Predictions</a>
+    <nav class="site-nav">
       <template v-if="user">
-        <span>{{ user.handle }}</span>
-        <a href="/logout">Sign out</a>
+        <span class="user-handle">{{ user.handle }}</span>
+        <a class="btn-ghost" href="/logout">Sign out</a>
       </template>
-      <a v-else href="/login">Sign In</a>
+      <a v-else class="btn-primary" href="/login">Sign In</a>
     </nav>
   </header>
 </template>
