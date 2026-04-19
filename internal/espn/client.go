@@ -31,6 +31,13 @@ type espnResponse struct {
 	} `json:"events"`
 }
 
+func parseKickoff(s string) (time.Time, error) {
+	if t, err := time.Parse(time.RFC3339, s); err == nil {
+		return t, nil
+	}
+	return time.Parse("2006-01-02T15:04Z07:00", s)
+}
+
 func FetchCrewMatches() ([]models.Match, error) {
 	resp, err := http.Get(scheduleURL)
 	if err != nil {
@@ -59,7 +66,7 @@ func FetchCrewMatches() ([]models.Match, error) {
 			}
 		}
 
-		kickoff, _ := time.Parse(time.RFC3339, event.Date)
+		kickoff, _ := parseKickoff(event.Date)
 		matches = append(matches, models.Match{
 			ID:       event.ID,
 			HomeTeam: home,
