@@ -47,12 +47,12 @@
           data-testid="result-card"
         >
           <div class="match-info">
-            <div class="matchup" data-testid="matchup">
-              {{ match.homeTeam }}
-              <span class="inline-score" v-if="match.homeScore">{{ match.homeScore }}</span>
+            <div class="matchup matchup--input" data-testid="matchup">
+              <span class="team-name">{{ match.homeTeam }}</span>
+              <span class="inline-score">{{ match.homeScore || '–' }}</span>
               <span class="vs">vs</span>
-              <span class="inline-score" v-if="match.awayScore">{{ match.awayScore }}</span>
-              {{ match.awayTeam }}
+              <span class="inline-score">{{ match.awayScore || '–' }}</span>
+              <span class="team-name">{{ match.awayTeam }}</span>
             </div>
             <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
             <div v-if="savedPredictions[match.id]" class="match-meta">
