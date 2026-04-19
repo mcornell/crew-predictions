@@ -15,6 +15,9 @@ templ Login() {
 			<script src="https://www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth.js"></script>
 			<script>
 				firebase.initializeApp(window.__firebaseConfig || {});
+				if (window.__firebaseConfig && window.__firebaseConfig.authEmulatorHost) {
+					firebase.auth().useEmulator('http://' + window.__firebaseConfig.authEmulatorHost);
+				}
 				const ui = new firebaseui.auth.AuthUI(firebase.auth());
 				ui.start('#firebaseui-auth-container', {
 					signInOptions: [
@@ -22,13 +25,19 @@ templ Login() {
 						firebase.auth.EmailAuthProvider.PROVIDER_ID,
 					],
 					callbacks: {
-						signInSuccessWithAuthResult: async function(result) {
-							const idToken = await result.user.getIdToken();
-							await fetch('/auth/session', {
-								method: 'POST',
-								body: new URLSearchParams({ idToken }),
+						signInSuccessWithAuthResult: function(result) {
+							result.user.getIdToken().then(function(idToken) {
+								var form = document.createElement('form');
+								form.method = 'POST';
+								form.action = '/auth/session';
+								var input = document.createElement('input');
+								input.type = 'hidden';
+								input.name = 'idToken';
+								input.value = idToken;
+								form.appendChild(input);
+								document.body.appendChild(form);
+								form.submit();
 							});
-							window.location.href = '/matches';
 							return false;
 						},
 					},

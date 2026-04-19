@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -43,6 +44,7 @@ func (h *SessionHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	tok, err := h.verifier.VerifyIDToken(r.Context(), idToken)
 	if err != nil {
+		log.Printf("VerifyIDToken failed: %v", err)
 		http.Error(w, "invalid token", http.StatusUnauthorized)
 		return
 	}

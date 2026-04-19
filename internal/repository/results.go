@@ -28,6 +28,10 @@ func (s *MemoryResultStore) SaveResult(ctx context.Context, r Result) error {
 	return nil
 }
 
+func (s *MemoryResultStore) Reset() {
+	s.data = make(map[string]Result)
+}
+
 func (s *MemoryResultStore) GetResult(ctx context.Context, matchID string) (*Result, error) {
 	r, ok := s.data[matchID]
 	if !ok {

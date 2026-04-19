@@ -7,6 +7,17 @@ import (
 	"github.com/mcornell/crew-predictions/internal/repository"
 )
 
+func TestMemoryPredictionStore_Reset_ClearsAllData(t *testing.T) {
+	store := repository.NewMemoryPredictionStore()
+	ctx := context.Background()
+	_ = store.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "u1"})
+	store.Reset()
+	all, _ := store.GetAll(ctx)
+	if len(all) != 0 {
+		t.Errorf("expected 0 predictions after Reset, got %d", len(all))
+	}
+}
+
 func TestMemoryPredictionStore_ReturnsNilWhenNotFound(t *testing.T) {
 	store := repository.NewMemoryPredictionStore()
 	got, err := store.GetByMatchAndUser(context.Background(), "no-match", "nobody")

@@ -37,6 +37,10 @@ func (s *MemoryPredictionStore) GetByMatchAndUser(ctx context.Context, matchID, 
 	return &p, nil
 }
 
+func (s *MemoryPredictionStore) Reset() {
+	s.data = make(map[string]Prediction)
+}
+
 func (s *MemoryPredictionStore) GetAll(ctx context.Context) ([]Prediction, error) {
 	all := make([]Prediction, 0, len(s.data))
 	for _, p := range s.data {

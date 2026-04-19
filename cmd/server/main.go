@@ -14,6 +14,7 @@ import (
 	"github.com/mcornell/crew-predictions/internal/handlers"
 	"github.com/mcornell/crew-predictions/internal/repository"
 	"github.com/mcornell/crew-predictions/templates"
+	"google.golang.org/api/option"
 )
 
 func main() {
@@ -42,14 +43,23 @@ func main() {
 	resultStore := repository.NewMemoryResultStore()
 
 	var verifier handlers.TokenVerifier = handlers.NoopTokenVerifier{}
-	app, err := firebase.NewApp(ctx, nil)
+	projectID := os.Getenv("FIREBASE_PROJECT_ID")
+	if projectID == "" {
+		projectID = os.Getenv("GOOGLE_CLOUD_PROJECT")
+	}
+	var appOpts []option.ClientOption
+	if os.Getenv("FIREBASE_AUTH_EMULATOR_HOST") != "" {
+		appOpts = append(appOpts, option.WithoutAuthentication())
+	}
+	fbConfig := &firebase.Config{ProjectID: projectID}
+	app, err := firebase.NewApp(ctx, fbConfig, appOpts...)
 	if err != nil {
-		log.Printf("Firebase unavailable (no credentials): %v", err)
+		log.Printf("Firebase unavailable: %v", err)
 	} else if authClient, err := app.Auth(ctx); err != nil {
 		log.Printf("Firebase Auth unavailable: %v", err)
 	} else {
 		verifier = handlers.NewFirebaseTokenVerifier(authClient)
-		log.Printf("Firebase Auth initialized")
+		log.Printf("Firebase Auth initialized (project: %s)", projectID)
 	}
 	sh := handlers.NewSessionHandler(verifier)
 
@@ -73,6 +83,17 @@ func main() {
 		templates.Login().Render(r.Context(), w)
 	})
 
+	if os.Getenv("TEST_MODE") == "1" {
+		if memPred, ok := predStore.(*repository.MemoryPredictionStore); ok {
+			mux.HandleFunc("DELETE /admin/reset", func(w http.ResponseWriter, r *http.Request) {
+				memPred.Reset()
+				resultStore.Reset()
+				w.WriteHeader(http.StatusNoContent)
+			})
+			log.Printf("test reset endpoint registered at DELETE /admin/reset")
+		}
+	}
+
 	log.Printf("listening on :%s", port)
 	if err := http.ListenAndServe(":"+port, mux); err != nil {
 		log.Fatal(err)
@@ -81,9 +102,10 @@ func main() {
 
 func serveFirebaseConfig(w http.ResponseWriter, r *http.Request) {
 	cfg, _ := json.Marshal(map[string]string{
-		"apiKey":    os.Getenv("FIREBASE_API_KEY"),
-		"authDomain": os.Getenv("FIREBASE_AUTH_DOMAIN"),
-		"projectId": os.Getenv("FIREBASE_PROJECT_ID"),
+		"apiKey":           os.Getenv("FIREBASE_API_KEY"),
+		"authDomain":       os.Getenv("FIREBASE_AUTH_DOMAIN"),
+		"projectId":        os.Getenv("FIREBASE_PROJECT_ID"),
+		"authEmulatorHost": os.Getenv("FIREBASE_AUTH_EMULATOR_HOST"),
 	})
 	w.Header().Set("Content-Type", "application/javascript")
 	fmt.Fprintf(w, "window.__firebaseConfig = %s;", cfg)

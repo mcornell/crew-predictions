@@ -40,7 +40,7 @@ templ MatchList(matches []models.Match, handle string, predictions map[string]*r
 						</div>
 						<div class="prediction">
 							if handle == "" {
-								<p class="signin-nudge"><a href="/auth/login">Sign in</a> to make your pick</p>
+								<p class="signin-nudge"><a href="/login">Sign in</a> to make your pick</p>
 							} else if p, ok := predictions[m.ID]; ok {
 								<div class="saved-score">{ fmt.Sprintf("%d – %d", p.HomeGoals, p.AwayGoals) }</div>
 								<div class="saved-label">Your Pick</div>
