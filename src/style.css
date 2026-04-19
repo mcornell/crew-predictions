@@ -194,10 +194,11 @@ body::after {
 
 .match-meta {
   font-family: 'DM Mono', monospace;
-  font-size: 0.7rem;
+  font-size: 0.85rem;
   color: var(--muted);
   margin-top: 0.35rem;
   letter-spacing: 0.04em;
+  text-align: center;
 }
 
 /* ── Prediction inputs ───────────────────────────────────────────────────── */
