@@ -1,10 +1,28 @@
 {
   "hosting": {
-    "public": "static",
+    "public": "dist",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/api/**",
+        "run": { "serviceId": "crew-predictions", "region": "us-east5" }
+      },
+      {
+        "source": "/auth/**",
+        "run": { "serviceId": "crew-predictions", "region": "us-east5" }
+      },
+      {
+        "source": "/admin/**",
+        "run": { "serviceId": "crew-predictions", "region": "us-east5" }
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
     ]
   },
   "emulators": {
