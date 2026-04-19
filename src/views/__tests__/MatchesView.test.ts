@@ -58,7 +58,8 @@ describe('MatchesView', () => {
     await card.find('button').trigger('click')
     await flushPromises()
 
-    expect(card.text()).toContain('3 – 1')
+    // New layout: Columbus Crew [3] vs [1] LA Galaxy
+    expect(card.text()).toMatch(/Columbus Crew\s*3\s*vs\s*1\s*LA Galaxy/)
   })
 
   it('shows existing prediction from initial load', async () => {
@@ -72,7 +73,8 @@ describe('MatchesView', () => {
     const wrapper = mount(MatchesView)
     await flushPromises()
     const card = wrapper.findAll('[data-testid="match-card"]')[0]
-    expect(card.text()).toContain('2 – 0')
+    // New layout: Columbus Crew [2] vs [0] LA Galaxy
+    expect(card.text()).toMatch(/Columbus Crew\s*2\s*vs\s*0\s*LA Galaxy/)
   })
 
   it('shows a Results section for completed matches', async () => {
@@ -96,11 +98,25 @@ describe('MatchesView', () => {
     expect(resultsSection.text()).not.toContain('LA Galaxy')
   })
 
-  it('shows final score on result cards', async () => {
+  it('shows final score between team names on result cards', async () => {
     const wrapper = mount(MatchesView)
     await flushPromises()
-    const resultsSection = wrapper.find('[data-testid="results-section"]')
-    expect(resultsSection.text()).toContain('2 – 1')
+    const card = wrapper.find('[data-testid="result-card"]')
+    const text = card.text().replace(/\s+/g, ' ')
+    // Score must appear between the two team names
+    const neIdx = text.indexOf('New England Revolution')
+    const clbIdx = text.indexOf('Columbus Crew')
+    const scoreIdx = text.indexOf('2')
+    expect(neIdx).toBeGreaterThanOrEqual(0)
+    expect(scoreIdx).toBeGreaterThan(neIdx)
+    expect(clbIdx).toBeGreaterThan(scoreIdx)
+  })
+
+  it('result card matchup line contains score inline', async () => {
+    const wrapper = mount(MatchesView)
+    await flushPromises()
+    const matchup = wrapper.find('[data-testid="result-card"] [data-testid="matchup"]')
+    expect(matchup.text()).toMatch(/New England Revolution\s*2\s*vs\s*1\s*Columbus Crew/i)
   })
 
   it('match more than 7 days away is not shown in upcoming', async () => {

@@ -140,10 +140,6 @@ body::after {
   border-left: 3px solid transparent;
   padding: 1.25rem 1.5rem;
   transition: border-left-color 0.15s;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
 }
 
 .match-card:hover,
@@ -159,6 +155,33 @@ body::after {
   letter-spacing: 0.06em;
   line-height: 1.2;
   color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.matchup .vs {
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+.inline-score {
+  font-family: 'DM Mono', monospace;
+  font-size: 1.4rem;
+  color: var(--gold);
+  min-width: 1.2ch;
+  text-align: center;
+}
+
+.matchup--input {
+  align-items: center;
+}
+
+.team-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.3rem;
+  letter-spacing: 0.06em;
 }
 
 .match-meta {
@@ -224,6 +247,7 @@ body::after {
   white-space: nowrap;
 }
 .btn-lock:hover { opacity: 0.88; }
+.match-info .btn-lock { margin-top: 0.75rem; }
 
 /* ── Saved prediction ────────────────────────────────────────────────────── */
 .saved-score {

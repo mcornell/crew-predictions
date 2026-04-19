@@ -11,22 +11,25 @@
           data-testid="match-card"
         >
           <div class="match-info">
-            <div class="matchup">{{ match.homeTeam }} <span style="color:var(--muted)">vs</span> {{ match.awayTeam }}</div>
-            <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
-          </div>
-          <div class="prediction">
             <template v-if="savedPredictions[match.id]">
-              <div class="saved-score">
-                <span class="score-display">{{ savedPredictions[match.id]!.homeGoals }} – {{ savedPredictions[match.id]!.awayGoals }}</span>
-                <span class="saved-label">Your Pick</span>
+              <div class="matchup" data-testid="matchup">
+                {{ match.homeTeam }}
+                <span class="inline-score">{{ savedPredictions[match.id]!.homeGoals }}</span>
+                <span class="vs">vs</span>
+                <span class="inline-score">{{ savedPredictions[match.id]!.awayGoals }}</span>
+                {{ match.awayTeam }}
               </div>
+              <div class="match-meta">{{ formatKickoff(match.kickoff) }} — <span class="saved-label">Locked in</span></div>
             </template>
             <template v-else>
-              <div class="score-inputs">
+              <div class="matchup matchup--input" data-testid="matchup">
+                <span class="team-name">{{ match.homeTeam }}</span>
                 <input class="score-input" name="home_goals" type="number" min="0" max="99" v-model="inputs[match.id].home" placeholder="0" />
-                <span class="score-sep">–</span>
+                <span class="vs">vs</span>
                 <input class="score-input" name="away_goals" type="number" min="0" max="99" v-model="inputs[match.id].away" placeholder="0" />
+                <span class="team-name">{{ match.awayTeam }}</span>
               </div>
+              <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
               <button class="btn-lock" @click="submit(match.id)">Lock In</button>
             </template>
           </div>
@@ -44,16 +47,16 @@
           data-testid="result-card"
         >
           <div class="match-info">
-            <div class="matchup">{{ match.homeTeam }} <span style="color:var(--muted)">vs</span> {{ match.awayTeam }}</div>
+            <div class="matchup" data-testid="matchup">
+              {{ match.homeTeam }}
+              <span class="inline-score" v-if="match.homeScore">{{ match.homeScore }}</span>
+              <span class="vs">vs</span>
+              <span class="inline-score" v-if="match.awayScore">{{ match.awayScore }}</span>
+              {{ match.awayTeam }}
+            </div>
             <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
-          </div>
-          <div class="result-score" v-if="match.homeScore && match.awayScore">
-            <span class="score-display">{{ match.homeScore }} – {{ match.awayScore }}</span>
-          </div>
-          <div class="prediction" v-if="savedPredictions[match.id]">
-            <div class="saved-score">
-              <span class="score-display">{{ savedPredictions[match.id]!.homeGoals }} – {{ savedPredictions[match.id]!.awayGoals }}</span>
-              <span class="saved-label">Your Pick</span>
+            <div v-if="savedPredictions[match.id]" class="match-meta">
+              Your pick: {{ savedPredictions[match.id]!.homeGoals }} – {{ savedPredictions[match.id]!.awayGoals }}
             </div>
           </div>
         </div>
