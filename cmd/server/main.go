@@ -71,7 +71,7 @@ func main() {
 	ph := handlers.NewPredictionsHandler(predStore)
 	mux.HandleFunc("POST /api/predictions", ph.Submit)
 	lh := handlers.NewLeaderboardHandler(predStore, resultStore, "Columbus Crew")
-	mux.HandleFunc("GET /api/leaderboard", lh.List)
+	mux.HandleFunc("GET /api/leaderboard", lh.APIList)
 	rh := handlers.NewResultsHandler(resultStore)
 	mux.HandleFunc("POST /admin/results", rh.Submit)
 
