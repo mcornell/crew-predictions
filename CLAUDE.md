@@ -24,10 +24,11 @@ Every feature increment starts from a failing **Playwright** (browser) scenario 
 
 #### Absolute rules
 
-- **No production code without a red test.** This is absolute. A failing test must exist and have been run before any production file is created or edited. This means every `if`, every `return`, every error branch — each one must be driven by its own failing test first.
-- **One branch, one test, one commit.** Every error path, happy path, and edge case is its own red-green-refactor cycle. Never write a whole function and test it afterward. If you do this correctly, coverage is never something to check at the end — it's guaranteed by construction.
-- **Always run `go test ./...` (full suite).** Never run a subset of packages. Run the full suite at every red, green, and refactor step.
-- **Never skip red.** If you cannot articulate exactly why the test fails, stop.
+- **No production code without a red test.** This is absolute. A failing test must exist and have been run before any production file is created or edited. This means every `if`, every `return`, every error branch — each one must be driven by its own failing test first. There are no exceptions for "wiring", "infrastructure", or "obvious" code.
+- **This applies to Vue code too.** Before creating any `.vue` or `.ts` file in `src/`, write a failing Vitest test. Run `npm run test:unit`. See it fail. Only then write the component. This rule was violated during the Vue migration and required significant rework. Do not repeat that mistake.
+- **One branch, one test, one commit.** Every error path, happy path, and edge case is its own red-green-refactor cycle. Never write a whole function and test it afterward.
+- **Always run the full test suite.** `go test ./...` and `npm run test:unit` at every red, green, and refactor step. Never run a subset.
+- **Never skip red.** If you cannot articulate exactly why the test fails, stop. Do not proceed.
 - **Exception — external HTTP calls:** Handlers that make live HTTP calls can't be fully unit-tested without injecting the HTTP client. Note the gap explicitly as tech debt; do not silently accept low coverage.
 
 #### Test commands
