@@ -8,6 +8,7 @@ const testDir = defineBddConfig({
 
 export default defineConfig({
   testDir,
+  workers: 1,
   globalSetup: './e2e/global-setup.ts',
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
