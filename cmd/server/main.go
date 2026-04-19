@@ -12,6 +12,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/mcornell/crew-predictions/internal/espn"
 	"github.com/mcornell/crew-predictions/internal/handlers"
+	"github.com/mcornell/crew-predictions/internal/models"
 	"github.com/mcornell/crew-predictions/internal/repository"
 	"google.golang.org/api/option"
 )
@@ -73,11 +74,24 @@ func main() {
 
 	mux := http.NewServeMux()
 
+	// Match fetcher: in TEST_MODE, seeded matches take priority over ESPN
+	var matchStore *repository.MemoryMatchStore
+	matchFetcher := espn.FetchCrewMatches
+	if os.Getenv("TEST_MODE") == "1" {
+		matchStore = repository.NewMemoryMatchStore()
+		matchFetcher = func() ([]models.Match, error) {
+			if m, _ := matchStore.GetAll(); len(m) > 0 {
+				return m, nil
+			}
+			return espn.FetchCrewMatches()
+		}
+	}
+
 	// API endpoints (JSON)
-	mh := handlers.NewMatchesHandler(predStore, espn.FetchCrewMatches)
+	mh := handlers.NewMatchesHandler(predStore, matchFetcher)
 	mux.HandleFunc("GET /api/matches", mh.APIList)
 	mux.HandleFunc("GET /api/me", handlers.Me)
-	ph := handlers.NewPredictionsHandler(predStore, espn.FetchCrewMatches)
+	ph := handlers.NewPredictionsHandler(predStore, matchFetcher)
 	mux.HandleFunc("POST /api/predictions", ph.Submit)
 	lh := handlers.NewLeaderboardHandler(predStore, resultStore, "Columbus Crew")
 	mux.HandleFunc("GET /api/leaderboard", lh.APIList)
@@ -104,12 +118,20 @@ func main() {
 				if memResult, ok := resultStore.(*repository.MemoryResultStore); ok {
 					memResult.Reset()
 				}
+				if matchStore != nil {
+					matchStore.Reset()
+				}
 				w.WriteHeader(http.StatusNoContent)
 			})
 			log.Printf("test reset endpoint registered at DELETE /admin/reset")
 			seedH := handlers.NewSeedPredictionHandler(predStore)
 			mux.HandleFunc("POST /admin/seed-prediction", seedH.Submit)
 			log.Printf("test seed endpoint registered at POST /admin/seed-prediction")
+		}
+		if matchStore != nil {
+			seedMH := handlers.NewSeedMatchHandler(matchStore)
+			mux.HandleFunc("POST /admin/seed-match", seedMH.Submit)
+			log.Printf("test seed endpoint registered at POST /admin/seed-match")
 		}
 	}
 

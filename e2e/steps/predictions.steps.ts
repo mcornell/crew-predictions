@@ -1,9 +1,30 @@
 import { createBdd } from 'playwright-bdd';
 import { expect } from '@playwright/test';
 
-const { When, Then } = createBdd();
+const { Given, When, Then } = createBdd();
 
 let lastPredictionStatus = 0;
+
+function kickoffForStatus(status: string): string {
+  const d = new Date();
+  const isScheduled = status === 'STATUS_SCHEDULED' || status === 'STATUS_IN_PROGRESS';
+  d.setHours(d.getHours() + (isScheduled ? 24 : -24));
+  return d.toISOString();
+}
+
+Given('the following matches are seeded:', async ({ request }, table: any) => {
+  for (const row of table.hashes()) {
+    await request.post('/admin/seed-match', {
+      form: {
+        id: row.id,
+        home_team: row.homeTeam,
+        away_team: row.awayTeam,
+        kickoff: kickoffForStatus(row.status),
+        status: row.status,
+      },
+    });
+  }
+});
 
 When('I enter a home score of {int} and away score of {int} for the first match', async ({ page }, home: number, away: number) => {
   const card = page.locator('[data-testid="match-card"]').first();
@@ -20,15 +41,9 @@ Then('I should see my prediction of {string} on the first match card', async ({ 
   await expect(card.locator('[data-testid="matchup"]').getByText(score)).toBeVisible();
 });
 
-When('I submit a prediction via API for a match that has already kicked off', async ({ page }) => {
-  const matchResp = await page.request.get('/api/matches');
-  const data = await matchResp.json();
-  const completed = data.matches.find((m: any) =>
-    m.status !== 'STATUS_SCHEDULED' && m.status !== 'STATUS_IN_PROGRESS'
-  );
-  if (!completed) throw new Error('No completed match found to test locking against');
+When('I submit a prediction via API for match {string}', async ({ page }, matchId: string) => {
   const resp = await page.request.post('/api/predictions', {
-    form: { match_id: completed.id, home_goals: '2', away_goals: '1' },
+    form: { match_id: matchId, home_goals: '2', away_goals: '1' },
   });
   lastPredictionStatus = resp.status();
 });

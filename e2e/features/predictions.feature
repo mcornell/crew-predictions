@@ -1,5 +1,11 @@
 Feature: Score predictions
 
+  Background:
+    Given the following matches are seeded:
+      | id           | homeTeam         | awayTeam      | status           |
+      | match-pred-1 | Columbus Crew    | LA Galaxy     | STATUS_SCHEDULED |
+      | match-past-1 | Portland Timbers | Columbus Crew | STATUS_FULL_TIME |
+
   Scenario: Logged-in user submits a score prediction
     Given I am logged in as "BlackAndGold@bsky.mock"
     When I visit the matches page
@@ -9,5 +15,5 @@ Feature: Score predictions
 
   Scenario: Prediction is rejected after kickoff
     Given I am logged in as "BlackAndGold@bsky.mock"
-    When I submit a prediction via API for a match that has already kicked off
+    When I submit a prediction via API for match "match-past-1"
     Then the server should reject it with 403
