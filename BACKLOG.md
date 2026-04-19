@@ -40,7 +40,7 @@
 
 - [ ] **GitHub Actions CI/CD** — push to `main` → test + deploy via Workload Identity Federation (keyless GCP auth, no stored service account keys).
 - [ ] **Real-data scoring accuracy test** — e2e scenario using actual 2025 Columbus Crew match results to validate the scoring engine against real outcomes. Get match data from user before writing.
-- [ ] **Firestore match cache** — cache ESPN results in Firestore daily instead of fetching live on every request
+- [ ] **Firestore match cache + score polling** — cache ESPN schedule in Firestore. Weekly refresh fires Tuesday midnight ET (cron) regardless of whether there's a match that week. When `kickoff + 2h <= now` and match not yet `STATUS_FINAL`, poll ESPN every ~5 min and write to ResultStore when final, then stop. ESPN already returns `status.type.name`.
 
 ---
 
