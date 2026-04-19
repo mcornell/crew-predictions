@@ -28,9 +28,9 @@
 
 - [x] **FirestoreResultStore** — results persist across restarts
 - [x] **Prediction locking** — enforce kickoff time deadline server-side; predictions must be submitted before kickoff
-- [ ] **GCP/Firebase env vars** — add `FIREBASE_API_KEY`, `FIREBASE_AUTH_DOMAIN`, `FIREBASE_PROJECT_ID` to `.env` and Cloud Run service env
-- [ ] **Cloud Run deploy** — first manual `gcloud run deploy crew-predictions --source . --region us-east5`
-- [ ] **Firebase Hosting** — `firebase deploy --only hosting` for static assets
+- [x] **GCP/Firebase env vars** — `FIREBASE_API_KEY`, `FIREBASE_AUTH_DOMAIN`, `FIREBASE_PROJECT_ID`, `GOOGLE_CLOUD_PROJECT` set on Cloud Run service; old OAuth vars removed
+- [x] **Cloud Run deploy** — live at https://crew-predictions-937208344837.us-east5.run.app
+- [x] **Firebase Hosting** — live at https://crew-predictions.web.app; rewrites `/api/**`, `/auth/**`, `/admin/**` to Cloud Run; SPA fallback for all other routes
 
 ---
 
