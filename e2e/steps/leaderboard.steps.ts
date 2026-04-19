@@ -4,7 +4,7 @@ import { expect } from '@playwright/test';
 const { Given, When, Then } = createBdd();
 
 Given('{string} predicted {int}-{int} for match {string}', async ({ request }, handle: string, home: number, away: number, matchID: string) => {
-  await request.post('/predictions', {
+  await request.post('/api/predictions', {
     form: { match_id: matchID, home_goals: String(home), away_goals: String(away) },
     headers: {
       Cookie: `session=${Buffer.from(JSON.stringify({ userID: `google:${handle}`, handle })).toString('base64')}`,

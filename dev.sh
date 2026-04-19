@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
-# Kill anything already on port 8080
-kill $(lsof -ti :8080) 2>/dev/null || true
+# Kill whatever is on emulator + server ports (including orphaned Java processes)
+fuser -k 8080/tcp 8081/tcp 9099/tcp 4000/tcp 4400/tcp 4500/tcp 2>/dev/null || true
+sleep 1
 
 # Start Firestore + Auth emulators in background
 firebase emulators:start --only firestore,auth &
@@ -17,5 +18,5 @@ FIREBASE_AUTH_EMULATOR_HOST=localhost:9099 \
 GOOGLE_CLOUD_PROJECT=crew-predictions \
 /usr/local/go/bin/go run ./cmd/server
 
-# Clean up emulators on exit
-kill $EMULATOR_PID 2>/dev/null || true
+# Clean up emulators (and their Java child processes) on exit
+trap "fuser -k 8081/tcp 9099/tcp 2>/dev/null || true; kill $EMULATOR_PID 2>/dev/null || true" EXIT
