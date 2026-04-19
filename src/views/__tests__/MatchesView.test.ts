@@ -3,8 +3,9 @@ import { mount, flushPromises } from '@vue/test-utils'
 import MatchesView from '../MatchesView.vue'
 
 const mockMatches = [
-  { id: 'match-1', homeTeam: 'Portland Timbers', awayTeam: 'Columbus Crew', kickoff: '2026-05-01T20:00:00Z', status: 'STATUS_SCHEDULED' },
-  { id: 'match-2', homeTeam: 'Sporting Kansas City', awayTeam: 'Columbus Crew', kickoff: '2026-05-08T23:00:00Z', status: 'STATUS_SCHEDULED' },
+  { id: 'match-past', homeTeam: 'New England Revolution', awayTeam: 'Columbus Crew', kickoff: '2026-04-18T23:30:00Z', status: 'STATUS_FULL_TIME' },
+  { id: 'match-1', homeTeam: 'Columbus Crew', awayTeam: 'LA Galaxy', kickoff: '2026-04-22T23:30:00Z', status: 'STATUS_SCHEDULED' },
+  { id: 'match-2', homeTeam: 'Columbus Crew', awayTeam: 'Philadelphia Union', kickoff: '2026-04-25T23:30:00Z', status: 'STATUS_SCHEDULED' },
 ]
 
 beforeEach(() => {
@@ -72,5 +73,26 @@ describe('MatchesView', () => {
     await flushPromises()
     const card = wrapper.findAll('[data-testid="match-card"]')[0]
     expect(card.text()).toContain('2 – 0')
+  })
+
+  it('shows a Results section for completed matches', async () => {
+    const wrapper = mount(MatchesView)
+    await flushPromises()
+    expect(wrapper.text()).toContain('Results')
+  })
+
+  it('completed match appears in results section, not upcoming', async () => {
+    const wrapper = mount(MatchesView)
+    await flushPromises()
+    const resultsSection = wrapper.find('[data-testid="results-section"]')
+    expect(resultsSection.exists()).toBe(true)
+    expect(resultsSection.text()).toContain('New England Revolution')
+  })
+
+  it('upcoming match does not appear in results section', async () => {
+    const wrapper = mount(MatchesView)
+    await flushPromises()
+    const resultsSection = wrapper.find('[data-testid="results-section"]')
+    expect(resultsSection.text()).not.toContain('LA Galaxy')
   })
 })

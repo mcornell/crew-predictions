@@ -1,6 +1,7 @@
 package espn
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -29,5 +30,33 @@ func TestParseKickoff_InvalidReturnsError(t *testing.T) {
 	_, err := parseKickoff("not-a-date")
 	if err == nil {
 		t.Error("expected error for invalid date")
+	}
+}
+
+func TestUpcomingURL_ContainsStartDate(t *testing.T) {
+	from := time.Date(2026, 4, 19, 0, 0, 0, 0, time.UTC)
+	url := upcomingURL(from)
+	if !strings.Contains(url, "20260419") {
+		t.Errorf("upcomingURL %q missing start date 20260419", url)
+	}
+}
+
+func TestUpcomingURL_ContainsScoreboard(t *testing.T) {
+	from := time.Date(2026, 4, 19, 0, 0, 0, 0, time.UTC)
+	url := upcomingURL(from)
+	if !strings.Contains(url, "scoreboard") {
+		t.Errorf("upcomingURL %q not pointing at scoreboard endpoint", url)
+	}
+}
+
+func TestDedupeByID_RemovesDuplicate(t *testing.T) {
+	from := time.Date(2026, 4, 19, 0, 0, 0, 0, time.UTC)
+	matches := dedupeByID([]matchRecord{
+		{id: "1", kickoff: from, home: "A", away: "B", status: "STATUS_FULL_TIME"},
+		{id: "1", kickoff: from, home: "A", away: "B", status: "STATUS_FULL_TIME"},
+		{id: "2", kickoff: from, home: "C", away: "D", status: "STATUS_SCHEDULED"},
+	})
+	if len(matches) != 2 {
+		t.Errorf("expected 2 matches after dedupe, got %d", len(matches))
 	}
 }
