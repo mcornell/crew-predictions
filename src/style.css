@@ -170,8 +170,12 @@ body::after {
   font-family: 'DM Mono', monospace;
   font-size: 1.4rem;
   color: var(--gold);
-  min-width: 1.2ch;
-  text-align: center;
+  width: 52px;
+  height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .matchup--input {
