@@ -64,4 +64,4 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for how the pieces fit together.
 
 - Official. The podcasts don't know this exists.
 - Finished. It's a side project built for fun and to learn Go + Vue + GCP.
-- For anyone but Crew fans. Everyone else can pound sand.
+
