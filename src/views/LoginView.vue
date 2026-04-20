@@ -32,8 +32,7 @@ async function handleSubmit() {
       body: new URLSearchParams({ idToken: token }),
     })
     router.push('/matches')
-  } catch (e: any) {
-    console.error('[login] sign-in failed:', e?.code, e?.message)
+  } catch {
     error.value = 'Invalid email or password'
   }
 }

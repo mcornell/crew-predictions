@@ -24,28 +24,11 @@ When('I visit the login page', async ({ page }) => {
 });
 
 When('I sign in with email {string} and password {string}', async ({ page }, email: string, password: string) => {
-  const consoleMessages: string[] = [];
-  const firebaseRequests: string[] = [];
-  page.on('console', msg => consoleMessages.push(`[${msg.type()}] ${msg.text()}`));
-  page.on('request', req => {
-    const url = req.url();
-    if (url.includes('identitytoolkit') || url.includes('9099')) {
-      firebaseRequests.push(`${req.method()} ${url}`);
-    }
-  });
-  (page as any).__consoleMessages = consoleMessages;
-  (page as any).__firebaseRequests = firebaseRequests;
-
   await page.fill('input[type="email"]', email);
   await page.fill('input[type="password"]', password);
   await page.click('button[type="submit"]');
 });
 
 Then('I should be on the matches page', async ({ page }) => {
-  const consoleMessages: string[] = (page as any).__consoleMessages ?? [];
-  const firebaseRequests: string[] = (page as any).__firebaseRequests ?? [];
-  await expect(
-    page,
-    `firebase requests: ${JSON.stringify(firebaseRequests)} | console: ${JSON.stringify(consoleMessages)}`
-  ).toHaveURL('/matches', { timeout: 10000 });
+  await expect(page).toHaveURL('/matches', { timeout: 10000 });
 });
