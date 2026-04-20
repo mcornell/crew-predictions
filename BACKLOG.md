@@ -48,7 +48,7 @@
    - [x] Password-reset flow — `/reset` view, `sendPasswordResetEmail`, "Forgot password?" link on login; emulator requires existing user so e2e seeds one first
    - [x] Display name / profile page — `/profile` route + `ProfileView`; session `handle` now prefers Firebase `name` claim (displayName) over email; user handle in header is a link to `/profile`; `waitForCurrentUser()` helper waits for Firebase auth state restoration before calling `updateProfile`
    - [x] Email verification — banner shown to unverified users; emailVerified surfaced through FirebaseToken → session cookie → /api/me → App.vue
-2. [ ] **Staging Cloud Run + artifact promotion** — develop builds/pushes Docker image to Artifact Registry tagged by commit SHA; deploys to `crew-predictions-staging` service (separate Firebase project). main promotes same SHA to prod — no rebuild. Smoke e2e runs against live staging before promotion.
+2. [x] **Staging Cloud Run + artifact promotion** — develop builds Docker image tagged by SHA, pushes to Artifact Registry, deploys to `crew-predictions-staging`, smoke tests staging, uploads `dist/` as artifact. main promotes same image to prod (no rebuild), downloads matching `dist/` artifact, deploys Firebase Hosting, smoke tests prod.
 3. [ ] **Custom domain migration** — Firebase Hosting custom domain + Cloud Run domain mapping. Update `authDomain` and OAuth redirect URIs.
 
 ---
