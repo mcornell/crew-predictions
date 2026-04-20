@@ -10,7 +10,7 @@
 - [x] Firebase Auth — Email/Password sign-in (Google SSO still pending)
 - [x] Session cookies (`HttpOnly`, base64 JSON)
 - [x] Vue 3 SPA: MatchesView, LoginView, LeaderboardView, AppHeader
-- [x] BDD e2e suite — 12/12 Playwright scenarios green
+- [x] BDD e2e suite — 16/16 Playwright scenarios green
 - [x] Vite dev proxy for local development
 - [x] Industrial Black & Gold Brutalism design applied
 - [x] ESPN date parsing fix (`2026-04-12T23:00Z` no-seconds format)
@@ -25,6 +25,7 @@
 - [x] Patch CVE-2026-34986 — upgraded `go-jose/v4` to 4.1.4 (transitive dep via Firebase → gRPC → SPIFFE)
 - [x] GitHub Actions CI/CD — push runs Go + Vitest + Playwright; main deploys to Cloud Run + Firebase Hosting via Workload Identity Federation
 - [x] Sign-up flow — `/signup` view + `firebase.signUp` (createUserWithEmailAndPassword), reuses `/auth/session` cookie flow
+- [x] Google SSO — `signInWithPopup(GoogleAuthProvider)` button on both `/login` and `/signup`; requires Google provider enabled in Firebase Console for prod to work
 
 ---
 
@@ -40,7 +41,7 @@
 
 ## Next Up (in order)
 
-1. [ ] **Google SSO** — enable Google provider in Firebase console (dev + prod); client-side `signInWithPopup(GoogleAuthProvider)` on `/login` and `/signup`. Server is provider-agnostic — no backend change.
+1. [ ] **Enable Google provider in Firebase Console (prod)** — the `signInWithPopup` button ships to prod with this commit but will fail until the provider is enabled at https://console.firebase.google.com/project/crew-predictions/authentication/providers. Manual GCP console step.
 2. [ ] **Auth UX polish** — login/signup cross-links (no way to discover `/signup` from `/login` yet), logout UI in header (verify current state), password-reset flow, display name / profile page (needed for leaderboard identity), email verification, error-state differentiation (email-already-in-use vs weak password vs invalid email).
 3. [ ] **Staging Cloud Run + artifact promotion** — develop builds/pushes Docker image to Artifact Registry tagged by commit SHA; deploys to `crew-predictions-staging` service (separate Firebase project). main promotes same SHA to prod — no rebuild. Smoke e2e runs against live staging before promotion.
 4. [ ] **Custom domain migration** — Firebase Hosting custom domain + Cloud Run domain mapping. Update `authDomain` and OAuth redirect URIs.
