@@ -44,7 +44,7 @@ func TestMeHandler_Returns401WhenNotLoggedIn(t *testing.T) {
 
 func TestMeHandler_ReturnsEmailVerifiedInResponse(t *testing.T) {
 	data, _ := json.Marshal(map[string]interface{}{"userID": "google:abc", "handle": "Fan", "emailVerified": true})
-	cookie := &http.Cookie{Name: "session", Value: base64.StdEncoding.EncodeToString(data)}
+	cookie := &http.Cookie{Name: "__session", Value: base64.StdEncoding.EncodeToString(data)}
 	req := httptest.NewRequest(http.MethodGet, "/api/me", nil)
 	req.AddCookie(cookie)
 	w := httptest.NewRecorder()

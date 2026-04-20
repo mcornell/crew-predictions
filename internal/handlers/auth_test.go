@@ -10,7 +10,7 @@ import (
 
 func TestLogout_ClearsSessionCookieAndRedirects(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/auth/logout", nil)
-	req.AddCookie(&http.Cookie{Name: "session", Value: "somevalue"})
+	req.AddCookie(&http.Cookie{Name: "__session", Value: "somevalue"})
 	w := httptest.NewRecorder()
 
 	handlers.Logout(w, req)
@@ -23,7 +23,7 @@ func TestLogout_ClearsSessionCookieAndRedirects(t *testing.T) {
 	}
 	var found bool
 	for _, c := range w.Result().Cookies() {
-		if c.Name == "session" && c.MaxAge == -1 {
+		if c.Name == "__session" && c.MaxAge == -1 {
 			found = true
 		}
 	}
