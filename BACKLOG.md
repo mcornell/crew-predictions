@@ -10,7 +10,7 @@
 - [x] Firebase Auth — Email/Password sign-in (Google SSO still pending)
 - [x] Session cookies (`HttpOnly`, base64 JSON)
 - [x] Vue 3 SPA: MatchesView, LoginView, LeaderboardView, AppHeader
-- [x] BDD e2e suite — 16/16 Playwright scenarios green
+- [x] BDD e2e suite — 22/22 Playwright scenarios green
 - [x] Vite dev proxy for local development
 - [x] Industrial Black & Gold Brutalism design applied
 - [x] ESPN date parsing fix (`2026-04-12T23:00Z` no-seconds format)
@@ -45,8 +45,8 @@
    - [x] Login/signup cross-links
    - [x] Error-state differentiation (sign-up only; login stays generic for security)
    - [x] Verify logout UI — fixed broken `/logout` href (Go route is `/auth/logout`), new BDD scenario asserts clicking Sign out logs the user out
-   - [ ] Password-reset flow (`sendPasswordResetEmail`)
-   - [ ] Display name / profile page (needed for leaderboard identity — currently using email)
+   - [x] Password-reset flow — `/reset` view, `sendPasswordResetEmail`, "Forgot password?" link on login; emulator requires existing user so e2e seeds one first
+   - [x] Display name / profile page — `/profile` route + `ProfileView`; session `handle` now prefers Firebase `name` claim (displayName) over email; user handle in header is a link to `/profile`; `waitForCurrentUser()` helper waits for Firebase auth state restoration before calling `updateProfile`
    - [ ] Email verification
 2. [ ] **Staging Cloud Run + artifact promotion** — develop builds/pushes Docker image to Artifact Registry tagged by commit SHA; deploys to `crew-predictions-staging` service (separate Firebase project). main promotes same SHA to prod — no rebuild. Smoke e2e runs against live staging before promotion.
 3. [ ] **Custom domain migration** — Firebase Hosting custom domain + Cloud Run domain mapping. Update `authDomain` and OAuth redirect URIs.
