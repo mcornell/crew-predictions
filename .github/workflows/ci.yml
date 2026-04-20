@@ -195,6 +195,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
+      - name: Wait for staging run to complete
+        run: gh run watch ${{ env.STAGING_RUN_ID }} --exit-status
+        env:
+          GH_TOKEN: ${{ github.token }}
+
       - uses: actions/download-artifact@v4
         with:
           name: frontend-${{ env.DEVELOP_SHA }}
