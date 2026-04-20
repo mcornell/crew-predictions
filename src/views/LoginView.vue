@@ -33,6 +33,7 @@ async function handleSubmit() {
     })
     router.push('/matches')
   } catch (e: any) {
+    console.error('[login] sign-in failed:', e?.code, e?.message)
     error.value = 'Invalid email or password'
   }
 }
