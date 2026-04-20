@@ -5,6 +5,7 @@ import SignupView from '../SignupView.vue'
 
 vi.mock('../../firebase', () => ({
   signUp: vi.fn(),
+  signInWithGoogle: vi.fn(),
 }))
 
 function makeRouter() {
@@ -45,6 +46,27 @@ describe('SignupView', () => {
     await flushPromises()
 
     expect(signUp).toHaveBeenCalledWith('new@crew.mock', 'pass123')
+    expect(router.currentRoute.value.path).toBe('/matches')
+  })
+
+  it('renders a Sign in with Google button', () => {
+    const wrapper = mount(SignupView, { global: { plugins: [makeRouter()] } })
+    expect(wrapper.find('button[data-testid="google-signin"]').exists()).toBe(true)
+  })
+
+  it('calls signInWithGoogle and navigates to /matches on success', async () => {
+    const { signInWithGoogle } = await import('../../firebase')
+    vi.mocked(signInWithGoogle).mockResolvedValue('fake-token')
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }))
+
+    const router = makeRouter()
+    await router.push('/signup')
+    const wrapper = mount(SignupView, { global: { plugins: [router] } })
+
+    await wrapper.find('button[data-testid="google-signin"]').trigger('click')
+    await flushPromises()
+
+    expect(signInWithGoogle).toHaveBeenCalled()
     expect(router.currentRoute.value.path).toBe('/matches')
   })
 })
