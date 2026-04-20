@@ -16,6 +16,9 @@
         Don't have an account?
         <router-link to="/signup">Sign up</router-link>
       </p>
+      <p class="auth-alt">
+        <router-link to="/reset">Forgot password?</router-link>
+      </p>
     </div>
   </div>
 </template>

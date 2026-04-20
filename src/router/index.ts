@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import MatchesView from '../views/MatchesView.vue'
 import LoginView from '../views/LoginView.vue'
 import SignupView from '../views/SignupView.vue'
+import ResetView from '../views/ResetView.vue'
 import LeaderboardView from '../views/LeaderboardView.vue'
 
 export default createRouter({
@@ -11,6 +12,7 @@ export default createRouter({
     { path: '/matches', component: MatchesView },
     { path: '/login', component: LoginView },
     { path: '/signup', component: SignupView },
+    { path: '/reset', component: ResetView },
     { path: '/leaderboard', component: LeaderboardView },
   ],
 })

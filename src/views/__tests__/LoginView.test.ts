@@ -54,6 +54,13 @@ describe('LoginView', () => {
     expect(link.text()).toBe('Sign up')
   })
 
+  it('renders a "Forgot password?" link to /reset', () => {
+    const wrapper = mount(LoginView, { global: { plugins: [router] } })
+    const link = wrapper.find('a[href="/reset"]')
+    expect(link.exists()).toBe(true)
+    expect(link.text()).toBe('Forgot password?')
+  })
+
   it('calls signInWithGoogle and navigates to /matches on success', async () => {
     const { signInWithGoogle } = await import('../../firebase')
     vi.mocked(signInWithGoogle).mockResolvedValue('fake-token')

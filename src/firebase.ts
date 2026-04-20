@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from 'firebase/app'
-import { getAuth, connectAuthEmulator, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth'
+import { getAuth, connectAuthEmulator, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, sendPasswordResetEmail } from 'firebase/auth'
 
 declare global {
   interface Window {
@@ -35,4 +35,9 @@ export async function signInWithGoogle(): Promise<string> {
   const auth = getFirebaseAuth()
   const result = await signInWithPopup(auth, new GoogleAuthProvider())
   return result.user.getIdToken()
+}
+
+export async function sendPasswordReset(email: string): Promise<void> {
+  const auth = getFirebaseAuth()
+  await sendPasswordResetEmail(auth, email)
 }
