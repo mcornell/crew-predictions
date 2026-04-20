@@ -16,7 +16,7 @@ import (
 
 func sessionCookie(userID, handle string) *http.Cookie {
 	data, _ := json.Marshal(map[string]string{"userID": userID, "handle": handle})
-	return &http.Cookie{Name: "session", Value: base64.StdEncoding.EncodeToString(data)}
+	return &http.Cookie{Name: "__session", Value: base64.StdEncoding.EncodeToString(data)}
 }
 
 func fetcherWithMatch(id string, kickoff time.Time) func() ([]models.Match, error) {

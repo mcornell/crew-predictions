@@ -62,7 +62,7 @@ func (h *SessionHandler) Create(w http.ResponseWriter, r *http.Request) {
 		EmailVerified: tok.EmailVerified,
 	})
 	http.SetCookie(w, &http.Cookie{
-		Name:     "session",
+		Name:     "__session",
 		Value:    base64.StdEncoding.EncodeToString(sessionData),
 		Path:     "/",
 		MaxAge:   86400 * 7,

@@ -10,7 +10,7 @@ import (
 
 func Logout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     "session",
+		Name:     "__session",
 		Value:    "",
 		Path:     "/",
 		MaxAge:   -1,
@@ -28,7 +28,7 @@ type sessionPayload struct {
 }
 
 func UserFromSession(r *http.Request) *repository.User {
-	cookie, err := r.Cookie("session")
+	cookie, err := r.Cookie("__session")
 	if err != nil {
 		return nil
 	}

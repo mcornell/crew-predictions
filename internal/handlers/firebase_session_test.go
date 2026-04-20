@@ -52,7 +52,7 @@ func TestSessionHandler_SetsSessionCookieOnValidToken(t *testing.T) {
 
 	var found bool
 	for _, c := range w.Result().Cookies() {
-		if c.Name == "session" && c.Value != "" {
+		if c.Name == "__session" && c.Value != "" {
 			found = true
 		}
 	}

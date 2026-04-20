@@ -5,7 +5,7 @@ const { Given, Then } = createBdd();
 
 Given('I am logged in as a verified user', async ({ context }) => {
   await context.addCookies([{
-    name: 'session',
+    name: '__session',
     value: Buffer.from(JSON.stringify({ userID: 'google:verified', handle: 'VerifiedFan', emailVerified: true })).toString('base64'),
     domain: 'localhost',
     path: '/',
