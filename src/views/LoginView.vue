@@ -9,6 +9,9 @@
         <p v-if="error" class="form-error">{{ error }}</p>
         <button class="btn-submit" type="submit">Sign In</button>
       </form>
+      <button class="btn-google" data-testid="google-signin" @click="handleGoogle">
+        Sign in with Google
+      </button>
     </div>
   </div>
 </template>
@@ -16,24 +19,39 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { signIn } from '../firebase'
+import { signIn, signInWithGoogle } from '../firebase'
 
 const router = useRouter()
 const email = ref('')
 const password = ref('')
 const error = ref('')
 
+async function postSession(token: string) {
+  await fetch('/auth/session', {
+    method: 'POST',
+    body: new URLSearchParams({ idToken: token }),
+  })
+}
+
 async function handleSubmit() {
   error.value = ''
   try {
     const token = await signIn(email.value, password.value)
-    await fetch('/auth/session', {
-      method: 'POST',
-      body: new URLSearchParams({ idToken: token }),
-    })
+    await postSession(token)
     router.push('/matches')
   } catch {
     error.value = 'Invalid email or password'
+  }
+}
+
+async function handleGoogle() {
+  error.value = ''
+  try {
+    const token = await signInWithGoogle()
+    await postSession(token)
+    router.push('/matches')
+  } catch {
+    error.value = 'Google sign-in failed'
   }
 }
 </script>
