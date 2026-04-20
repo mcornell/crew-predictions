@@ -191,7 +191,7 @@ jobs:
             --quiet
 
       - name: Find staging run ID
-        run: echo "STAGING_RUN_ID=$(gh run list --workflow=ci.yml --branch=develop --commit=${{ env.DEVELOP_SHA }} --json=databaseId --jq='.[0].databaseId')" >> $GITHUB_ENV
+        run: echo "STAGING_RUN_ID=$(gh run list --workflow=ci.yml --branch=develop --event=push --commit=${{ env.DEVELOP_SHA }} --json=databaseId --jq='.[0].databaseId')" >> $GITHUB_ENV
         env:
           GH_TOKEN: ${{ github.token }}
 
