@@ -41,7 +41,13 @@
 
 ## Next Up (in order)
 
-1. [ ] **Auth UX polish** — login/signup cross-links (no way to discover `/signup` from `/login` yet), logout UI in header (verify current state), password-reset flow, display name / profile page (needed for leaderboard identity), email verification, error-state differentiation (email-already-in-use vs weak password vs invalid email).
+1. [ ] **Auth UX polish** — remaining sub-items:
+   - [x] Login/signup cross-links
+   - [x] Error-state differentiation (sign-up only; login stays generic for security)
+   - [ ] Verify logout UI in header — `auth.feature` already asserts "sign-out link"; need to confirm it actually logs out
+   - [ ] Password-reset flow (`sendPasswordResetEmail`)
+   - [ ] Display name / profile page (needed for leaderboard identity — currently using email)
+   - [ ] Email verification
 2. [ ] **Staging Cloud Run + artifact promotion** — develop builds/pushes Docker image to Artifact Registry tagged by commit SHA; deploys to `crew-predictions-staging` service (separate Firebase project). main promotes same SHA to prod — no rebuild. Smoke e2e runs against live staging before promotion.
 3. [ ] **Custom domain migration** — Firebase Hosting custom domain + Cloud Run domain mapping. Update `authDomain` and OAuth redirect URIs.
 
