@@ -7,7 +7,7 @@
 - [x] AcesRadio scoring engine (+15/+10/−15/0)
 - [x] Upper 90 Club scoring engine (+1 result, +1 Columbus goals, stacking)
 - [x] Leaderboard (both formats, JSON API + Vue view)
-- [x] Firebase Auth — Email/Password + Google OAuth
+- [x] Firebase Auth — Email/Password sign-in (Google SSO still pending)
 - [x] Session cookies (`HttpOnly`, base64 JSON)
 - [x] Vue 3 SPA: MatchesView, LoginView, LeaderboardView, AppHeader
 - [x] BDD e2e suite — 11/11 Playwright scenarios green
@@ -23,6 +23,7 @@
 - [x] E2e test isolation — `Before` hook resets all stores per scenario; serial workers prevent shared-state races
 - [x] Remove templ — deleted `templates/` package and dead HTML-rendering `List` handlers after Vue SPA migration
 - [x] Patch CVE-2026-34986 — upgraded `go-jose/v4` to 4.1.4 (transitive dep via Firebase → gRPC → SPIFFE)
+- [x] GitHub Actions CI/CD — push runs Go + Vitest + Playwright; main deploys to Cloud Run + Firebase Hosting via Workload Identity Federation
 
 ---
 
@@ -36,15 +37,24 @@
 
 ---
 
-## Post-Launch
+## Next Up (in order)
 
-- [ ] **GitHub Actions CI/CD** — push to `main` → test + deploy via Workload Identity Federation (keyless GCP auth, no stored service account keys).
+1. [ ] **Sign-up flow** — blocker for real users. `/signup` view, `createUserWithEmailAndPassword`, reuse `/auth/session` for session cookie. BDD-first (failing Playwright scenario).
+2. [ ] **Google SSO** — enable Google provider in Firebase console (dev + prod); client-side `signInWithPopup(GoogleAuthProvider)` on `/login` and `/signup`. Server is provider-agnostic — no backend change.
+3. [ ] **Auth UX polish** — logout UI in header (verify current state), password-reset flow, display name / profile page (needed for leaderboard identity), email verification.
+4. [ ] **Staging Cloud Run + artifact promotion** — develop builds/pushes Docker image to Artifact Registry tagged by commit SHA; deploys to `crew-predictions-staging` service (separate Firebase project). main promotes same SHA to prod — no rebuild. Smoke e2e runs against live staging before promotion.
+5. [ ] **Custom domain migration** — Firebase Hosting custom domain + Cloud Run domain mapping. Update `authDomain` and OAuth redirect URIs.
+
+---
+
+## Data & Polling
+
 - [ ] **Real-data scoring accuracy test** — e2e scenario using actual 2025 Columbus Crew match results to validate the scoring engine against real outcomes. Get match data from user before writing.
 - [ ] **Firestore match cache + score polling** — cache ESPN schedule in Firestore. Weekly refresh fires Tuesday midnight ET (cron) regardless of whether there's a match that week. When `kickoff + 2h <= now` and match not yet `STATUS_FINAL`, poll ESPN every ~5 min and write to ResultStore when final, then stop. ESPN already returns `status.type.name`.
 
 ---
 
-## Post-Launch (Test Infrastructure)
+## Test Infrastructure
 
 - [ ] **Per-worker server isolation** — if the e2e suite grows large enough that serial execution is too slow, give each Playwright worker its own server instance (separate ports) so parallel runs don't share in-memory state.
 
