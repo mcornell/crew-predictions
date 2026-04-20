@@ -366,6 +366,21 @@ body::after {
 }
 .btn-submit:hover { opacity: 0.88; }
 
+.btn-google {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
+  color: var(--gold);
+  background: transparent;
+  border: 2px solid var(--gold);
+  padding: 0.75rem 1rem 0.55rem;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 0.5rem;
+  transition: opacity 0.15s;
+}
+.btn-google:hover { opacity: 0.88; }
+
 /* ── Leaderboard ─────────────────────────────────────────────────────────── */
 .leaderboard-section {
   margin-bottom: 3rem;

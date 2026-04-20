@@ -61,7 +61,7 @@ func TestSessionHandler_SetsSessionCookieOnValidToken(t *testing.T) {
 	}
 }
 
-func TestSessionHandler_RedirectsToMatchesOnSuccess(t *testing.T) {
+func TestSessionHandler_Returns200OnSuccess(t *testing.T) {
 	tok := &handlers.FirebaseToken{UID: "uid123", Email: "user@example.com", Provider: "google.com"}
 	h := handlers.NewSessionHandler(&mockVerifier{token: tok})
 	req := httptest.NewRequest(http.MethodPost, "/auth/session", strings.NewReader("idToken=valid"))
@@ -69,11 +69,8 @@ func TestSessionHandler_RedirectsToMatchesOnSuccess(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Create(w, req)
 
-	if w.Code != http.StatusFound {
-		t.Errorf("expected 302, got %d", w.Code)
-	}
-	if w.Header().Get("Location") != "/matches" {
-		t.Errorf("expected redirect to /matches, got %s", w.Header().Get("Location"))
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", w.Code)
 	}
 }
 
