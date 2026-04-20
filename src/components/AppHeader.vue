@@ -4,7 +4,7 @@
     <nav class="site-nav">
       <template v-if="user">
         <span class="user-handle">{{ user.handle }}</span>
-        <a class="btn-ghost" href="/logout">Sign out</a>
+        <a class="btn-ghost" href="/auth/logout">Sign out</a>
       </template>
       <a v-else class="btn-primary" href="/login">Sign In</a>
     </nav>

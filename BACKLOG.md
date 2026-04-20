@@ -44,7 +44,7 @@
 1. [ ] **Auth UX polish** — remaining sub-items:
    - [x] Login/signup cross-links
    - [x] Error-state differentiation (sign-up only; login stays generic for security)
-   - [ ] Verify logout UI in header — `auth.feature` already asserts "sign-out link"; need to confirm it actually logs out
+   - [x] Verify logout UI — fixed broken `/logout` href (Go route is `/auth/logout`), new BDD scenario asserts clicking Sign out logs the user out
    - [ ] Password-reset flow (`sendPasswordResetEmail`)
    - [ ] Display name / profile page (needed for leaderboard identity — currently using email)
    - [ ] Email verification

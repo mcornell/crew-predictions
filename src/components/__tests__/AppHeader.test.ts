@@ -19,7 +19,7 @@ describe('AppHeader', () => {
   it('shows username and Sign out link when logged in', () => {
     const wrapper = mount(AppHeader, { props: { user: { handle: 'BlackAndGold@bsky.mock' } } })
     expect(wrapper.text()).toContain('BlackAndGold@bsky.mock')
-    expect(wrapper.find('a[href="/logout"]').text()).toBe('Sign out')
+    expect(wrapper.find('a[href="/auth/logout"]').text()).toBe('Sign out')
   })
 
   it('hides Sign In link when logged in', () => {
