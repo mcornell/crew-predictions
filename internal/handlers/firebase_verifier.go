@@ -21,10 +21,12 @@ func (v *FirebaseTokenVerifier) VerifyIDToken(ctx context.Context, idToken strin
 	}
 	email, _ := token.Claims["email"].(string)
 	displayName, _ := token.Claims["name"].(string)
+	emailVerified, _ := token.Claims["email_verified"].(bool)
 	return &FirebaseToken{
-		UID:         token.UID,
-		Email:       email,
-		DisplayName: displayName,
-		Provider:    token.Firebase.SignInProvider,
+		UID:           token.UID,
+		Email:         email,
+		DisplayName:   displayName,
+		EmailVerified: emailVerified,
+		Provider:      token.Firebase.SignInProvider,
 	}, nil
 }

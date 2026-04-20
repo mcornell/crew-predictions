@@ -36,6 +36,26 @@ describe('App', () => {
     expect(wrapper.find('a[href="/login"]').exists()).toBe(false)
   })
 
+  it('hides email verification banner when user is verified', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ handle: 'fan@crew.mock', emailVerified: true }),
+    }))
+    const wrapper = mount(App, { global: { plugins: [makeRouter()] } })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="email-verification-banner"]').exists()).toBe(false)
+  })
+
+  it('shows email verification banner when user is not verified', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ handle: 'fan@crew.mock', emailVerified: false }),
+    }))
+    const wrapper = mount(App, { global: { plugins: [makeRouter()] } })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="email-verification-banner"]').exists()).toBe(true)
+  })
+
   it('re-fetches /api/me after route change to update auth state', async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce({ ok: false, status: 401 })

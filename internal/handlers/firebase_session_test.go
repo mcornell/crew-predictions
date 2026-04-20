@@ -121,6 +121,28 @@ func TestSessionHandler_HandleFallsBackToEmailWhenNoDisplayName(t *testing.T) {
 	}
 }
 
+func TestSessionHandler_SessionContainsEmailVerifiedTrue(t *testing.T) {
+	tok := &handlers.FirebaseToken{UID: "uid1", Email: "user@example.com", EmailVerified: true, Provider: "password"}
+	h := handlers.NewSessionHandler(&mockVerifier{token: tok})
+	req := httptest.NewRequest(http.MethodPost, "/auth/session", strings.NewReader("idToken=valid"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	h.Create(w, req)
+
+	resp := w.Result()
+	req2 := httptest.NewRequest(http.MethodGet, "/", nil)
+	for _, c := range resp.Cookies() {
+		req2.AddCookie(c)
+	}
+	user := handlers.UserFromSession(req2)
+	if user == nil {
+		t.Fatal("expected user from session, got nil")
+	}
+	if !user.EmailVerified {
+		t.Error("expected EmailVerified to be true")
+	}
+}
+
 func TestSessionHandler_SessionContainsFirebaseUID(t *testing.T) {
 	tok := &handlers.FirebaseToken{UID: "uid123", Email: "user@example.com", Provider: "google.com"}
 	h := handlers.NewSessionHandler(&mockVerifier{token: tok})
