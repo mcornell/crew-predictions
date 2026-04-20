@@ -34,8 +34,8 @@
 - [x] **FirestoreResultStore** — results persist across restarts
 - [x] **Prediction locking** — enforce kickoff time deadline server-side; predictions must be submitted before kickoff
 - [x] **GCP/Firebase env vars** — `FIREBASE_API_KEY`, `FIREBASE_AUTH_DOMAIN`, `FIREBASE_PROJECT_ID`, `GOOGLE_CLOUD_PROJECT` set on Cloud Run service; old OAuth vars removed
-- [x] **Cloud Run deploy** — live at https://crew-predictions-937208344837.us-east5.run.app
-- [x] **Firebase Hosting** — live at https://crew-predictions.web.app; rewrites `/api/**`, `/auth/**`, `/admin/**` to Cloud Run; SPA fallback for all other routes
+- [x] **Cloud Run deploy** — Go server deployed to Cloud Run
+- [x] **Firebase Hosting** — SPA shell + static assets; rewrites `/api/**`, `/auth/**`, `/admin/**` to Cloud Run; SPA fallback for all other routes
 
 ---
 
@@ -62,6 +62,7 @@
 
 ## Test Infrastructure
 
+- [ ] **Fix Vue Router warnings in unit tests** — test `makeRouter()` factories only register a few routes; components with `<router-link>` to unregistered paths (e.g. `/login`, `/signup`, `/reset`) trigger "No match found" warnings. Add stub routes to silence them.
 - [ ] **Per-worker server isolation** — if the e2e suite grows large enough that serial execution is too slow, give each Playwright worker its own server instance (separate ports) so parallel runs don't share in-memory state.
 
 ---
