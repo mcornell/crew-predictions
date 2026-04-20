@@ -37,14 +37,19 @@ async function postSession(token: string) {
   })
 }
 
+const signUpErrorMessages: Record<string, string> = {
+  'auth/email-already-in-use': 'That email is already registered. Sign in instead.',
+  'auth/weak-password': 'Password must be at least 6 characters.',
+}
+
 async function handleSubmit() {
   error.value = ''
   try {
     const token = await signUp(email.value, password.value)
     await postSession(token)
     router.push('/matches')
-  } catch {
-    error.value = 'Could not create account'
+  } catch (e: any) {
+    error.value = signUpErrorMessages[e?.code] ?? 'Could not create account.'
   }
 }
 
