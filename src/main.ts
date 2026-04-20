@@ -15,7 +15,6 @@ async function bootstrap() {
   } catch {
     // no config served (tests / local dev without server)
   }
-  console.log('[firebase-config]', JSON.stringify(window.__firebaseConfig))
   createApp(App).use(router).mount('#app')
 }
 

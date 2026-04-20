@@ -24,6 +24,7 @@ export default defineConfig({
       FIREBASE_AUTH_EMULATOR_HOST: 'localhost:9099',
       FIREBASE_PROJECT_ID: 'crew-predictions',
       FIREBASE_API_KEY: 'fake-api-key',
+      FIREBASE_AUTH_DOMAIN: 'localhost',
       TEST_MODE: '1',
     },
   },
