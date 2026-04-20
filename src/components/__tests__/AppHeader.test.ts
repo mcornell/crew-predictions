@@ -26,4 +26,14 @@ describe('AppHeader', () => {
     const wrapper = mount(AppHeader, { props: { user: { handle: 'BlackAndGold@bsky.mock' } } })
     expect(wrapper.find('a[href="/login"]').exists()).toBe(false)
   })
+
+  it('shows a profile link when logged in', () => {
+    const wrapper = mount(AppHeader, { props: { user: { handle: 'BlackAndGold@bsky.mock' } } })
+    expect(wrapper.find('a[href="/profile"]').exists()).toBe(true)
+  })
+
+  it('hides profile link when not logged in', () => {
+    const wrapper = mount(AppHeader, { props: { user: null } })
+    expect(wrapper.find('a[href="/profile"]').exists()).toBe(false)
+  })
 })

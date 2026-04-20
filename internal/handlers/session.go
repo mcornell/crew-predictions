@@ -10,9 +10,10 @@ import (
 )
 
 type FirebaseToken struct {
-	UID      string
-	Email    string
-	Provider string
+	UID         string
+	Email       string
+	DisplayName string
+	Provider    string
 }
 
 type TokenVerifier interface {
@@ -49,9 +50,13 @@ func (h *SessionHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	handle := tok.DisplayName
+	if handle == "" {
+		handle = tok.Email
+	}
 	sessionData, _ := json.Marshal(map[string]string{
 		"userID":   "firebase:" + tok.UID,
-		"handle":   tok.Email,
+		"handle":   handle,
 		"provider": tok.Provider,
 	})
 	http.SetCookie(w, &http.Cookie{

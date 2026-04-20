@@ -3,6 +3,7 @@ import MatchesView from '../views/MatchesView.vue'
 import LoginView from '../views/LoginView.vue'
 import SignupView from '../views/SignupView.vue'
 import ResetView from '../views/ResetView.vue'
+import ProfileView from '../views/ProfileView.vue'
 import LeaderboardView from '../views/LeaderboardView.vue'
 
 export default createRouter({
@@ -13,6 +14,7 @@ export default createRouter({
     { path: '/login', component: LoginView },
     { path: '/signup', component: SignupView },
     { path: '/reset', component: ResetView },
+    { path: '/profile', component: ProfileView },
     { path: '/leaderboard', component: LeaderboardView },
   ],
 })
