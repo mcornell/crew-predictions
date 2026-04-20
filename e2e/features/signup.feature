@@ -18,3 +18,8 @@ Feature: Sign up
     And I sign up with email "weakpw@example.com" and password "abc"
     Then I should stay on the sign-up page
     And I should see the error "Could not create account"
+
+  Scenario: Sign-up page links to login for existing users
+    When I visit the sign-up page
+    And I click the "Sign in" link
+    Then I should be on the login page

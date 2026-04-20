@@ -47,6 +47,13 @@ describe('LoginView', () => {
     expect(wrapper.find('button[data-testid="google-signin"]').exists()).toBe(true)
   })
 
+  it('renders a link to the sign-up page', () => {
+    const wrapper = mount(LoginView, { global: { plugins: [router] } })
+    const link = wrapper.find('a[href="/signup"]')
+    expect(link.exists()).toBe(true)
+    expect(link.text()).toBe('Sign up')
+  })
+
   it('calls signInWithGoogle and navigates to /matches on success', async () => {
     const { signInWithGoogle } = await import('../../firebase')
     vi.mocked(signInWithGoogle).mockResolvedValue('fake-token')

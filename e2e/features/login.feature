@@ -6,3 +6,8 @@ Feature: Login
     And I sign in with email "testfan@example.com" and password "Nordecke96!"
     Then I should be on the matches page
     And I should see "testfan@example.com" in the header
+
+  Scenario: Login page links to sign-up for new users
+    When I visit the login page
+    And I click the "Sign up" link
+    Then I should be on the sign-up page

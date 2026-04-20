@@ -12,6 +12,10 @@
       <button class="btn-google" data-testid="google-signin" @click="handleGoogle">
         Sign in with Google
       </button>
+      <p class="auth-alt">
+        Don't have an account?
+        <router-link to="/signup">Sign up</router-link>
+      </p>
     </div>
   </div>
 </template>
