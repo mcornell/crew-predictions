@@ -8,6 +8,7 @@ const testDir = defineBddConfig({
 
 export default defineConfig({
   testDir,
+  workers: 1,
   globalSetup: './e2e/global-setup.ts',
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
@@ -22,6 +23,7 @@ export default defineConfig({
     env: {
       FIREBASE_AUTH_EMULATOR_HOST: 'localhost:9099',
       FIREBASE_PROJECT_ID: 'crew-predictions',
+      FIREBASE_API_KEY: 'fake-api-key',
       TEST_MODE: '1',
     },
   },

@@ -1,6 +1,9 @@
 package repository
 
-import "context"
+import (
+	"context"
+	"sync"
+)
 
 type Prediction struct {
 	MatchID   string
@@ -17,6 +20,7 @@ type PredictionStore interface {
 }
 
 type MemoryPredictionStore struct {
+	mu   sync.RWMutex
 	data map[string]Prediction
 }
 
@@ -25,11 +29,15 @@ func NewMemoryPredictionStore() *MemoryPredictionStore {
 }
 
 func (s *MemoryPredictionStore) Save(ctx context.Context, p Prediction) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.data[p.MatchID+"|"+p.UserID] = p
 	return nil
 }
 
 func (s *MemoryPredictionStore) GetByMatchAndUser(ctx context.Context, matchID, userID string) (*Prediction, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	p, ok := s.data[matchID+"|"+userID]
 	if !ok {
 		return nil, nil
@@ -38,10 +46,14 @@ func (s *MemoryPredictionStore) GetByMatchAndUser(ctx context.Context, matchID, 
 }
 
 func (s *MemoryPredictionStore) Reset() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.data = make(map[string]Prediction)
 }
 
 func (s *MemoryPredictionStore) GetAll(ctx context.Context) ([]Prediction, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	all := make([]Prediction, 0, len(s.data))
 	for _, p := range s.data {
 		all = append(all, p)

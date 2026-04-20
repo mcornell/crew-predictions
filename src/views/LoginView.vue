@@ -32,7 +32,7 @@ async function handleSubmit() {
       body: new URLSearchParams({ idToken: token }),
     })
     router.push('/matches')
-  } catch (e: any) {
+  } catch {
     error.value = 'Invalid email or password'
   }
 }

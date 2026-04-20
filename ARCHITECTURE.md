@@ -61,6 +61,8 @@ Entry point: `cmd/server/main.go`
 | `GET` | `/auth/config.js` | — | Firebase client config as JS (`window.__firebaseConfig`) |
 | `DELETE` | `/admin/reset` | — | Reset in-memory stores (TEST_MODE=1 only) |
 | `POST` | `/admin/results` | — | Record a final match result for scoring |
+| `POST` | `/admin/seed-match` | — | Inject a fixture match (TEST_MODE=1 only) |
+| `POST` | `/admin/seed-prediction` | — | Inject a fixture prediction (TEST_MODE=1 only) |
 
 **Form data convention:** `POST /api/predictions` and `POST /auth/session` use `application/x-www-form-urlencoded` (Go's `r.ParseForm()`). Send via `URLSearchParams`, not JSON.
 
@@ -90,7 +92,7 @@ Entry: `src/main.ts` → loads `/auth/config.js` → mounts Vue app
 | `src/App.vue` | — | Root: fetches `/api/me` on mount + route change |
 | `src/firebase.ts` | — | Firebase Auth SDK init + `signIn` helper |
 
-**CSS:** `src/style.css` — design tokens as CSS variables, imported in `src/main.ts`. Not yet written.
+**CSS:** `src/style.css` — Industrial Black & Gold Brutalism design tokens as CSS variables, imported in `src/main.ts`.
 
 ---
 
@@ -105,4 +107,54 @@ predictions/{predictionId}
   awayGoals:  int
 ```
 
-Results are currently stored in `MemoryResultStore` (not persisted). See BACKLOG.md.
+Results are stored in `FirestoreResultStore` in production (`results/{matchID}` documents).
+
+---
+
+## Deploy Workflow
+
+### When to build Docker locally
+
+Only when the **Dockerfile changes** (new base image, added build step, changed COPY paths). For code-only changes, push and let Cloud Build handle it — it reuses cached layers.
+
+```bash
+./docker-build.sh          # build only — catches Dockerfile issues fast
+./docker-build.sh --run    # build + run on :8080 for a smoke test
+```
+
+Docker Desktop must be running (`systemctl --user start docker-desktop`). The script starts it automatically if it isn't.
+
+### Deploy to Cloud Run
+
+```bash
+gcloud run deploy crew-predictions --source . --region us-east5
+```
+
+Cloud Build builds the Dockerfile remotely and deploys the new revision. Takes ~3–5 minutes.
+
+### Deploy static assets to Firebase Hosting
+
+```bash
+npm run build
+npx firebase-tools@latest deploy --only hosting
+```
+
+Run this after any change to `src/` or `public/`. The `dist/` directory is what gets deployed.
+
+### Production URLs
+
+| URL | What |
+|---|---|
+| https://crew-predictions.web.app | Firebase Hosting (CDN) — SPA shell + static assets; rewrites `/api/**`, `/auth/**`, `/admin/**` to Cloud Run |
+| https://crew-predictions-937208344837.us-east5.run.app | Cloud Run direct — Go server serving everything |
+
+### Environment variables (Cloud Run)
+
+Set via `gcloud run services update crew-predictions --region us-east5 --update-env-vars KEY=VALUE`.
+
+| Variable | Purpose |
+|---|---|
+| `GOOGLE_CLOUD_PROJECT` | Activates Firestore (predictions + results) |
+| `FIREBASE_PROJECT_ID` | Firebase Admin SDK init |
+| `FIREBASE_API_KEY` | Served to browser via `/auth/config.js` |
+| `FIREBASE_AUTH_DOMAIN` | Served to browser via `/auth/config.js` |
