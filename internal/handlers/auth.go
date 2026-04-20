@@ -20,6 +20,13 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/matches", http.StatusFound)
 }
 
+type sessionPayload struct {
+	UserID        string `json:"userID"`
+	Handle        string `json:"handle"`
+	Provider      string `json:"provider"`
+	EmailVerified bool   `json:"emailVerified"`
+}
+
 func UserFromSession(r *http.Request) *repository.User {
 	cookie, err := r.Cookie("session")
 	if err != nil {
@@ -29,18 +36,17 @@ func UserFromSession(r *http.Request) *repository.User {
 	if err != nil {
 		return nil
 	}
-	var session map[string]string
+	var session sessionPayload
 	if err := json.Unmarshal(data, &session); err != nil {
 		return nil
 	}
-	userID := session["userID"]
-	handle := session["handle"]
-	if userID == "" || handle == "" {
+	if session.UserID == "" || session.Handle == "" {
 		return nil
 	}
 	return &repository.User{
-		UserID:   userID,
-		Handle:   handle,
-		Provider: session["provider"],
+		UserID:        session.UserID,
+		Handle:        session.Handle,
+		Provider:      session.Provider,
+		EmailVerified: session.EmailVerified,
 	}
 }

@@ -1,5 +1,8 @@
 <template>
   <AppHeader :user="currentUser" />
+  <div v-if="currentUser && !currentUser.emailVerified" data-testid="email-verification-banner" class="verification-banner">
+    Please verify your email — check your inbox for the verification link.
+  </div>
   <RouterView />
 </template>
 
@@ -9,7 +12,7 @@ import { useRoute } from 'vue-router'
 import AppHeader from './components/AppHeader.vue'
 
 const route = useRoute()
-const currentUser = ref<{ handle: string } | null>(null)
+const currentUser = ref<{ handle: string; emailVerified: boolean } | null>(null)
 
 async function fetchUser() {
   const res = await fetch('/api/me')

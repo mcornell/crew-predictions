@@ -1,7 +1,8 @@
 package repository
 
 type User struct {
-	UserID   string
-	Handle   string
-	Provider string
+	UserID        string
+	Handle        string
+	Provider      string
+	EmailVerified bool
 }

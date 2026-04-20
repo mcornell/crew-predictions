@@ -1,6 +1,7 @@
 package handlers_test
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -38,5 +39,29 @@ func TestMeHandler_Returns401WhenNotLoggedIn(t *testing.T) {
 
 	if w.Code != http.StatusUnauthorized {
 		t.Errorf("expected 401, got %d", w.Code)
+	}
+}
+
+func TestMeHandler_ReturnsEmailVerifiedInResponse(t *testing.T) {
+	data, _ := json.Marshal(map[string]interface{}{"userID": "google:abc", "handle": "Fan", "emailVerified": true})
+	cookie := &http.Cookie{Name: "session", Value: base64.StdEncoding.EncodeToString(data)}
+	req := httptest.NewRequest(http.MethodGet, "/api/me", nil)
+	req.AddCookie(cookie)
+	w := httptest.NewRecorder()
+
+	handlers.Me(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+	var body struct {
+		Handle        string `json:"handle"`
+		EmailVerified bool   `json:"emailVerified"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+		t.Fatalf("invalid JSON: %v", err)
+	}
+	if !body.EmailVerified {
+		t.Error("expected emailVerified to be true in response")
 	}
 }

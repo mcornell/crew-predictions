@@ -16,3 +16,10 @@ Feature: Authentication
     Then I should see "BlackAndGold@bsky.mock" in the header
     And I should see a "Sign out" link in the header
     And I should not see a "Sign In" link
+
+  Scenario: User can sign out from the header
+    Given I am logged in as "BlackAndGold@bsky.mock"
+    When I visit the matches page
+    And I click the "Sign out" link in the header
+    Then I should see a "Sign In" link in the header
+    And I should not see "BlackAndGold@bsky.mock" in the header

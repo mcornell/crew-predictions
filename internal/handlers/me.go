@@ -12,5 +12,8 @@ func Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"handle": user.Handle})
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"handle":        user.Handle,
+		"emailVerified": user.EmailVerified,
+	})
 }

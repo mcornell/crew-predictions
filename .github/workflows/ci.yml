@@ -97,8 +97,8 @@ jobs:
             test-results/
           retention-days: 3
 
-  deploy:
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+  deploy-staging:
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
     needs: test
     runs-on: ubuntu-latest
     permissions:
@@ -108,12 +108,71 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v3
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker us-east5-docker.pkg.dev --quiet
+
+      - name: Build and push Docker image
+        run: |
+          docker pull us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions:latest || true
+          docker build \
+            --cache-from us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions:latest \
+            -t us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions:sha-${{ github.sha }} \
+            -t us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions:latest \
+            .
+          docker push us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions:sha-${{ github.sha }}
+          docker push us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions:latest
+
+      - name: Deploy to staging Cloud Run
+        run: |
+          gcloud run deploy crew-predictions-staging \
+            --image=us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions:sha-${{ github.sha }} \
+            --region=us-east5 \
+            --allow-unauthenticated \
+            --set-env-vars=FIREBASE_PROJECT_ID=crew-predictions-staging,FIREBASE_API_KEY=$STAGING_API_KEY,FIREBASE_AUTH_DOMAIN=crew-predictions-staging.firebaseapp.com,GOOGLE_CLOUD_PROJECT=crew-predictions-staging \
+            --quiet
+        env:
+          STAGING_API_KEY: ${{ secrets.STAGING_FIREBASE_API_KEY }}
+
+      - name: Smoke test staging
+        run: |
+          STAGING_URL=$(gcloud run services describe crew-predictions-staging --region=us-east5 --format='value(status.url)')
+          curl -f "$STAGING_URL/"
+          curl -f "$STAGING_URL/api/matches"
+
       - uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: npm
 
       - run: npm ci && npm run build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-${{ github.sha }}
+          path: dist/
+          retention-days: 90
+
+  deploy-prod:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      actions: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Get develop SHA
+        run: echo "DEVELOP_SHA=$(git rev-parse HEAD^2)" >> $GITHUB_ENV
 
       - uses: google-github-actions/auth@v3
         with:
@@ -122,8 +181,30 @@ jobs:
 
       - uses: google-github-actions/setup-gcloud@v3
 
-      - name: Deploy to Cloud Run
-        run: gcloud run deploy crew-predictions --source . --region us-east5 --quiet
+      - name: Deploy image to prod Cloud Run
+        run: |
+          gcloud run deploy crew-predictions \
+            --image=us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions:sha-${{ env.DEVELOP_SHA }} \
+            --region=us-east5 \
+            --quiet
+
+      - name: Find staging run ID
+        run: echo "STAGING_RUN_ID=$(gh run list --workflow=ci.yml --branch=develop --commit=${{ env.DEVELOP_SHA }} --json=databaseId --jq='.[0].databaseId')" >> $GITHUB_ENV
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-${{ env.DEVELOP_SHA }}
+          run-id: ${{ env.STAGING_RUN_ID }}
+          github-token: ${{ github.token }}
+          path: dist/
 
       - name: Deploy to Firebase Hosting
         run: npx firebase-tools@latest deploy --only hosting --project crew-predictions
+
+      - name: Smoke test prod
+        run: |
+          PROD_URL=$(gcloud run services describe crew-predictions --region=us-east5 --format='value(status.url)')
+          curl -f "$PROD_URL/"
+          curl -f "$PROD_URL/api/matches"

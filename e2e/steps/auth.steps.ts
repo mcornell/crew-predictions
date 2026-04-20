@@ -1,13 +1,13 @@
 import { createBdd } from 'playwright-bdd';
 import { expect } from '@playwright/test';
 
-const { Given, Then } = createBdd();
+const { Given, When, Then } = createBdd();
 
 Given('I am logged in as {string}', async ({ page, context }, handle: string) => {
   // Seed a session cookie directly — bypasses OAuth for testing
   await context.addCookies([{
     name: 'session',
-    value: Buffer.from(JSON.stringify({ userID: `google:${handle}`, handle })).toString('base64'),
+    value: Buffer.from(JSON.stringify({ userID: `google:${handle}`, handle, emailVerified: true })).toString('base64'),
     domain: 'localhost',
     path: '/',
   }]);
@@ -28,4 +28,12 @@ Then('I should see {string} in the header', async ({ page }, text: string) => {
 
 Then('I should not see a {string} link', async ({ page }, text: string) => {
   await expect(page.getByRole('banner').getByRole('link', { name: text })).not.toBeVisible();
+});
+
+Then('I should not see {string} in the header', async ({ page }, text: string) => {
+  await expect(page.getByRole('banner').getByText(text)).not.toBeVisible();
+});
+
+When('I click the {string} link in the header', async ({ page }, text: string) => {
+  await page.getByRole('banner').getByRole('link', { name: text }).click();
 });

@@ -19,11 +19,21 @@ describe('AppHeader', () => {
   it('shows username and Sign out link when logged in', () => {
     const wrapper = mount(AppHeader, { props: { user: { handle: 'BlackAndGold@bsky.mock' } } })
     expect(wrapper.text()).toContain('BlackAndGold@bsky.mock')
-    expect(wrapper.find('a[href="/logout"]').text()).toBe('Sign out')
+    expect(wrapper.find('a[href="/auth/logout"]').text()).toBe('Sign out')
   })
 
   it('hides Sign In link when logged in', () => {
     const wrapper = mount(AppHeader, { props: { user: { handle: 'BlackAndGold@bsky.mock' } } })
     expect(wrapper.find('a[href="/login"]').exists()).toBe(false)
+  })
+
+  it('shows a profile link when logged in', () => {
+    const wrapper = mount(AppHeader, { props: { user: { handle: 'BlackAndGold@bsky.mock' } } })
+    expect(wrapper.find('a[href="/profile"]').exists()).toBe(true)
+  })
+
+  it('hides profile link when not logged in', () => {
+    const wrapper = mount(AppHeader, { props: { user: null } })
+    expect(wrapper.find('a[href="/profile"]').exists()).toBe(false)
   })
 })
