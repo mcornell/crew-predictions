@@ -15,7 +15,16 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
-          cache: true
+          cache: false
+
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
       - uses: actions/setup-node@v6
         with:
@@ -35,6 +44,7 @@ jobs:
           key: firebase-emulators-${{ runner.os }}
 
       - run: npm ci
+      - run: go mod download
 
       - name: Go unit tests
         run: go test ./...
