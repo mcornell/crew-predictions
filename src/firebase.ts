@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from 'firebase/app'
-import { getAuth, connectAuthEmulator, signInWithEmailAndPassword } from 'firebase/auth'
+import { getAuth, connectAuthEmulator, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth'
 
 declare global {
   interface Window {
@@ -22,5 +22,11 @@ function getFirebaseAuth() {
 export async function signIn(email: string, password: string): Promise<string> {
   const auth = getFirebaseAuth()
   const result = await signInWithEmailAndPassword(auth, email, password)
+  return result.user.getIdToken()
+}
+
+export async function signUp(email: string, password: string): Promise<string> {
+  const auth = getFirebaseAuth()
+  const result = await createUserWithEmailAndPassword(auth, email, password)
   return result.user.getIdToken()
 }
