@@ -202,3 +202,9 @@ jobs:
 
       - name: Deploy to Firebase Hosting
         run: npx firebase-tools@latest deploy --only hosting --project crew-predictions
+
+      - name: Smoke test prod
+        run: |
+          PROD_URL=$(gcloud run services describe crew-predictions --region=us-east5 --format='value(status.url)')
+          curl -f "$PROD_URL/"
+          curl -f "$PROD_URL/api/matches"
