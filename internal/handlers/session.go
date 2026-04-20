@@ -69,5 +69,5 @@ func (h *SessionHandler) Create(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 	})
-	http.Redirect(w, r, "/matches", http.StatusFound)
+	w.WriteHeader(http.StatusOK)
 }

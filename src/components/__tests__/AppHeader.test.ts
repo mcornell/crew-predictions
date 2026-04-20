@@ -36,4 +36,9 @@ describe('AppHeader', () => {
     const wrapper = mount(AppHeader, { props: { user: null } })
     expect(wrapper.find('a[href="/profile"]').exists()).toBe(false)
   })
+
+  it('always shows a leaderboard link', () => {
+    const wrapper = mount(AppHeader, { props: { user: null } })
+    expect(wrapper.find('a[href="/leaderboard"]').exists()).toBe(true)
+  })
 })
