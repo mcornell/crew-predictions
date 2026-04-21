@@ -116,7 +116,9 @@ const upcomingMatches = computed(() => {
 })
 
 const completedMatches = computed(() =>
-  matches.value.filter(m => m.status !== 'STATUS_SCHEDULED' && m.status !== 'STATUS_IN_PROGRESS')
+  matches.value
+    .filter(m => m.status !== 'STATUS_SCHEDULED' && m.status !== 'STATUS_IN_PROGRESS')
+    .reverse()
 )
 
 function formatKickoff(iso: string): string {

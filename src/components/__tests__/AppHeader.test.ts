@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import AppHeader from '../AppHeader.vue'
 
 describe('AppHeader', () => {
@@ -45,5 +45,28 @@ describe('AppHeader', () => {
   it('hides Sign In when auth is loading', () => {
     const wrapper = mount(AppHeader, { props: { user: null, loading: true } })
     expect(wrapper.find('a[href="/login"]').exists()).toBe(false)
+  })
+
+  it('renders a hamburger button', () => {
+    const wrapper = mount(AppHeader, { props: { user: null } })
+    expect(wrapper.find('button[data-testid="hamburger"]').exists()).toBe(true)
+  })
+
+  it('drawer is not visible by default', () => {
+    const wrapper = mount(AppHeader, { props: { user: null } })
+    expect(wrapper.find('[data-testid="mobile-drawer"]').exists()).toBe(false)
+  })
+
+  it('clicking hamburger opens the drawer', async () => {
+    const wrapper = mount(AppHeader, { props: { user: null } })
+    await wrapper.find('button[data-testid="hamburger"]').trigger('click')
+    expect(wrapper.find('[data-testid="mobile-drawer"]').exists()).toBe(true)
+  })
+
+  it('clicking a drawer link closes the drawer', async () => {
+    const wrapper = mount(AppHeader, { props: { user: null } })
+    await wrapper.find('button[data-testid="hamburger"]').trigger('click')
+    await wrapper.find('[data-testid="mobile-drawer"] a').trigger('click')
+    expect(wrapper.find('[data-testid="mobile-drawer"]').exists()).toBe(false)
   })
 })

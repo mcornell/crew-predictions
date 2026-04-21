@@ -94,6 +94,24 @@ describe('MatchesView', () => {
     expect(wrapper.text()).toContain('Results')
   })
 
+  it('results section shows most recent match first', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        matches: [
+          { id: 'older', homeTeam: 'CF Montréal', awayTeam: 'Columbus Crew', kickoff: '2026-04-10T23:30:00Z', status: 'STATUS_FULL_TIME', homeScore: '0', awayScore: '2' },
+          { id: 'newer', homeTeam: 'Columbus Crew', awayTeam: 'Atlanta United', kickoff: '2026-04-17T23:30:00Z', status: 'STATUS_FULL_TIME', homeScore: '3', awayScore: '1' },
+        ],
+        predictions: {},
+      }),
+    }))
+    const wrapper = mount(MatchesView)
+    await flushPromises()
+    const cards = wrapper.findAll('[data-testid="result-card"]')
+    expect(cards[0].text()).toContain('Atlanta United')
+    expect(cards[1].text()).toContain('CF Montréal')
+  })
+
   it('completed match appears in results section, not upcoming', async () => {
     const wrapper = mount(MatchesView)
     await flushPromises()
