@@ -134,6 +134,7 @@ jobs:
         run: |
           gcloud run deploy crew-predictions-staging \
             --image=us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions:sha-${{ github.sha }} \
+            --project=crew-predictions-staging \
             --region=us-east5 \
             --allow-unauthenticated \
             --set-env-vars=FIREBASE_PROJECT_ID=crew-predictions-staging,FIREBASE_API_KEY=$STAGING_API_KEY,FIREBASE_AUTH_DOMAIN=crew-predictions-staging.web.app,GOOGLE_CLOUD_PROJECT=crew-predictions-staging \
@@ -143,9 +144,12 @@ jobs:
 
       - name: Smoke test staging
         run: |
-          STAGING_URL=$(gcloud run services describe crew-predictions-staging --region=us-east5 --format='value(status.url)')
+          STAGING_URL=$(gcloud run services describe crew-predictions-staging --region=us-east5 --project=crew-predictions-staging --format='value(status.url)')
           curl -f "$STAGING_URL/"
           curl -f "$STAGING_URL/api/matches"
+
+      - name: Deploy staging to Firebase Hosting
+        run: npx firebase-tools@latest deploy --only hosting --project crew-predictions-staging --config firebase.staging.json
 
       - name: Extract frontend artifact from Docker image
         run: |
