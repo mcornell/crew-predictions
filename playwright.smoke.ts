@@ -19,6 +19,6 @@ export default defineConfig({
     baseURL: process.env.STAGING_URL ?? 'https://crew-predictions-staging.web.app',
     headless: !debug,
     video: debug ? 'on' : 'off',
-    screenshot: debug ? 'on' : 'off',
+    screenshot: 'on',
   },
 })
