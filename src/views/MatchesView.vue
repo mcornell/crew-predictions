@@ -66,7 +66,7 @@
 
     <p v-if="upcomingMatches.length === 0 && completedMatches.length === 0" class="empty">No matches found. Check back later.</p>
 
-    <div v-if="showNudge && !currentUser?.value" class="guest-nudge" data-testid="guest-nudge">
+    <div v-if="showNudge && !currentUser" class="guest-nudge" data-testid="guest-nudge">
       <a href="/signup">Create an account</a> to get on the leaderboard.
     </div>
   </div>

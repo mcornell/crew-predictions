@@ -1,15 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
-import { ref } from 'vue'
+import { ref, type Ref } from 'vue'
 import MatchesView from '../MatchesView.vue'
 import { makeRouter } from '../../test-utils/router'
 
-const loggedOutProvide = { currentUser: ref(null) }
-const loggedInProvide = {
+type User = { handle: string; emailVerified: boolean } | null
+type Provide = { currentUser: Ref<User> }
+
+const loggedOutProvide: Provide = { currentUser: ref(null) }
+const loggedInProvide: Provide = {
   currentUser: ref({ handle: 'testfan@crew.mock', emailVerified: true }),
 }
 
-function mountMatches(provide = loggedOutProvide) {
+function mountMatches(provide: Provide = loggedOutProvide) {
   return mount(MatchesView, { global: { plugins: [makeRouter()], provide } })
 }
 
