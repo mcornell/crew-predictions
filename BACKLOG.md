@@ -44,11 +44,11 @@
 1. [x] **Mobile responsive layout** — shipped: cards stack correctly at 390px and 412px; header stays single-row; Predict button is full-width at 48px. Remaining polish:
    - [ ] Team name truncation on 360px (Galaxy S24) — "COLUMBUS CREW" clips to "COLUMBUS C..." at the narrowest CSS viewport; physical screen is 1080px but CSS pixels are 360px due to 3× device pixel ratio, so there's no way to use more pixels — need a layout solution (smaller inputs, abbreviated names, or two-line team display)
 
-2. [ ] **UX fixes — broken flows**
+2. [x] **UX fixes — broken flows** — all shipped
    - [x] Predict while logged out silently fails — redirects to `/login` on 401
    - [x] Unknown routes render blank — 404 NotFoundView added with link home
-   - [ ] Score inputs visible to logged-out users — users can type scores before being asked to sign in; either hide inputs or replace Predict button with "Sign in to predict" until authenticated
-   - [ ] Profile display name not pre-populated — the input on `/profile` is empty even when the user already has a handle set; load current handle on mount
+   - [x] Score inputs visible to logged-out users — replaced with "Sign in to predict" button; inputs hidden until authenticated
+   - [x] Profile display name not pre-populated — watches currentUser and seeds input on load
    - [ ] Google sign-in popup blocked on mobile — `signInWithPopup` is blocked by mobile browsers (tested: real device); switch to `signInWithRedirect` everywhere (desktop too — it does a full-page nav to Google and back, seamless and widely accepted). Drop the popup entirely for simplicity. Firebase's `getRedirectResult()` must be called on app load to complete the redirect flow.
 
 3. [ ] **UX gaps — missing content**
@@ -57,15 +57,17 @@
 
 4. [ ] **Page `<title>` per route** — currently always "Crew Predictions" regardless of route; each view should set a meaningful `<title>` (e.g. "Leaderboard — Crew Predictions")
 
-5. [ ] **Auth UX polish** — remaining sub-items:
+5. [x] **Auth UX polish** — all done
    - [x] Login/signup cross-links
    - [x] Error-state differentiation (sign-up only; login stays generic for security)
-   - [x] Verify logout UI — fixed broken `/logout` href (Go route is `/auth/logout`), new BDD scenario asserts clicking Sign out logs the user out
-   - [x] Password-reset flow — `/reset` view, `sendPasswordResetEmail`, "Forgot password?" link on login; emulator requires existing user so e2e seeds one first
-   - [x] Display name / profile page — `/profile` route + `ProfileView`; session `handle` now prefers Firebase `name` claim (displayName) over email; user handle in header is a link to `/profile`; `waitForCurrentUser()` helper waits for Firebase auth state restoration before calling `updateProfile`
-   - [x] Email verification — banner shown to unverified users; emailVerified surfaced through FirebaseToken → session cookie → /api/me → App.vue
-2. [x] **Staging Cloud Run + artifact promotion** — develop builds Docker image tagged by SHA, pushes to Artifact Registry, deploys to `crew-predictions-staging`, smoke tests staging, uploads `dist/` as artifact. main promotes same image to prod (no rebuild), downloads matching `dist/` artifact, deploys Firebase Hosting, smoke tests prod.
-3. [ ] **Custom domain migration** — Firebase Hosting custom domain + Cloud Run domain mapping. Update `authDomain` and OAuth redirect URIs.
+   - [x] Verify logout UI
+   - [x] Password-reset flow
+   - [x] Display name / profile page
+   - [x] Email verification banner
+
+6. [x] **Staging Cloud Run + artifact promotion**
+
+7. [ ] **Custom domain migration** — Firebase Hosting custom domain + Cloud Run domain mapping. Update `authDomain` and OAuth redirect URIs.
 
 ---
 
