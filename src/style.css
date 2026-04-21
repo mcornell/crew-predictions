@@ -7,7 +7,7 @@
   --card:   #1a1a1a;
   --border: #2a2a2a;
   --gold:   #fedd00;
-  --muted:  #888;
+  --muted:  #aaa;
   --danger: #e03c3c;
   --text:   #e0e0e0;
 }
@@ -272,6 +272,13 @@ body::after {
   visibility: hidden;
 }
 .btn-lock:hover { opacity: 0.88; }
+.btn-lock--disabled,
+.btn-lock--disabled:hover {
+  background: var(--border);
+  color: var(--muted);
+  opacity: 1;
+  cursor: not-allowed;
+}
 
 /* ── Saved prediction ────────────────────────────────────────────────────── */
 .saved-score {

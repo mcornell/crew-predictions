@@ -42,7 +42,7 @@
           </div>
           <template v-if="!savedPredictions[match.id]">
             <button v-if="currentUser" class="btn-lock" @click="submit(match.id)">Predict</button>
-            <button v-else class="btn-lock" @click="router.push('/login')">Sign in to predict</button>
+            <button v-else class="btn-lock btn-lock--disabled" disabled>Predict</button>
           </template>
         </div>
       </div>

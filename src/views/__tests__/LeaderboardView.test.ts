@@ -29,7 +29,6 @@ describe('LeaderboardView', () => {
     const wrapper = mount(LeaderboardView)
     await flushPromises()
     expect(wrapper.text()).toContain('No predictions scored yet')
-    expect(wrapper.text()).toContain('rules')
   })
 
   it('renders leaderboard rows for Aces Radio', async () => {

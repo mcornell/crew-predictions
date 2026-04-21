@@ -130,6 +130,15 @@ describe('MatchesView', () => {
     expect(matchup.text()).toMatch(/New England Revolution\s*2\s*vs\s*1\s*Columbus Crew/i)
   })
 
+  it('logged-out user sees a disabled Predict button, not a Sign in link', async () => {
+    const wrapper = mount(MatchesView)
+    await flushPromises()
+    const card = wrapper.findAll('[data-testid="match-card"]')[0]
+    const btn = card.find('button')
+    expect(btn.text()).toBe('Predict')
+    expect(btn.attributes('disabled')).toBeDefined()
+  })
+
   it('match more than 7 days away is not shown in upcoming', async () => {
     const farFuture = new Date()
     farFuture.setDate(farFuture.getDate() + 10)

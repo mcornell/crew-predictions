@@ -56,6 +56,12 @@ Then('I should not see a {string} button', async ({ page }, label: string) => {
   await expect(page.getByRole('button', { name: label, exact: true })).not.toBeVisible();
 });
 
+Then('I should see a disabled {string} button', async ({ page }, label: string) => {
+  const btn = page.getByRole('button', { name: label, exact: true }).first();
+  await expect(btn).toBeVisible();
+  await expect(btn).toBeDisabled();
+});
+
 Then('the server should reject it with 403', async () => {
   expect(lastPredictionStatus).toBe(403);
 });
