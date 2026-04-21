@@ -50,3 +50,6 @@ trace.zip
 *.log
 .cache/
 dist/
+*.png
+*.html
+.playwright-cli/
