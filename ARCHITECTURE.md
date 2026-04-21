@@ -5,11 +5,11 @@
 | Layer | Technology | Why |
 |---|---|---|
 | Language | Go | Fast cold starts, single binary, good GCP SDKs |
-| Compute | GCP Cloud Run | Multi-route web app, free tier (2M req/mo), source deploy |
+| Compute | GCP Cloud Run | Multi-route web app, free tier (2M req/mo) |
 | Frontend | Vue 3 + TypeScript + Vite | Simpler than React, user preference over templ/HTMX |
 | Database | Firestore | GCP always-free (50k reads/20k writes per day) |
-| Auth | Firebase Auth — Email/Password | Custom form; FirebaseUI dropped (incompatible with firebase@11) |
-| Static assets | Firebase Hosting | GCP-native, pairs with Cloud Run |
+| Auth | Firebase Auth — Email/Password + Google SSO | Custom form; FirebaseUI dropped (incompatible with firebase@11) |
+| Static assets | Firebase Hosting | GCP-native CDN; rewrites API/auth paths to Cloud Run |
 | Match data | ESPN unofficial API | Free, covers MLS/Columbus Crew |
 
 **Firestore region:** `us-east5` (Columbus, Ohio — obviously)
@@ -25,7 +25,7 @@ Browser (Vue SPA)
     │                                    │
     ├── /auth/* ──────────────────►      ├── Firebase Admin SDK (token verification)
     │                                    ├── Firestore (predictions, results)
-    └── /assets/* ─────────────────      └── ESPN API (match data, cached)
+    └── /assets/* ─────────────────      └── ESPN API (match data)
          (Vite build → dist/)
 ```
 
@@ -44,7 +44,6 @@ Entry point: `cmd/server/main.go`
 | `internal/scoring` | Scoring engines — AcesRadio and Upper90Club |
 | `internal/espn` | ESPN API client — fetches upcoming Crew matches |
 | `internal/models` | Domain types |
-| `templates/` | templ components (leaderboard HTML — legacy, being phased out) |
 
 ---
 
@@ -70,12 +69,19 @@ Entry point: `cmd/server/main.go`
 
 ## Auth Flow
 
-1. User submits email + password on `/login`
-2. Vue calls `signInWithEmailAndPassword` (Firebase Auth SDK → emulator in dev, real in prod)
+### Email/Password
+1. User submits email + password on `/login` (or creates account on `/signup`)
+2. Vue calls `signInWithEmailAndPassword` / `createUserWithEmailAndPassword`
 3. Gets ID token → POSTs to `POST /auth/session` as form data
 4. Go server verifies token via Firebase Admin SDK, sets `HttpOnly` session cookie
 5. Session cookie = base64-encoded JSON `{ userID, handle, provider }`
 6. Subsequent requests: Go reads cookie via `UserFromSession(r)`
+
+### Google SSO
+1. User clicks "Sign in with Google" on `/login` or `/signup`
+2. Vue calls `signInWithRedirect` (redirect — not popup — for mobile compatibility)
+3. After redirect back, `App.vue` calls `getRedirectResult()` on mount
+4. Same session cookie flow as email/password from step 3
 
 ---
 
@@ -85,12 +91,17 @@ Entry: `src/main.ts` → loads `/auth/config.js` → mounts Vue app
 
 | File | Route | Purpose |
 |---|---|---|
-| `src/views/MatchesView.vue` | `/` `/matches` | Upcoming matches + prediction inputs |
-| `src/views/LoginView.vue` | `/login` | Email/password sign-in form |
+| `src/views/MatchesView.vue` | `/` `/matches` | Upcoming matches + prediction inputs; completed matches reversed chronological |
+| `src/views/LoginView.vue` | `/login` | Email/password sign-in + Google SSO |
+| `src/views/SignupView.vue` | `/signup` | New account creation (email/password + Google SSO) |
+| `src/views/ResetView.vue` | `/reset` | Password reset request |
 | `src/views/LeaderboardView.vue` | `/leaderboard` | Aces Radio + Upper 90 Club rankings |
-| `src/components/AppHeader.vue` | (all) | Nav header with auth state |
-| `src/App.vue` | — | Root: fetches `/api/me` on mount + route change |
-| `src/firebase.ts` | — | Firebase Auth SDK init + `signIn` helper |
+| `src/views/ProfileView.vue` | `/profile` | Display name edit |
+| `src/views/RulesView.vue` | `/rules` | Scoring format explainer |
+| `src/views/NotFoundView.vue` | `*` | 404 catch-all |
+| `src/components/AppHeader.vue` | (all) | Nav header; desktop nav + hamburger drawer at ≤480px |
+| `src/App.vue` | — | Root: fetches `/api/me` on mount + route change; handles Google redirect result |
+| `src/firebase.ts` | — | Firebase Auth SDK init + `signIn` / `signInWithGoogle` helpers |
 
 **CSS:** `src/style.css` — Industrial Black & Gold Brutalism design tokens as CSS variables, imported in `src/main.ts`.
 
@@ -105,52 +116,58 @@ predictions/{predictionId}
   handle:     string   // display name at time of prediction
   homeGoals:  int
   awayGoals:  int
-```
 
-Results are stored in `FirestoreResultStore` in production (`results/{matchID}` documents).
+results/{matchID}
+  homeScore:  int
+  awayScore:  int
+```
 
 ---
 
-## Deploy Workflow
+## CI/CD Pipeline
 
-### When to build Docker locally
+All deploys flow through GitHub Actions (`.github/workflows/ci.yml`).
 
-Only when the **Dockerfile changes** (new base image, added build step, changed COPY paths). For code-only changes, push and let Cloud Build handle it — it reuses cached layers.
+```
+push to develop
+    │
+    ├── test job ──────── Go unit tests + Vue unit tests + e2e BDD suite (Firebase emulators)
+    │
+    └── deploy-staging ── Docker build → Artifact Registry
+                          Cloud Run deploy (crew-predictions-staging, us-east5)
+                          Firebase Hosting deploy → crew-predictions-staging.web.app
+                          Smoke test suite (real staging URL, screenshots always on)
+                          Frontend artifact uploaded (retained 90 days)
 
-```bash
-./docker-build.sh          # build only — catches Dockerfile issues fast
-./docker-build.sh --run    # build + run on :8080 for a smoke test
+push to main (merge from develop)
+    │
+    └── deploy-prod ─────  Promote Docker image from staging artifact (no rebuild)
+                           Cloud Run deploy (crew-predictions, us-east5)
+                           Firebase Hosting deploy → crew-predictions.web.app
+                           curl liveness check
 ```
 
-Docker Desktop must be running (`systemctl --user start docker-desktop`). The script starts it automatically if it isn't.
+**Artifact promotion:** prod deploys reuse the Docker image built for staging — no rebuild on merge. The frontend dist is downloaded from the staging workflow artifact and deployed directly.
 
-### Deploy to Cloud Run
+**GCP auth:** Workload Identity Federation (no stored service account keys).
 
-```bash
-gcloud run deploy crew-predictions --source . --region us-east5
-```
+---
 
-Cloud Build builds the Dockerfile remotely and deploys the new revision. Takes ~3–5 minutes.
+## Environments
 
-### Deploy static assets to Firebase Hosting
+| Environment | Frontend URL | Cloud Run | GCP Project |
+|---|---|---|---|
+| Prod | https://crew-predictions.web.app | `crew-predictions` service, `us-east5` | `crew-predictions` |
+| Staging | https://crew-predictions-staging.web.app | `crew-predictions-staging` service, `us-east5` | `crew-predictions-staging` |
+| Local | http://localhost:5173 (Vite proxy) | Go server :8080 | — (emulators) |
 
-```bash
-npm run build
-npx firebase-tools@latest deploy --only hosting
-```
+**Why staging needs its own GCP project:** Firebase Hosting rewrites to Cloud Run require both to be in the same GCP project. Staging Cloud Run lives in `crew-predictions-staging` so the staging Hosting config can rewrite to it without touching prod infrastructure.
 
-Run this after any change to `src/` or `public/`. The `dist/` directory is what gets deployed.
+---
 
-### Production URLs
+## Environment Variables (Cloud Run)
 
-| URL | What |
-|---|---|
-| https://crew-predictions.web.app | Firebase Hosting (CDN) — SPA shell + static assets; rewrites `/api/**`, `/auth/**`, `/admin/**` to Cloud Run |
-| https://crew-predictions-937208344837.us-east5.run.app | Cloud Run direct — Go server serving everything |
-
-### Environment variables (Cloud Run)
-
-Set via `gcloud run services update crew-predictions --region us-east5 --update-env-vars KEY=VALUE`.
+Set via `gcloud run services update <service> --region us-east5 --update-env-vars KEY=VALUE`.
 
 | Variable | Purpose |
 |---|---|
@@ -158,3 +175,19 @@ Set via `gcloud run services update crew-predictions --region us-east5 --update-
 | `FIREBASE_PROJECT_ID` | Firebase Admin SDK init |
 | `FIREBASE_API_KEY` | Served to browser via `/auth/config.js` |
 | `FIREBASE_AUTH_DOMAIN` | Served to browser via `/auth/config.js` |
+
+---
+
+## Local Dev Commands
+
+```bash
+./dev.sh               # start Firebase emulators (:8081/:9099) + Go server (:8080)
+npm run dev            # Vite dev server (:5173) with hot reload + API proxy
+go test ./...          # Go unit tests
+npm run test:unit      # Vitest unit tests
+npm test               # e2e BDD suite (emulators must be running)
+npm run test:smoke     # smoke suite against staging (STAGING_URL env var)
+SMOKE_DEBUG=1 npm run test:smoke  # headed browser + video locally
+```
+
+**Note:** `GOOGLE_CLOUD_PROJECT` must NOT be set in the Playwright `webServer` env — it triggers Firestore, which conflicts with the in-memory test store.
