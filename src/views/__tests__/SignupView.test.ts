@@ -61,10 +61,9 @@ describe('SignupView', () => {
     expect(link.text()).toBe('Sign in')
   })
 
-  it('calls signInWithGoogle and navigates to /matches on success', async () => {
+  it('calls signInWithGoogle on button click', async () => {
     const { signInWithGoogle } = await import('../../firebase')
-    vi.mocked(signInWithGoogle).mockResolvedValue('fake-token')
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }))
+    vi.mocked(signInWithGoogle).mockResolvedValue(undefined)
 
     const router = makeRouter()
     await router.push('/signup')
@@ -74,7 +73,6 @@ describe('SignupView', () => {
     await flushPromises()
 
     expect(signInWithGoogle).toHaveBeenCalled()
-    expect(router.currentRoute.value.path).toBe('/matches')
   })
 
   it('shows a specific message when email is already registered', async () => {

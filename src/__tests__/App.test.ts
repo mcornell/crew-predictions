@@ -3,6 +3,10 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import App from '../App.vue'
 
+vi.mock('../firebase', () => ({
+  getGoogleRedirectResult: vi.fn().mockResolvedValue(null),
+}))
+
 function makeRouter() {
   return createRouter({
     history: createMemoryHistory(),

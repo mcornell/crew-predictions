@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
+import { ref } from 'vue'
 import MatchesView from '../MatchesView.vue'
+
+const loggedInProvide = {
+  currentUser: ref({ handle: 'testfan@crew.mock', emailVerified: true }),
+}
 
 const mockMatches = [
   { id: 'match-past', homeTeam: 'New England Revolution', awayTeam: 'Columbus Crew', kickoff: '2026-04-18T23:30:00Z', status: 'STATUS_FULL_TIME', homeScore: '2', awayScore: '1' },
@@ -35,7 +40,7 @@ describe('MatchesView', () => {
   })
 
   it('each card has home_goals and away_goals inputs and a Lock In button', async () => {
-    const wrapper = mount(MatchesView)
+    const wrapper = mount(MatchesView, { global: { provide: loggedInProvide } })
     await flushPromises()
     const card = wrapper.findAll('[data-testid="match-card"]')[0]
     expect(card.find('input[name="home_goals"]').exists()).toBe(true)
@@ -49,7 +54,7 @@ describe('MatchesView', () => {
       .mockResolvedValueOnce({ ok: true })
     vi.stubGlobal('fetch', fetchMock)
 
-    const wrapper = mount(MatchesView)
+    const wrapper = mount(MatchesView, { global: { provide: loggedInProvide } })
     await flushPromises()
 
     const card = wrapper.findAll('[data-testid="match-card"]')[0]
