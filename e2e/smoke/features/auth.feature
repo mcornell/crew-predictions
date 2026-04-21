@@ -3,9 +3,9 @@ Feature: Staging auth smoke tests
 
   Scenario: New user can sign up with email on desktop
     When I visit the staging sign-up page
-    And I sign up with email "smoke-new@crew-predictions-staging.web.app"
+    And I sign up with email "smoke-new-desktop@crew-predictions-staging.web.app"
     Then I should be on the staging matches page
-    And I should see "smoke-new@crew-predictions-staging.web.app" in the staging header
+    And I should see "smoke-new-desktop@crew-predictions-staging.web.app" in the staging header
 
   Scenario: Existing user can sign in with email on desktop
     When I visit the staging login page
@@ -16,9 +16,9 @@ Feature: Staging auth smoke tests
   Scenario: New user can sign up with email on iPhone 15
     Given I am on an iPhone 15 viewport
     When I visit the staging sign-up page
-    And I sign up with email "smoke-new@crew-predictions-staging.web.app"
+    And I sign up with email "smoke-new-ios@crew-predictions-staging.web.app"
     Then I should be on the staging matches page
-    And I should see "smoke-new@crew-predictions-staging.web.app" in the staging header
+    And I should see "smoke-new-ios@crew-predictions-staging.web.app" in the staging header
 
   Scenario: Existing user can sign in with email on iPhone 15
     Given I am on an iPhone 15 viewport

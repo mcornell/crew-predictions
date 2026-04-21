@@ -40,24 +40,14 @@ describe('App', () => {
     expect(wrapper.find('a[href="/login"]').exists()).toBe(false)
   })
 
-  it('hides email verification banner when user is verified', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ handle: 'fan@crew.mock', emailVerified: true }),
-    }))
-    const wrapper = mount(App, { global: { plugins: [makeRouter()] } })
-    await flushPromises()
-    expect(wrapper.find('[data-testid="email-verification-banner"]').exists()).toBe(false)
-  })
-
-  it('shows email verification banner when user is not verified', async () => {
+  it('does not show an email verification banner', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ handle: 'fan@crew.mock', emailVerified: false }),
     }))
     const wrapper = mount(App, { global: { plugins: [makeRouter()] } })
     await flushPromises()
-    expect(wrapper.find('[data-testid="email-verification-banner"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="email-verification-banner"]').exists()).toBe(false)
   })
 
   it('still fetches /api/me when getGoogleRedirectResult throws', async () => {

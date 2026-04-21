@@ -1,9 +1,6 @@
 <template>
   <AppHeader :user="currentUser" :loading="authLoading" />
-  <div v-if="currentUser && !currentUser.emailVerified" data-testid="email-verification-banner" class="verification-banner">
-    Please verify your email — check your inbox for the verification link.
-  </div>
-  <RouterView />
+<RouterView />
 </template>
 
 <script setup lang="ts">

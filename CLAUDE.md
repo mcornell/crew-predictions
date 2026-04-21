@@ -39,12 +39,18 @@ Every feature increment starts from a failing **Playwright** (browser) scenario 
 ```bash
 go test ./...          # Go unit tests — always run the full suite
 npm run test:unit      # Vitest unit tests for Vue components
-npm test               # e2e BDD outer loop (bddgen + playwright)
+npm test               # e2e BDD outer loop (bddgen + playwright) — runs against local emulator
 npx bddgen             # regenerate specs from .feature files only
+npm run test:smoke     # post-deploy smoke suite against crew-predictions-staging.web.app
+npm run test:smoke:debug  # same, with headed browser + video + screenshots
 ```
 
 Feature files live in `e2e/features/`. Step definitions live in `e2e/steps/`.
+Smoke feature files live in `e2e/smoke/features/`. Smoke steps in `e2e/smoke/steps/`.
 Always run `bddgen` after editing a `.feature` file.
+
+**Never push without both `npm run test:unit` AND `npm test` green locally.**
+The smoke suite (`npm run test:smoke`) runs in CI after `deploy-staging` — it is not a substitute for the local e2e suite.
 
 #### Vue test patterns
 
