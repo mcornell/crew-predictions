@@ -8,7 +8,7 @@
         <a class="btn-ghost" href="/profile">{{ user.handle }}</a>
         <a class="btn-ghost" href="/auth/logout">Sign out</a>
       </template>
-      <a v-else class="btn-primary" href="/login">Sign In</a>
+      <a v-else-if="!loading" class="btn-primary" href="/login">Sign In</a>
     </nav>
   </header>
 </template>
@@ -16,5 +16,6 @@
 <script setup lang="ts">
 defineProps<{
   user: { handle: string } | null
+  loading?: boolean
 }>()
 </script>

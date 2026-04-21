@@ -134,16 +134,17 @@ jobs:
         run: |
           gcloud run deploy crew-predictions-staging \
             --image=us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions:sha-${{ github.sha }} \
+            --project=crew-predictions-staging \
             --region=us-east5 \
             --allow-unauthenticated \
-            --set-env-vars=FIREBASE_PROJECT_ID=crew-predictions-staging,FIREBASE_API_KEY=$STAGING_API_KEY,FIREBASE_AUTH_DOMAIN=crew-predictions-staging.firebaseapp.com,GOOGLE_CLOUD_PROJECT=crew-predictions-staging \
+            --set-env-vars=FIREBASE_PROJECT_ID=crew-predictions-staging,FIREBASE_API_KEY=$STAGING_API_KEY,FIREBASE_AUTH_DOMAIN=crew-predictions-staging.web.app,GOOGLE_CLOUD_PROJECT=crew-predictions-staging \
             --quiet
         env:
           STAGING_API_KEY: ${{ secrets.STAGING_FIREBASE_API_KEY }}
 
       - name: Smoke test staging
         run: |
-          STAGING_URL=$(gcloud run services describe crew-predictions-staging --region=us-east5 --format='value(status.url)')
+          STAGING_URL=$(gcloud run services describe crew-predictions-staging --region=us-east5 --project=crew-predictions-staging --format='value(status.url)')
           curl -f "$STAGING_URL/"
           curl -f "$STAGING_URL/api/matches"
 
@@ -153,11 +154,62 @@ jobs:
           docker cp tmp:/app/dist ./dist
           docker rm tmp
 
+      - name: Deploy staging to Firebase Hosting
+        run: npx firebase-tools@latest deploy --only hosting --project crew-predictions-staging --config firebase.staging.json
+
       - uses: actions/upload-artifact@v4
         with:
           name: frontend-${{ github.sha }}
           path: dist/
           retention-days: 90
+
+  smoke-staging:
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Get Playwright version
+        id: playwright-version
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v5
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Playwright system deps
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Run staging smoke tests
+        run: npm run test:smoke
+        env:
+          STAGING_URL: https://crew-predictions-staging.web.app
+          STAGING_API_KEY: ${{ secrets.STAGING_FIREBASE_API_KEY }}
+          SMOKE_TEST_PASSWORD: ${{ secrets.SMOKE_TEST_PASSWORD }}
+
+      - name: Upload smoke report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-report
+          path: smoke-report/
+          retention-days: 3
 
   deploy-prod:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
