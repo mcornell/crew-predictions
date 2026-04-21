@@ -53,4 +53,6 @@ trace.zip
 dist/
 *.png
 *.html
+*.webm
+*.mp4
 .playwright-cli/

@@ -46,3 +46,20 @@ Feature: Mobile layout
     When I visit the login page
     And I sign in with Google as "gmobilefan@example.com"
     Then I should be on the matches page
+
+  Scenario: Hamburger menu opens and closes on mobile
+    Given I am not logged in
+    And I am viewing on an iPhone 15
+    When I visit the matches page
+    And I tap the hamburger menu
+    Then I should see the mobile navigation drawer
+    When I tap outside the drawer
+    Then the mobile navigation drawer should be closed
+
+  Scenario: User can navigate via hamburger menu on mobile
+    Given I am not logged in
+    And I am viewing on an iPhone 15
+    When I visit the matches page
+    And I tap the hamburger menu
+    And I tap the Leaderboard link in the drawer
+    Then I should be on the leaderboard page

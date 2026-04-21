@@ -1,7 +1,7 @@
 import { createBdd } from 'playwright-bdd';
 import { expect } from '@playwright/test';
 
-const { Given, Then } = createBdd();
+const { Given, When, Then } = createBdd();
 
 Given('I am viewing on an iPhone 15', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -41,4 +41,28 @@ Then('the Predict button should be at least 44px tall', async ({ page }) => {
   await expect(btn).toBeVisible();
   const box = await btn.boundingBox();
   expect(box!.height).toBeGreaterThanOrEqual(44);
+});
+
+When('I tap the hamburger menu', async ({ page }) => {
+  await page.getByTestId('hamburger').click();
+});
+
+Then('I should see the mobile navigation drawer', async ({ page }) => {
+  await expect(page.getByTestId('mobile-drawer')).toBeVisible();
+});
+
+When('I tap outside the drawer', async ({ page }) => {
+  await page.locator('.drawer-backdrop').click();
+});
+
+Then('the mobile navigation drawer should be closed', async ({ page }) => {
+  await expect(page.getByTestId('mobile-drawer')).not.toBeVisible();
+});
+
+When('I tap the Leaderboard link in the drawer', async ({ page }) => {
+  await page.getByTestId('mobile-drawer').getByRole('link', { name: 'Leaderboard' }).click();
+});
+
+Then('I should be on the leaderboard page', async ({ page }) => {
+  await expect(page).toHaveURL('/leaderboard');
 });

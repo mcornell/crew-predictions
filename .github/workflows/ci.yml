@@ -204,12 +204,12 @@ jobs:
           SMOKE_TEST_PASSWORD: ${{ secrets.SMOKE_TEST_PASSWORD }}
 
       - name: Upload smoke report
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: smoke-report
           path: smoke-report/
-          retention-days: 3
+          retention-days: 5
 
   deploy-prod:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'

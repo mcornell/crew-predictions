@@ -23,7 +23,8 @@ Then('the {string} link should point to {string}', async ({ page }, text: string
 });
 
 Then('I should see {string} in the header', async ({ page }, text: string) => {
-  await expect(page.getByRole('banner').getByText(text)).toBeVisible();
+  // .last() handles mobile layout where the handle appears twice (nav + mobile span)
+  await expect(page.getByRole('banner').getByText(text).last()).toBeVisible();
 });
 
 Then('I should not see a {string} link', async ({ page }, text: string) => {
