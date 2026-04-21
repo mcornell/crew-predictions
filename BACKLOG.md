@@ -41,11 +41,8 @@
 
 ## Next Up (in order)
 
-1. [ ] **Mobile responsive layout** — match cards have no mobile breakpoint and collapse completely on all phone sizes (tested: iPhone 15 390px, Samsung Galaxy S24 360px, Pixel 8 412px); header also wraps at narrow widths. Full mobile-first pass needed:
-   - Match card layout: stack home/away vertically on mobile, keep score prominent
-   - Header: collapse nav or reduce to icon-only on narrow widths
-   - Score inputs: increase tap target size and font size on mobile
-   - Typography: team names and scores too small to read comfortably on 360–412px widths
+1. [x] **Mobile responsive layout** — shipped: cards stack correctly at 390px and 412px; header stays single-row; Predict button is full-width at 48px. Remaining polish:
+   - [ ] Team name truncation on 360px (Galaxy S24) — "COLUMBUS CREW" clips to "COLUMBUS C..." at the narrowest CSS viewport; physical screen is 1080px but CSS pixels are 360px due to 3× device pixel ratio, so there's no way to use more pixels — need a layout solution (smaller inputs, abbreviated names, or two-line team display)
 
 2. [ ] **UX fixes — broken flows**
    - [ ] Predict while logged out silently fails — clicking Predict fires a 401 but shows no feedback; redirect to `/login` or show an inline "sign in to predict" prompt
