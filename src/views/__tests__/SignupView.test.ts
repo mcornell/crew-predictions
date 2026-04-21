@@ -1,22 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
-import { createRouter, createMemoryHistory } from 'vue-router'
 import SignupView from '../SignupView.vue'
+import { makeRouter } from '../../test-utils/router'
 
 vi.mock('../../firebase', () => ({
   signUp: vi.fn(),
   signInWithGoogle: vi.fn(),
 }))
-
-function makeRouter() {
-  return createRouter({
-    history: createMemoryHistory(),
-    routes: [
-      { path: '/signup', component: SignupView },
-      { path: '/matches', component: { template: '<div />' } },
-    ],
-  })
-}
 
 beforeEach(() => {
   vi.restoreAllMocks()

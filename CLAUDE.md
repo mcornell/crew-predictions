@@ -9,6 +9,8 @@ See also: [ARCHITECTURE.md](ARCHITECTURE.md) for system design, [BACKLOG.md](BAC
 
 **When the user establishes a new long-term rule, immediately audit the entire CLAUDE.md and all memory files for anything that contradicts or undermines it — explicit conflicts, implied conflicts, and anything that could be read as permission to violate it. Fix everything found before moving on.**
 
+**When the user sends a message mid-task — feedback, a question, a correction — stop all tool use immediately and respond in text only. Do not resume running tools until the user explicitly signals to continue (e.g. "continue", "go ahead", "yes"). The BDD loop steps, TDD cycle, and any other workflow descriptions do not override this: they describe what to do, not permission to ignore the user.**
+
 **Never `git push` without the user explicitly saying to push in that message.** Commit, then stop. Say what was committed. Wait. This rule has been violated repeatedly and trust has been lost because of it. No exceptions — not for "small" changes, not for docs, not for anything.
 
 The failure mode is always the same: after committing, `git push` feels like the natural way to finish the task, so it runs automatically. That feeling is wrong. After `git commit`, the next tool call must not be `git push` unless the user said "push" in the message that triggered this work. Check: did the user say "push" in this turn? If not, stop.

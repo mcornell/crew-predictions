@@ -1,21 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
-import { createRouter, createMemoryHistory } from 'vue-router'
 import ResetView from '../ResetView.vue'
+import { makeRouter } from '../../test-utils/router'
 
 vi.mock('../../firebase', () => ({
   sendPasswordReset: vi.fn(),
 }))
-
-function makeRouter() {
-  return createRouter({
-    history: createMemoryHistory(),
-    routes: [
-      { path: '/reset', component: ResetView },
-      { path: '/login', component: { template: '<div />' } },
-    ],
-  })
-}
 
 describe('ResetView', () => {
   beforeEach(() => {

@@ -1,19 +1,17 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
-import { createRouter, createMemoryHistory } from 'vue-router'
 import LoginView from '../LoginView.vue'
+import { makeRouter } from '../../test-utils/router'
 
 vi.mock('../../firebase', () => ({
   signIn: vi.fn(),
   signInWithGoogle: vi.fn(),
 }))
 
-const router = createRouter({
-  history: createMemoryHistory(),
-  routes: [
-    { path: '/login', component: LoginView },
-    { path: '/matches', component: { template: '<div />' } },
-  ],
+let router: ReturnType<typeof makeRouter>
+
+beforeEach(() => {
+  router = makeRouter()
 })
 
 describe('LoginView', () => {

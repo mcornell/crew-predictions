@@ -21,7 +21,7 @@
               </div>
               <div class="match-meta">{{ formatKickoff(match.kickoff) }} — <span class="saved-label">Locked in</span></div>
             </template>
-            <template v-else-if="currentUser">
+            <template v-else>
               <div class="matchup matchup--input" data-testid="matchup">
                 <span class="team-name team-home">{{ match.homeTeam }}</span>
                 <input class="score-input" name="home_goals" type="number" min="0" max="99" v-model="inputs[match.id].home" placeholder="0" />
@@ -31,19 +31,8 @@
               </div>
               <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
             </template>
-            <template v-else>
-              <div class="matchup" data-testid="matchup">
-                <span class="team-name team-home">{{ match.homeTeam }}</span>
-                <span class="vs">vs</span>
-                <span class="team-name team-away">{{ match.awayTeam }}</span>
-              </div>
-              <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
-            </template>
           </div>
-          <template v-if="!savedPredictions[match.id]">
-            <button v-if="currentUser" class="btn-lock" @click="submit(match.id)">Predict</button>
-            <button v-else class="btn-lock btn-lock--disabled" disabled>Predict</button>
-          </template>
+          <button v-if="!savedPredictions[match.id]" class="btn-lock" @click="submit(match.id)">Predict</button>
         </div>
       </div>
     </section>
@@ -76,6 +65,10 @@
     </section>
 
     <p v-if="upcomingMatches.length === 0 && completedMatches.length === 0" class="empty">No matches found. Check back later.</p>
+
+    <div v-if="showNudge && !currentUser" class="guest-nudge" data-testid="guest-nudge">
+      <a href="/signup">Create an account</a> to get on the leaderboard.
+    </div>
   </div>
 </template>
 
@@ -102,9 +95,12 @@ interface Prediction {
   awayGoals: number
 }
 
+const GUEST_KEY = 'guestPredictions'
+
 const matches = ref<Match[]>([])
 const savedPredictions = reactive<Record<string, Prediction | null>>({})
 const inputs = reactive<Record<string, { home: string; away: string }>>({})
+const showNudge = ref(false)
 
 const upcomingMatches = computed(() => {
   const cutoff = new Date()
@@ -133,21 +129,27 @@ onMounted(async () => {
   if (res.ok) {
     const data = await res.json()
     matches.value = data.matches
+    const guestPredictions: Record<string, Prediction> = JSON.parse(localStorage.getItem(GUEST_KEY) ?? '{}')
     for (const m of data.matches) {
       inputs[m.id] = { home: '', away: '' }
-      savedPredictions[m.id] = data.predictions[m.id] ?? null
+      savedPredictions[m.id] = data.predictions[m.id] ?? guestPredictions[m.id] ?? null
     }
   }
 })
 
 async function submit(matchId: string) {
   const { home, away } = inputs[matchId]
-  const body = new URLSearchParams({ match_id: matchId, home_goals: home, away_goals: away })
-  const res = await fetch('/api/predictions', { method: 'POST', body })
-  if (res.status === 401) {
-    router.push('/login')
+  if (!currentUser?.value) {
+    const prediction = { homeGoals: Number(home), awayGoals: Number(away) }
+    const stored: Record<string, Prediction> = JSON.parse(localStorage.getItem(GUEST_KEY) ?? '{}')
+    stored[matchId] = prediction
+    localStorage.setItem(GUEST_KEY, JSON.stringify(stored))
+    savedPredictions[matchId] = prediction
+    showNudge.value = true
     return
   }
+  const body = new URLSearchParams({ match_id: matchId, home_goals: home, away_goals: away })
+  const res = await fetch('/api/predictions', { method: 'POST', body })
   if (res.ok) {
     savedPredictions[matchId] = { homeGoals: Number(home), awayGoals: Number(away) }
   }

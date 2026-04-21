@@ -1,21 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
-import { createRouter, createMemoryHistory } from 'vue-router'
 import ProfileView from '../ProfileView.vue'
+import { makeRouter } from '../../test-utils/router'
 
 vi.mock('../../firebase', () => ({
   updateDisplayName: vi.fn(),
 }))
-
-function makeRouter() {
-  return createRouter({
-    history: createMemoryHistory(),
-    routes: [
-      { path: '/profile', component: ProfileView },
-      { path: '/matches', component: { template: '<div />' } },
-    ],
-  })
-}
 
 describe('ProfileView', () => {
   beforeEach(() => {
