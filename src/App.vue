@@ -24,15 +24,19 @@ async function fetchUser() {
 }
 
 onMounted(async () => {
-  const token = await getGoogleRedirectResult()
-  if (token) {
-    await fetch('/auth/session', {
-      method: 'POST',
-      body: new URLSearchParams({ idToken: token }),
-    })
-    await fetchUser()
-    router.push('/matches')
-    return
+  try {
+    const token = await getGoogleRedirectResult()
+    if (token) {
+      await fetch('/auth/session', {
+        method: 'POST',
+        body: new URLSearchParams({ idToken: token }),
+      })
+      await fetchUser()
+      router.push('/matches')
+      return
+    }
+  } catch {
+    // redirect result failed — fall through and fetch current session state
   }
   await fetchUser()
 })

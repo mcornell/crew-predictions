@@ -49,17 +49,19 @@
    - [x] Unknown routes render blank — 404 NotFoundView added with link home
    - [x] Score inputs visible to logged-out users — replaced with "Sign in to predict" button; inputs hidden until authenticated
    - [x] Profile display name not pre-populated — watches currentUser and seeds input on load
-   - [ ] Google sign-in popup blocked on mobile — `signInWithPopup` is blocked by mobile browsers (tested: real device); switch to `signInWithRedirect` everywhere (desktop too — it does a full-page nav to Google and back, seamless and widely accepted). Drop the popup entirely for simplicity. Firebase's `getRedirectResult()` must be called on app load to complete the redirect flow.
+   - [x] Google sign-in popup blocked on mobile — switched to `signInWithRedirect` everywhere; `getRedirectResult()` called in App.vue onMounted with error handling so fetchUser always runs even if redirect result fails.
 
 3. [ ] **Match official Columbus Crew brand colors** — current `--gold: #ffc20e` is approximate; audit the official Columbus Crew website for exact hex values for gold, black, and any secondary palette colors (e.g. dark charcoal, accent red). Update CSS variables in `src/style.css`. Use the Playwright browser plugin to pull colors directly from the live site rather than guessing.
 
-4. [ ] **UX gaps — missing content**
+4. [ ] **Guest predictions (no account required)** — users who don't want to sign up should be able to make predictions and see how they'd score. They won't appear on the leaderboard. Options: (a) store predictions in localStorage keyed by a generated guest token, compute score client-side, show a "you'd have X points" summary; (b) server-side guest session with a randomly-generated anonymous ID. Either way, guests should see a persistent "Sign in to save your predictions" nudge and be able to upgrade to a real account without losing picks.
+
+6. [ ] **UX gaps — missing content**
    - [ ] Leaderboard empty state is a dead end — "No predictions scored yet" with no explanation of what will appear or how scoring works; add context
    - [ ] No scoring rules explanation anywhere — new users have no idea what Aces Radio or Upper 90 Club scoring means; add a "How it works" section or `/rules` page
 
-5. [ ] **Page `<title>` per route** — currently always "Crew Predictions" regardless of route; each view should set a meaningful `<title>` (e.g. "Leaderboard — Crew Predictions")
+7. [ ] **Page `<title>` per route** — currently always "Crew Predictions" regardless of route; each view should set a meaningful `<title>` (e.g. "Leaderboard — Crew Predictions")
 
-6. [x] **Auth UX polish** — all done
+8. [x] **Auth UX polish** — all done
    - [x] Login/signup cross-links
    - [x] Error-state differentiation (sign-up only; login stays generic for security)
    - [x] Verify logout UI
@@ -67,9 +69,9 @@
    - [x] Display name / profile page
    - [x] Email verification banner
 
-7. [x] **Staging Cloud Run + artifact promotion**
+9. [x] **Staging Cloud Run + artifact promotion**
 
-8. [ ] **Custom domain migration** — Firebase Hosting custom domain + Cloud Run domain mapping. Update `authDomain` and OAuth redirect URIs.
+10. [ ] **Custom domain migration** — Firebase Hosting custom domain + Cloud Run domain mapping. Update `authDomain` and OAuth redirect URIs.
 
 ---
 
