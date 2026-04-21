@@ -24,9 +24,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { signIn, signInWithGoogle } from '../firebase'
+
+onMounted(() => { document.title = 'Sign In — Crew Predictions' })
 
 const router = useRouter()
 const email = ref('')

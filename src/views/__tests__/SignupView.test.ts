@@ -23,6 +23,12 @@ beforeEach(() => {
 })
 
 describe('SignupView', () => {
+  it('sets document title to Sign Up — Crew Predictions', async () => {
+    mount(SignupView, { global: { plugins: [makeRouter()] } })
+    await flushPromises()
+    expect(document.title).toBe('Sign Up — Crew Predictions')
+  })
+
   it('renders an email/password form', () => {
     const wrapper = mount(SignupView, { global: { plugins: [makeRouter()] } })
     expect(wrapper.find('form[data-testid="signup-form"]').exists()).toBe(true)

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Barlow:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=DM+Mono:wght@300;400;500&family=Barlow:wght@300;400;500;600&display=swap');
 
 /* ── Tokens ─────────────────────────────────────────────────────────────── */
 :root {
@@ -7,7 +7,7 @@
   --card:   #1a1a1a;
   --border: #2a2a2a;
   --gold:   #fedd00;
-  --muted:  #555;
+  --muted:  #888;
   --danger: #e03c3c;
   --text:   #e0e0e0;
 }
@@ -62,9 +62,9 @@ body::after {
 }
 
 .page-title {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 3rem;
-  letter-spacing: 0.08em;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+  font-size: 3.75rem;
+  letter-spacing: 0.06em;
   color: var(--text);
   margin-bottom: 2rem;
   line-height: 1;
@@ -85,8 +85,8 @@ body::after {
 }
 
 .brand {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 1.6rem;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+  font-size: 1.9rem;
   color: var(--gold);
   letter-spacing: 0.06em;
 }
@@ -106,24 +106,26 @@ body::after {
 
 .btn-ghost {
   font-family: 'Barlow', sans-serif;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 500;
-  color: var(--muted);
+  color: var(--text);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   transition: color 0.15s;
 }
-.btn-ghost:hover { color: var(--text); }
+.btn-ghost:hover { color: var(--gold); }
 
 .btn-primary {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 1rem;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+  font-size: 1.1rem;
   letter-spacing: 0.08em;
   color: var(--black);
   background: var(--gold);
-  padding: 0.35rem 1rem 0.25rem;
+  padding: 0.45rem 1rem;
   transition: opacity 0.15s;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .btn-primary:hover { opacity: 0.88; }
 
@@ -153,9 +155,9 @@ body::after {
 .match-info { flex: 1; min-width: 0; }
 
 .matchup {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 1.3rem;
-  letter-spacing: 0.06em;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+  font-size: 1.55rem;
+  letter-spacing: 0.04em;
   line-height: 1.2;
   color: var(--text);
   display: flex;
@@ -186,9 +188,9 @@ body::after {
 }
 
 .team-name {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 1.3rem;
-  letter-spacing: 0.06em;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+  font-size: 1.55rem;
+  letter-spacing: 0.04em;
   flex: 1;
 }
 
@@ -197,7 +199,7 @@ body::after {
 
 .match-meta {
   font-family: 'DM Mono', monospace;
-  font-size: 0.85rem;
+  font-size: 1rem;
   color: var(--muted);
   margin-top: 0.35rem;
   letter-spacing: 0.04em;
@@ -246,19 +248,22 @@ body::after {
 }
 
 .btn-lock {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 1rem;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+  font-size: 1.15rem;
   letter-spacing: 0.1em;
   color: var(--black);
   background: var(--gold);
   border: none;
-  padding: 0.5rem 1.1rem 0.35rem;
+  padding: 0;
   cursor: pointer;
   height: 52px;
   width: 110px;
   flex-shrink: 0;
   transition: opacity 0.15s;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-spacer {
@@ -311,15 +316,15 @@ body::after {
 }
 
 .login-title {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 2rem;
-  letter-spacing: 0.08em;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+  font-size: 2.75rem;
+  letter-spacing: 0.06em;
   color: var(--text);
   margin-bottom: 0.25rem;
 }
 
 .login-sub {
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   color: var(--muted);
   margin-bottom: 2rem;
 }
@@ -335,8 +340,8 @@ body::after {
   border: 1px solid var(--border);
   color: var(--text);
   font-family: 'Barlow', sans-serif;
-  font-size: 0.9rem;
-  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  padding: 0.85rem 1rem;
   outline: none;
   width: 100%;
   transition: border-color 0.15s;
@@ -352,32 +357,38 @@ body::after {
 }
 
 .btn-submit {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 1.1rem;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+  font-size: 1.25rem;
   letter-spacing: 0.1em;
   color: var(--black);
   background: var(--gold);
   border: none;
-  padding: 0.75rem 1rem 0.55rem;
+  padding: 0.85rem 1rem;
   cursor: pointer;
   width: 100%;
   margin-top: 0.5rem;
   transition: opacity 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .btn-submit:hover { opacity: 0.88; }
 
 .btn-google {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 1.1rem;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+  font-size: 1.25rem;
   letter-spacing: 0.1em;
   color: var(--gold);
   background: transparent;
   border: 2px solid var(--gold);
-  padding: 0.75rem 1rem 0.55rem;
+  padding: 0.85rem 1rem;
   cursor: pointer;
   width: 100%;
   margin-top: 0.5rem;
   transition: opacity 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .btn-google:hover { opacity: 0.88; }
 
@@ -387,9 +398,9 @@ body::after {
 }
 
 .section-title {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 1.4rem;
-  letter-spacing: 0.08em;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+  font-size: 1.6rem;
+  letter-spacing: 0.06em;
   color: var(--muted);
   text-transform: uppercase;
   border-bottom: 1px solid var(--border);
@@ -421,7 +432,7 @@ body::after {
 
 .leaderboard-handle {
   font-family: 'DM Mono', monospace;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   color: var(--text);
   flex: 1;
   min-width: 0;
@@ -432,7 +443,7 @@ body::after {
 
 .leaderboard-points {
   font-family: 'DM Mono', monospace;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-weight: 500;
   color: var(--gold);
   flex-shrink: 0;
@@ -443,7 +454,7 @@ body::after {
 /* ── Empty state ─────────────────────────────────────────────────────────── */
 .empty {
   font-family: 'DM Mono', monospace;
-  font-size: 0.8rem;
+  font-size: 1rem;
   color: var(--muted);
   padding: 1.5rem 0;
   letter-spacing: 0.04em;
@@ -456,7 +467,7 @@ body::after {
   }
 
   .page-title {
-    font-size: 2.2rem;
+    font-size: 2.75rem;
     margin-bottom: 1.25rem;
   }
 
@@ -466,7 +477,7 @@ body::after {
   }
 
   .brand {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
   }
 
   .site-nav {
@@ -474,12 +485,12 @@ body::after {
   }
 
   .btn-ghost {
-    font-size: 0.7rem;
+    font-size: 0.8rem;
   }
 
   .btn-primary {
-    font-size: 0.85rem;
-    padding: 0.35rem 0.75rem 0.25rem;
+    font-size: 1rem;
+    padding: 0.45rem 0.75rem;
   }
 
   /* Match cards — stack vertically */
@@ -494,13 +505,13 @@ body::after {
   }
 
   .matchup {
-    font-size: 1.05rem;
+    font-size: 1.2rem;
     flex-wrap: nowrap;
     gap: 0.25rem;
   }
 
   .team-name {
-    font-size: 1.05rem;
+    font-size: 1.2rem;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -520,7 +531,7 @@ body::after {
   }
 
   .match-meta {
-    font-size: 0.78rem;
+    font-size: 0.9rem;
     margin-top: 0.25rem;
   }
 
@@ -552,4 +563,70 @@ body::after {
   letter-spacing: 0.04em;
   padding: 0.75rem 1.5rem;
   text-align: center;
+}
+
+/* ── Rules ───────────────────────────────────────────────────────────────── */
+.rules-intro {
+  font-size: 1rem;
+  color: var(--muted);
+  margin-bottom: 2.5rem;
+}
+
+.rules-section {
+  margin-bottom: 3rem;
+}
+
+.rules-desc {
+  font-size: 0.95rem;
+  color: var(--muted);
+  margin-bottom: 1.25rem;
+  line-height: 1.6;
+}
+
+.rules-table {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 1rem;
+}
+
+.rules-row {
+  display: flex;
+  align-items: baseline;
+  gap: 1.25rem;
+  padding: 0.85rem 1.25rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 3px solid transparent;
+}
+
+.rules-row--positive { border-left-color: var(--gold); }
+.rules-row--negative { border-left-color: var(--danger); }
+.rules-row--zero     { border-left-color: var(--border); }
+
+.rules-points {
+  font-family: 'DM Mono', monospace;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--gold);
+  min-width: 3rem;
+  flex-shrink: 0;
+}
+
+.rules-row--negative .rules-points { color: var(--danger); }
+.rules-row--zero .rules-points     { color: var(--muted); }
+
+.rules-condition {
+  font-size: 0.95rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.rules-note {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.85rem;
+  color: var(--muted);
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--border);
+  letter-spacing: 0.02em;
 }

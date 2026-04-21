@@ -21,6 +21,12 @@ beforeEach(() => {
 })
 
 describe('MatchesView', () => {
+  it('sets document title to Upcoming — Crew Predictions', async () => {
+    mount(MatchesView)
+    await flushPromises()
+    expect(document.title).toBe('Upcoming — Crew Predictions')
+  })
+
   it('renders an Upcoming heading', async () => {
     const wrapper = mount(MatchesView)
     await flushPromises()

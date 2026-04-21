@@ -17,6 +17,12 @@ const router = createRouter({
 })
 
 describe('LoginView', () => {
+  it('sets document title to Sign In — Crew Predictions', async () => {
+    mount(LoginView, { global: { plugins: [router] } })
+    await flushPromises()
+    expect(document.title).toBe('Sign In — Crew Predictions')
+  })
+
   it('renders an email/password form', () => {
     const wrapper = mount(LoginView, { global: { plugins: [router] } })
     expect(wrapper.find('form[data-testid="login-form"]').exists()).toBe(true)

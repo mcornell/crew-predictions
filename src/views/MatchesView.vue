@@ -126,6 +126,7 @@ function formatKickoff(iso: string): string {
 }
 
 onMounted(async () => {
+  document.title = 'Upcoming — Crew Predictions'
   const res = await fetch('/api/matches')
   if (res.ok) {
     const data = await res.json()

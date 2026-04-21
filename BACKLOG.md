@@ -1,84 +1,20 @@
 # Backlog
 
-## Done
+## Up Next
 
-- [x] Go server with ESPN match fetching
-- [x] Firestore prediction store
-- [x] AcesRadio scoring engine (+15/+10/−15/0)
-- [x] Upper 90 Club scoring engine (+1 result, +1 Columbus goals, stacking)
-- [x] Leaderboard (both formats, JSON API + Vue view)
-- [x] Firebase Auth — Email/Password sign-in (Google SSO still pending)
-- [x] Session cookies (`HttpOnly`, base64 JSON)
-- [x] Vue 3 SPA: MatchesView, LoginView, LeaderboardView, AppHeader
-- [x] BDD e2e suite — 24/24 Playwright scenarios green
-- [x] Vite dev proxy for local development
-- [x] Industrial Black & Gold Brutalism design applied
-- [x] ESPN date parsing fix (`2026-04-12T23:00Z` no-seconds format)
-- [x] Match listings — upcoming (next 7 days) + results with scores inline
-- [x] Multi-competition support — MLS, US Open Cup, Leagues Cup, CONCACAF Champions
-- [x] Server-side prediction locking — 403 after kickoff; ESPN fetcher injected into handler
-- [x] FirestoreResultStore — match results persist across restarts
-- [x] Seed endpoints (`/admin/seed-match`, `/admin/seed-prediction`) — deterministic e2e fixtures, no ESPN dependency in tests
-- [x] Thread-safe in-memory stores — `sync.RWMutex` on prediction and result stores
-- [x] E2e test isolation — `Before` hook resets all stores per scenario; serial workers prevent shared-state races
-- [x] Remove templ — deleted `templates/` package and dead HTML-rendering `List` handlers after Vue SPA migration
-- [x] Patch CVE-2026-34986 — upgraded `go-jose/v4` to 4.1.4 (transitive dep via Firebase → gRPC → SPIFFE)
-- [x] GitHub Actions CI/CD — push runs Go + Vitest + Playwright; main deploys to Cloud Run + Firebase Hosting via Workload Identity Federation
-- [x] Sign-up flow — `/signup` view + `firebase.signUp` (createUserWithEmailAndPassword), reuses `/auth/session` cookie flow
-- [x] Google SSO — `signInWithPopup(GoogleAuthProvider)` button on both `/login` and `/signup`; Google provider + OAuth web client secret were enabled in the Firebase Console in an earlier session
+1. [ ] **Guest predictions (no account required)** — users who don't want to sign up should be able to make predictions and see how they'd score. They won't appear on the leaderboard. Options: (a) store predictions in localStorage keyed by a generated guest token, compute score client-side, show a "you'd have X points" summary; (b) server-side guest session with a randomly-generated anonymous ID. Either way, guests should see a persistent "Sign in to save your predictions" nudge and be able to upgrade to a real account without losing picks.
 
----
-
-## Before First Deploy
-
-- [x] **FirestoreResultStore** — results persist across restarts
-- [x] **Prediction locking** — enforce kickoff time deadline server-side; predictions must be submitted before kickoff
-- [x] **GCP/Firebase env vars** — `FIREBASE_API_KEY`, `FIREBASE_AUTH_DOMAIN`, `FIREBASE_PROJECT_ID`, `GOOGLE_CLOUD_PROJECT` set on Cloud Run service; old OAuth vars removed
-- [x] **Cloud Run deploy** — Go server deployed to Cloud Run
-- [x] **Firebase Hosting** — SPA shell + static assets; rewrites `/api/**`, `/auth/**`, `/admin/**` to Cloud Run; SPA fallback for all other routes
-
----
-
-## Next Up (in order)
-
-1. [x] **Mobile responsive layout** — shipped: cards stack correctly at 390px and 412px; header stays single-row; Predict button is full-width at 48px. Remaining polish:
-   - [ ] Team name truncation on 360px (Galaxy S24) — "COLUMBUS CREW" clips to "COLUMBUS C..." at the narrowest CSS viewport; physical screen is 1080px but CSS pixels are 360px due to 3× device pixel ratio, so there's no way to use more pixels — need a layout solution (smaller inputs, abbreviated names, or two-line team display)
-
-2. [x] **UX fixes — broken flows** — all shipped
-   - [x] Predict while logged out silently fails — redirects to `/login` on 401
-   - [x] Unknown routes render blank — 404 NotFoundView added with link home
-   - [x] Score inputs visible to logged-out users — replaced with "Sign in to predict" button; inputs hidden until authenticated
-   - [x] Profile display name not pre-populated — watches currentUser and seeds input on load
-   - [x] Google sign-in popup blocked on mobile — switched to `signInWithRedirect` everywhere; `getRedirectResult()` called in App.vue onMounted with error handling so fetchUser always runs even if redirect result fails.
-
-3. [ ] **Match official Columbus Crew brand colors** — current `--gold: #ffc20e` is approximate; audit the official Columbus Crew website for exact hex values for gold, black, and any secondary palette colors (e.g. dark charcoal, accent red). Update CSS variables in `src/style.css`. Use the Playwright browser plugin to pull colors directly from the live site rather than guessing.
-
-4. [ ] **Guest predictions (no account required)** — users who don't want to sign up should be able to make predictions and see how they'd score. They won't appear on the leaderboard. Options: (a) store predictions in localStorage keyed by a generated guest token, compute score client-side, show a "you'd have X points" summary; (b) server-side guest session with a randomly-generated anonymous ID. Either way, guests should see a persistent "Sign in to save your predictions" nudge and be able to upgrade to a real account without losing picks.
-
-6. [ ] **UX gaps — missing content**
+2. [ ] **UX gaps — missing content**
    - [ ] Leaderboard empty state is a dead end — "No predictions scored yet" with no explanation of what will appear or how scoring works; add context
    - [ ] No scoring rules explanation anywhere — new users have no idea what Aces Radio or Upper 90 Club scoring means; add a "How it works" section or `/rules` page
 
-7. [ ] **Page `<title>` per route** — currently always "Crew Predictions" regardless of route; each view should set a meaningful `<title>` (e.g. "Leaderboard — Crew Predictions")
+3. [ ] **Page `<title>` per route** — currently always "Crew Predictions" regardless of route; each view should set a meaningful `<title>` (e.g. "Leaderboard — Crew Predictions")
 
-8. [x] **Auth UX polish** — all done
-   - [x] Login/signup cross-links
-   - [x] Error-state differentiation (sign-up only; login stays generic for security)
-   - [x] Verify logout UI
-   - [x] Password-reset flow
-   - [x] Display name / profile page
-   - [x] Email verification banner
+4. [ ] **Custom domain migration** — Firebase Hosting custom domain + Cloud Run domain mapping. Update `authDomain` and OAuth redirect URIs.
 
-9. [x] **Staging Cloud Run + artifact promotion**
+5. [ ] **Team name truncation on 360px (Galaxy S24)** — "COLUMBUS CREW" clips at the narrowest CSS viewport; physical screen is 1080px but CSS pixels are 360px due to 3× device pixel ratio. Need a layout solution: smaller inputs, abbreviated names, or two-line team display.
 
-10. [ ] **Custom domain migration** — Firebase Hosting custom domain + Cloud Run domain mapping. Update `authDomain` and OAuth redirect URIs.
-
----
-
-## Polish (prioritize later)
-
-- [ ] **Password field `autocomplete` attribute** — login and signup password inputs missing `autocomplete="current-password"` / `"new-password"`; breaks password manager autofill and triggers browser console warnings
-- [ ] **Profile page needs context** — currently just a display name form floating in space; add current prediction count, scoring summary, or other stats to make it worth visiting
+6. [ ] **Profile page needs context** — currently just a display name form floating in space; add current prediction count, scoring summary, or other stats to make it worth visiting.
 
 ---
 
@@ -105,3 +41,31 @@
 - **templ/HTMX/Alpine.js** — replaced by Vue 3 SPA; `templates/` package deleted.
 - **GCP Cloud Build** — GitHub Actions preferred; simpler config, already where the code lives, Workload Identity Federation handles GCP auth without stored keys.
 - **Frontend subdirectory** — kept as single project root (`package.json` at root, `src/` for Vue).
+
+---
+
+## Done
+
+- [x] **Typography overhaul** — replaced Bebas Neue with Barlow Condensed 800 (closer to official MLS/Crew aesthetic, works in mixed case); bumped font sizes across the board; fixed button vertical centering (flexbox, replacing asymmetric padding hack for Bebas Neue baseline quirk)
+- [x] **Official Crew brand colors** — `--gold: #fedd00` (sourced from columbuscrew.com computed styles); nav link and muted text contrast improved (`#888`)
+- [x] **Autocomplete attributes** — `autocomplete="email"` on all email inputs, `current-password` on login, `new-password` on signup; fixes password manager autofill and removes browser console warning
+- [x] **Google sign-in redirect** — switched from `signInWithPopup` to `signInWithRedirect` everywhere; `getRedirectResult()` called in App.vue onMounted with try/catch so fetchUser always runs even if redirect result fails
+- [x] **Mobile responsive layout** — cards stack at 390px and 412px; header stays single-row; Predict button full-width at 48px
+- [x] **UX fixes — broken flows** — logged-out predict redirects to `/login`; 404 NotFoundView; score inputs gated behind auth; profile display name pre-populated; Google sign-in popup fixed
+- [x] **Auth UX polish** — login/signup cross-links; error-state differentiation; logout UI; password-reset flow; display name / profile page; email verification banner
+- [x] **Sign-up flow** — `/signup` view, `createUserWithEmailAndPassword`, reuses `/auth/session` cookie flow
+- [x] **Google SSO** — Google provider + OAuth web client secret configured in Firebase Console
+- [x] **Staging Cloud Run + artifact promotion** — CI deploys develop → staging; main promoted from staging artifact
+- [x] **GitHub Actions CI/CD** — Go + Vitest + Playwright on push; Workload Identity Federation for GCP auth
+- [x] **BDD e2e suite** — Playwright scenarios covering auth, predictions, leaderboard, mobile layout
+- [x] **Server-side prediction locking** — 403 after kickoff; ESPN fetcher injected into handler
+- [x] **Multi-competition support** — MLS, US Open Cup, Leagues Cup, CONCACAF Champions
+- [x] **Match listings** — upcoming (next 7 days) + results with scores inline
+- [x] **Leaderboard** — Aces Radio and Upper 90 Club formats; JSON API + Vue view
+- [x] **Scoring engines** — AcesRadio (+15/+10/−15/0) and Upper 90 Club (+1 result, +1 Columbus goals, stacking)
+- [x] **FirestoreResultStore** — match results persist across restarts; thread-safe stores with `sync.RWMutex`
+- [x] **Firebase Auth** — email/password; session cookies (`HttpOnly`); Firebase Admin SDK with emulator support
+- [x] **Vue 3 SPA** — MatchesView, LoginView, SignupView, LeaderboardView, ProfileView, AppHeader; Vite dev proxy
+- [x] **Go server** — ESPN match fetching; Firestore prediction store; seed endpoints for e2e fixtures
+- [x] **Industrial Black & Gold Brutalism design** — noise texture, gold stripe, Bebas Neue (now replaced), DM Mono scores, match card hover states
+- [x] **Patch CVE-2026-34986** — upgraded `go-jose/v4` to 4.1.4

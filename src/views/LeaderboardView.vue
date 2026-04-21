@@ -14,7 +14,7 @@
         <span class="leaderboard-handle">{{ entry.handle }}</span>
         <span class="leaderboard-points" data-testid="leaderboard-points">{{ entry.points }}</span>
       </div>
-      <p v-if="leaderboard.acesRadio.length === 0" class="empty">No predictions scored yet.</p>
+      <p v-if="leaderboard.acesRadio.length === 0" class="empty">No predictions scored yet. Lock in your first pick on the <router-link to="/matches">matches page</router-link>, then check the <router-link to="/rules">rules</router-link> to see how points are calculated.</p>
     </div>
 
     <div class="leaderboard-section">
@@ -48,6 +48,7 @@ const leaderboard = reactive<{ acesRadio: Entry[]; upper90Club: Entry[] }>({
 })
 
 onMounted(async () => {
+  document.title = 'Leaderboard — Crew Predictions'
   const res = await fetch('/api/leaderboard')
   if (res.ok) {
     const data = await res.json()

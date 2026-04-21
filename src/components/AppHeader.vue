@@ -3,6 +3,7 @@
     <a class="brand" href="/">Crew Predictions</a>
     <nav class="site-nav">
       <a class="btn-ghost" href="/leaderboard">Leaderboard</a>
+      <a class="btn-ghost" href="/rules">Rules</a>
       <template v-if="user">
         <a class="btn-ghost" href="/profile">{{ user.handle }}</a>
         <a class="btn-ghost" href="/auth/logout">Sign out</a>
