@@ -19,13 +19,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, inject, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { updateDisplayName } from '../firebase'
+import type { Ref } from 'vue'
 
+const currentUser = inject<Ref<{ handle: string; emailVerified: boolean } | null>>('currentUser')
 const router = useRouter()
 const displayName = ref('')
 const error = ref('')
+
+watch(
+  () => currentUser?.value,
+  (user) => { if (user && !displayName.value) displayName.value = user.handle },
+  { immediate: true }
+)
 
 async function handleSubmit() {
   error.value = ''

@@ -1,5 +1,10 @@
 Feature: User profile
 
+  Scenario: Profile page pre-populates the display name field with current handle
+    Given I am logged in as "BlackAndGold@bsky.mock"
+    When I visit the profile page
+    Then the display name field should contain "BlackAndGold@bsky.mock"
+
   Scenario: Logged-in user can set a display name
     Given a test user exists with email "profiletest@crew.mock" and password "Nordecke96!"
     When I visit the login page
