@@ -32,3 +32,17 @@ Feature: Mobile layout
     Then the page should not overflow horizontally
     And I should see at least one Columbus Crew match card
     And each match card should be at most 180px tall
+
+  Scenario: User can sign in with email and password on mobile
+    Given a test user exists with email "mobilefan@example.com" and password "Nordecke96!"
+    And I am viewing on an iPhone 15
+    When I visit the login page
+    And I sign in with email "mobilefan@example.com" and password "Nordecke96!"
+    Then I should be on the matches page
+    And I should see "mobilefan@example.com" in the header
+
+  Scenario: User can sign in with Google on mobile
+    Given I am viewing on an iPhone 15
+    When I visit the login page
+    And I sign in with Google as "gmobilefan@example.com"
+    Then I should be on the matches page
