@@ -5,6 +5,18 @@ See also: [ARCHITECTURE.md](ARCHITECTURE.md) for system design, [BACKLOG.md](BAC
 
 ---
 
+## Absolute Rules
+
+**When the user establishes a new long-term rule, immediately audit the entire CLAUDE.md and all memory files for anything that contradicts or undermines it — explicit conflicts, implied conflicts, and anything that could be read as permission to violate it. Fix everything found before moving on.**
+
+**Never `git push` without the user explicitly saying to push in that message.** Commit, then stop. Say what was committed. Wait. This rule has been violated repeatedly and trust has been lost because of it. No exceptions — not for "small" changes, not for docs, not for anything.
+
+The failure mode is always the same: after committing, `git push` feels like the natural way to finish the task, so it runs automatically. That feeling is wrong. After `git commit`, the next tool call must not be `git push` unless the user said "push" in the message that triggered this work. Check: did the user say "push" in this turn? If not, stop.
+
+**Never write production code without a failing test first.** See BDD Dual-Loop TDD below.
+
+---
+
 ## Development Approach
 
 ### BDD Dual-Loop TDD
@@ -21,8 +33,8 @@ Every feature increment starts from a failing **Playwright** (browser) scenario 
    - **Green** — Write the minimum production code to pass that one test. Only what the test demands — nothing more. Run the test. **Commit.**
    - **Refactor** — Clean up covered code only. All tests stay green. **Commit.**
 3. **Coverage gate** — Run `go test ./... -cover`. Any uncovered branch means production code was written without a test — go back to the inner loop.
-4. **Green (scenario)** — Run the Playwright test. Still failing? Identify the next missing piece and return to the inner loop. Passes? **Commit and push.**
-5. **Refactor (scenario)** — Refactor across modules if needed. All tests stay green. **Commit and push.**
+4. **Green (scenario)** — Run the Playwright test. Still failing? Identify the next missing piece and return to the inner loop. Passes? **Commit.** (Push only when user says to.)
+5. **Refactor (scenario)** — Refactor across modules if needed. All tests stay green. **Commit.** (Push only when user says to.)
 6. Repeat from step 1.
 
 #### Absolute rules
@@ -49,7 +61,7 @@ Feature files live in `e2e/features/`. Step definitions live in `e2e/steps/`.
 Smoke feature files live in `e2e/smoke/features/`. Smoke steps in `e2e/smoke/steps/`.
 Always run `bddgen` after editing a `.feature` file.
 
-**Never push without both `npm run test:unit` AND `npm test` green locally.**
+**If asked to push, both `npm run test:unit` AND `npm test` must be green locally first.**
 The smoke suite (`npm run test:smoke`) runs in CI after `deploy-staging` — it is not a substitute for the local e2e suite.
 
 #### Vue test patterns
