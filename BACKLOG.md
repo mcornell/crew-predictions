@@ -2,13 +2,13 @@
 
 ## Up Next
 
-1. [ ] **Team name truncation on 360px (Galaxy S24)** — "COLUMBUS CREW" clips at the narrowest CSS viewport; physical screen is 1080px but CSS pixels are 360px due to 3× device pixel ratio. Need a layout solution: smaller inputs, abbreviated names, or two-line team display.
+1. [ ] **Guest predictions (no account required)** — users who don't want to sign up should be able to make predictions and see how they'd score. They won't appear on the leaderboard. Options: (a) store predictions in localStorage keyed by a generated guest token, compute score client-side, show a "you'd have X points" summary; (b) server-side guest session with a randomly-generated anonymous ID. Either way, guests should see a persistent "Sign in to save your predictions" nudge and be able to upgrade to a real account without losing picks.
 
-2. [ ] **Guest predictions (no account required)** — users who don't want to sign up should be able to make predictions and see how they'd score. They won't appear on the leaderboard. Options: (a) store predictions in localStorage keyed by a generated guest token, compute score client-side, show a "you'd have X points" summary; (b) server-side guest session with a randomly-generated anonymous ID. Either way, guests should see a persistent "Sign in to save your predictions" nudge and be able to upgrade to a real account without losing picks.
+3. [ ] **Custom domain migration** — Firebase Hosting custom domain + Cloud Run domain mapping. Update `authDomain` and OAuth redirect URIs.
 
-3. [ ] **Profile page needs context** — currently just a display name form floating in space; add current prediction count, scoring summary, or other stats to make it worth visiting.
+4. [ ] **Team name truncation on 360px (Galaxy S24)** — "COLUMBUS CREW" clips at the narrowest CSS viewport; physical screen is 1080px but CSS pixels are 360px due to 3× device pixel ratio. Need a layout solution: smaller inputs, abbreviated names, or two-line team display.
 
-4. [ ] **Custom domain migration** — Firebase Hosting custom domain + Cloud Run domain mapping. Update `authDomain` and OAuth redirect URIs.
+5. [ ] **Profile page needs context** — currently just a display name form floating in space; add current prediction count, scoring summary, or other stats to make it worth visiting.
 
 ---
 
