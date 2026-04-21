@@ -1,0 +1,34 @@
+Feature: Mobile layout
+
+  Scenario: Matches page fits within a mobile viewport without horizontal overflow
+    Given I am not logged in
+    And I am viewing on an iPhone 15
+    When I visit the matches page
+    Then the page should not overflow horizontally
+    And I should see at least one Columbus Crew match card
+
+  Scenario: Predict button meets minimum tap target size on mobile
+    Given I am not logged in
+    And I am viewing on an iPhone 15
+    When I visit the matches page
+    Then the Predict button should be at least 44px tall
+
+  Scenario: Match cards do not collapse to an unreadable height on mobile
+    Given I am not logged in
+    And I am viewing on an iPhone 15
+    When I visit the matches page
+    Then each match card should be at most 180px tall
+
+  Scenario: Site header stays within a single row on mobile
+    Given I am not logged in
+    And I am viewing on an iPhone 15
+    When I visit the matches page
+    Then the site header should be at most 64px tall
+
+  Scenario: Matches page fits within a narrow Android viewport
+    Given I am not logged in
+    And I am viewing on a Galaxy S24
+    When I visit the matches page
+    Then the page should not overflow horizontally
+    And I should see at least one Columbus Crew match card
+    And each match card should be at most 180px tall
