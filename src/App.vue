@@ -7,12 +7,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, provide, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppHeader from './components/AppHeader.vue'
 
 const route = useRoute()
 const currentUser = ref<{ handle: string; emailVerified: boolean } | null>(null)
+
+provide('currentUser', currentUser)
 
 async function fetchUser() {
   const res = await fetch('/api/me')

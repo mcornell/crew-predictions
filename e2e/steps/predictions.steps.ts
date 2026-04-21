@@ -33,7 +33,7 @@ When('I enter a home score of {int} and away score of {int} for the first match'
 });
 
 When('I click {string}', async ({ page }, label: string) => {
-  await page.getByRole('button', { name: label }).first().click();
+  await page.getByRole('button', { name: label, exact: true }).first().click();
 });
 
 Then('I should see my prediction of {string} on the first match card', async ({ page }, score: string) => {
@@ -46,6 +46,14 @@ When('I submit a prediction via API for match {string}', async ({ page }, matchI
     form: { match_id: matchId, home_goals: '2', away_goals: '1' },
   });
   lastPredictionStatus = resp.status();
+});
+
+Then('I should see a {string} button', async ({ page }, label: string) => {
+  await expect(page.getByRole('button', { name: label, exact: true }).first()).toBeVisible();
+});
+
+Then('I should not see a {string} button', async ({ page }, label: string) => {
+  await expect(page.getByRole('button', { name: label, exact: true })).not.toBeVisible();
 });
 
 Then('the server should reject it with 403', async () => {
