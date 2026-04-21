@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from 'firebase/app'
-import { getAuth, connectAuthEmulator, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, sendPasswordResetEmail, updateProfile, onAuthStateChanged, type User } from 'firebase/auth'
+import { getAuth, connectAuthEmulator, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithRedirect, getRedirectResult, GoogleAuthProvider, sendPasswordResetEmail, updateProfile, onAuthStateChanged, type User } from 'firebase/auth'
 
 declare global {
   interface Window {
@@ -31,9 +31,15 @@ export async function signUp(email: string, password: string): Promise<string> {
   return result.user.getIdToken()
 }
 
-export async function signInWithGoogle(): Promise<string> {
+export async function signInWithGoogle(): Promise<void> {
   const auth = getFirebaseAuth()
-  const result = await signInWithPopup(auth, new GoogleAuthProvider())
+  await signInWithRedirect(auth, new GoogleAuthProvider())
+}
+
+export async function getGoogleRedirectResult(): Promise<string | null> {
+  const auth = getFirebaseAuth()
+  const result = await getRedirectResult(auth)
+  if (!result) return null
   return result.user.getIdToken()
 }
 
