@@ -41,7 +41,22 @@
 
 ## Next Up (in order)
 
-1. [ ] **Auth UX polish** — remaining sub-items:
+1. [x] **Mobile responsive layout** — shipped: cards stack correctly at 390px and 412px; header stays single-row; Predict button is full-width at 48px. Remaining polish:
+   - [ ] Team name truncation on 360px (Galaxy S24) — "COLUMBUS CREW" clips to "COLUMBUS C..." at the narrowest CSS viewport; physical screen is 1080px but CSS pixels are 360px due to 3× device pixel ratio, so there's no way to use more pixels — need a layout solution (smaller inputs, abbreviated names, or two-line team display)
+
+2. [ ] **UX fixes — broken flows**
+   - [ ] Predict while logged out silently fails — clicking Predict fires a 401 but shows no feedback; redirect to `/login` or show an inline "sign in to predict" prompt
+   - [ ] Unknown routes render blank — `/notapage` shows just the header on a black void; add a 404/NotFound view with a link home
+   - [ ] Score inputs visible to logged-out users — users can type scores before being asked to sign in; either hide inputs or replace Predict button with "Sign in to predict" until authenticated
+   - [ ] Profile display name not pre-populated — the input on `/profile` is empty even when the user already has a handle set; load current handle on mount
+
+3. [ ] **UX gaps — missing content**
+   - [ ] Leaderboard empty state is a dead end — "No predictions scored yet" with no explanation of what will appear or how scoring works; add context
+   - [ ] No scoring rules explanation anywhere — new users have no idea what Aces Radio or Upper 90 Club scoring means; add a "How it works" section or `/rules` page
+
+4. [ ] **Page `<title>` per route** — currently always "Crew Predictions" regardless of route; each view should set a meaningful `<title>` (e.g. "Leaderboard — Crew Predictions")
+
+5. [ ] **Auth UX polish** — remaining sub-items:
    - [x] Login/signup cross-links
    - [x] Error-state differentiation (sign-up only; login stays generic for security)
    - [x] Verify logout UI — fixed broken `/logout` href (Go route is `/auth/logout`), new BDD scenario asserts clicking Sign out logs the user out
@@ -50,6 +65,13 @@
    - [x] Email verification — banner shown to unverified users; emailVerified surfaced through FirebaseToken → session cookie → /api/me → App.vue
 2. [x] **Staging Cloud Run + artifact promotion** — develop builds Docker image tagged by SHA, pushes to Artifact Registry, deploys to `crew-predictions-staging`, smoke tests staging, uploads `dist/` as artifact. main promotes same image to prod (no rebuild), downloads matching `dist/` artifact, deploys Firebase Hosting, smoke tests prod.
 3. [ ] **Custom domain migration** — Firebase Hosting custom domain + Cloud Run domain mapping. Update `authDomain` and OAuth redirect URIs.
+
+---
+
+## Polish (prioritize later)
+
+- [ ] **Password field `autocomplete` attribute** — login and signup password inputs missing `autocomplete="current-password"` / `"new-password"`; breaks password manager autofill and triggers browser console warnings
+- [ ] **Profile page needs context** — currently just a display name form floating in space; add current prediction count, scoring summary, or other stats to make it worth visiting
 
 ---
 
