@@ -5,6 +5,7 @@ import SignupView from '../views/SignupView.vue'
 import ResetView from '../views/ResetView.vue'
 import ProfileView from '../views/ProfileView.vue'
 import LeaderboardView from '../views/LeaderboardView.vue'
+import NotFoundView from '../views/NotFoundView.vue'
 
 export default createRouter({
   history: createWebHistory(),
@@ -16,5 +17,6 @@ export default createRouter({
     { path: '/reset', component: ResetView },
     { path: '/profile', component: ProfileView },
     { path: '/leaderboard', component: LeaderboardView },
+    { path: '/:pathMatch(.*)*', component: NotFoundView },
   ],
 })

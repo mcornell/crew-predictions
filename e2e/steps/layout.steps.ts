@@ -1,7 +1,19 @@
 import { createBdd } from 'playwright-bdd';
 import { expect } from '@playwright/test';
 
-const { Then } = createBdd();
+const { When, Then } = createBdd();
+
+When('I visit an unknown page', async ({ page }) => {
+  await page.goto('/this-page-does-not-exist');
+});
+
+Then('I should see a not-found message', async ({ page }) => {
+  await expect(page.getByTestId('not-found')).toBeVisible();
+});
+
+Then('I should see a link home', async ({ page }) => {
+  await expect(page.getByRole('link', { name: /home|matches/i })).toBeVisible();
+});
 
 Then('the page title should be {string}', async ({ page }, title: string) => {
   await expect(page).toHaveTitle(title);
