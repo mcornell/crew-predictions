@@ -13,7 +13,7 @@
       <template v-else>
         <p class="login-sub">Enter your email and we'll send a reset link.</p>
         <form class="login-form" data-testid="reset-form" @submit.prevent="handleSubmit">
-          <input class="form-input" v-model="email" type="email" placeholder="Email" required />
+          <input class="form-input" v-model="email" type="email" placeholder="Email" autocomplete="email" required />
           <p v-if="error" class="form-error">{{ error }}</p>
           <button class="btn-submit" type="submit">Send Reset Link</button>
         </form>

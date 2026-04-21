@@ -42,6 +42,16 @@ describe('LoginView', () => {
     expect(router.currentRoute.value.path).toBe('/matches')
   })
 
+  it('email input has autocomplete="email"', () => {
+    const wrapper = mount(LoginView, { global: { plugins: [router] } })
+    expect(wrapper.find('input[type="email"]').attributes('autocomplete')).toBe('email')
+  })
+
+  it('password input has autocomplete="current-password"', () => {
+    const wrapper = mount(LoginView, { global: { plugins: [router] } })
+    expect(wrapper.find('input[type="password"]').attributes('autocomplete')).toBe('current-password')
+  })
+
   it('renders a Sign in with Google button', () => {
     const wrapper = mount(LoginView, { global: { plugins: [router] } })
     expect(wrapper.find('button[data-testid="google-signin"]').exists()).toBe(true)
