@@ -20,6 +20,7 @@ const mockMatches = [
 ]
 
 beforeEach(() => {
+  localStorage.clear()
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
     ok: true,
     json: () => Promise.resolve({ matches: mockMatches, predictions: {} }),
@@ -153,13 +154,62 @@ describe('MatchesView', () => {
     expect(matchup.text()).toMatch(/New England Revolution\s*2\s*vs\s*1\s*Columbus Crew/i)
   })
 
-  it('logged-out user sees a disabled Predict button, not a Sign in link', async () => {
+  it('logged-out user sees an enabled Predict button with score inputs', async () => {
     const wrapper = mountMatches()
     await flushPromises()
     const card = wrapper.findAll('[data-testid="match-card"]')[0]
+    expect(card.find('input[name="home_goals"]').exists()).toBe(true)
+    expect(card.find('input[name="away_goals"]').exists()).toBe(true)
     const btn = card.find('button')
     expect(btn.text()).toBe('Predict')
-    expect(btn.attributes('disabled')).toBeDefined()
+    expect(btn.attributes('disabled')).toBeUndefined()
+  })
+
+  it('guest prediction is saved to localStorage after submit', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ matches: mockMatches, predictions: {} }) })
+    vi.stubGlobal('fetch', fetchMock)
+    const storageSpy = vi.spyOn(Storage.prototype, 'setItem')
+
+    const wrapper = mountMatches()
+    await flushPromises()
+
+    const card = wrapper.findAll('[data-testid="match-card"]')[0]
+    await card.find('input[name="home_goals"]').setValue('2')
+    await card.find('input[name="away_goals"]').setValue('0')
+    await card.find('button').trigger('click')
+    await flushPromises()
+
+    expect(storageSpy).toHaveBeenCalledWith(
+      'guestPredictions',
+      expect.stringContaining('"match-1"'),
+    )
+    storageSpy.mockRestore()
+  })
+
+  it('shows sign-in nudge after guest submits a prediction', async () => {
+    const wrapper = mountMatches()
+    await flushPromises()
+
+    const card = wrapper.findAll('[data-testid="match-card"]')[0]
+    await card.find('input[name="home_goals"]').setValue('2')
+    await card.find('input[name="away_goals"]').setValue('0')
+    await card.find('button').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="guest-nudge"]').exists()).toBe(true)
+  })
+
+  it('guest prediction loaded from localStorage on mount', async () => {
+    localStorage.setItem('guestPredictions', JSON.stringify({ 'match-1': { homeGoals: 3, awayGoals: 2 } }))
+
+    const wrapper = mountMatches()
+    await flushPromises()
+
+    const card = wrapper.findAll('[data-testid="match-card"]')[0]
+    expect(card.text()).toMatch(/Columbus Crew\s*3\s*vs\s*2\s*LA Galaxy/)
+
+    localStorage.removeItem('guestPredictions')
   })
 
   it('match more than 7 days away is not shown in upcoming', async () => {

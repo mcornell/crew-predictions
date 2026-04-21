@@ -65,3 +65,11 @@ Then('I should see a disabled {string} button', async ({ page }, label: string) 
 Then('the server should reject it with 403', async () => {
   expect(lastPredictionStatus).toBe(403);
 });
+
+When('I reload the page', async ({ page }) => {
+  await page.reload();
+});
+
+Then('I should see a sign-in nudge', async ({ page }) => {
+  await expect(page.locator('[data-testid="guest-nudge"]')).toBeVisible();
+});
