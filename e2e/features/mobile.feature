@@ -33,6 +33,12 @@ Feature: Mobile layout
     And I should see at least one Columbus Crew match card
     And each match card should be at most 180px tall
 
+  Scenario: Team names are not clipped on Galaxy S24
+    Given I am not logged in
+    And I am viewing on a Galaxy S24
+    When I visit the matches page
+    Then team names should not be clipped on any match card
+
   Scenario: User can sign in with email and password on mobile
     Given a test user exists with email "mobilefan@example.com" and password "Nordecke96!"
     And I am viewing on an iPhone 15

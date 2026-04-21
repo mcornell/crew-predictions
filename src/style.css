@@ -515,15 +515,35 @@ body::after {
 
   .matchup {
     font-size: 1.2rem;
-    flex-wrap: nowrap;
-    gap: 0.25rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.25rem 0.5rem;
+  }
+
+  .team-home {
+    order: 1;
+    width: 100%;
+    text-align: center;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+  }
+
+  .team-away {
+    order: 3;
+    width: 100%;
+    text-align: center;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+  }
+
+  .score-input, .inline-score, .vs {
+    order: 2;
   }
 
   .team-name {
     font-size: 1.2rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .score-input {
