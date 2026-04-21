@@ -45,10 +45,11 @@
    - [ ] Team name truncation on 360px (Galaxy S24) — "COLUMBUS CREW" clips to "COLUMBUS C..." at the narrowest CSS viewport; physical screen is 1080px but CSS pixels are 360px due to 3× device pixel ratio, so there's no way to use more pixels — need a layout solution (smaller inputs, abbreviated names, or two-line team display)
 
 2. [ ] **UX fixes — broken flows**
-   - [ ] Predict while logged out silently fails — clicking Predict fires a 401 but shows no feedback; redirect to `/login` or show an inline "sign in to predict" prompt
-   - [ ] Unknown routes render blank — `/notapage` shows just the header on a black void; add a 404/NotFound view with a link home
+   - [x] Predict while logged out silently fails — redirects to `/login` on 401
+   - [x] Unknown routes render blank — 404 NotFoundView added with link home
    - [ ] Score inputs visible to logged-out users — users can type scores before being asked to sign in; either hide inputs or replace Predict button with "Sign in to predict" until authenticated
    - [ ] Profile display name not pre-populated — the input on `/profile` is empty even when the user already has a handle set; load current handle on mount
+   - [ ] Google sign-in popup blocked on mobile — `signInWithPopup` is blocked by mobile browsers (tested: real device); switch to `signInWithRedirect` on mobile (detect via screen width or UA), keep popup on desktop. Firebase's `getRedirectResult()` must be called on app load to complete the redirect flow.
 
 3. [ ] **UX gaps — missing content**
    - [ ] Leaderboard empty state is a dead end — "No predictions scored yet" with no explanation of what will appear or how scoring works; add context
