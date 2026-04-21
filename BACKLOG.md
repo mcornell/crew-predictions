@@ -49,7 +49,7 @@
    - [x] Unknown routes render blank — 404 NotFoundView added with link home
    - [ ] Score inputs visible to logged-out users — users can type scores before being asked to sign in; either hide inputs or replace Predict button with "Sign in to predict" until authenticated
    - [ ] Profile display name not pre-populated — the input on `/profile` is empty even when the user already has a handle set; load current handle on mount
-   - [ ] Google sign-in popup blocked on mobile — `signInWithPopup` is blocked by mobile browsers (tested: real device); switch to `signInWithRedirect` on mobile (detect via screen width or UA), keep popup on desktop. Firebase's `getRedirectResult()` must be called on app load to complete the redirect flow.
+   - [ ] Google sign-in popup blocked on mobile — `signInWithPopup` is blocked by mobile browsers (tested: real device); switch to `signInWithRedirect` everywhere (desktop too — it does a full-page nav to Google and back, seamless and widely accepted). Drop the popup entirely for simplicity. Firebase's `getRedirectResult()` must be called on app load to complete the redirect flow.
 
 3. [ ] **UX gaps — missing content**
    - [ ] Leaderboard empty state is a dead end — "No predictions scored yet" with no explanation of what will appear or how scoring works; add context
