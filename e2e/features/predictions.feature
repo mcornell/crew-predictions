@@ -6,6 +6,12 @@ Feature: Score predictions
       | match-pred-1 | Columbus Crew    | LA Galaxy     | STATUS_SCHEDULED |
       | match-past-1 | Portland Timbers | Columbus Crew | STATUS_FULL_TIME |
 
+  Scenario: Logged-out user clicking Predict is redirected to sign in
+    Given I am not logged in
+    When I visit the matches page
+    And I click "Predict"
+    Then I should be on the login page
+
   Scenario: Logged-in user submits a score prediction
     Given I am logged in as "BlackAndGold@bsky.mock"
     When I visit the matches page

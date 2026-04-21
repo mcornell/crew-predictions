@@ -125,6 +125,10 @@ async function submit(matchId: string) {
   const { home, away } = inputs[matchId]
   const body = new URLSearchParams({ match_id: matchId, home_goals: home, away_goals: away })
   const res = await fetch('/api/predictions', { method: 'POST', body })
+  if (res.status === 401) {
+    window.location.href = '/login'
+    return
+  }
   if (res.ok) {
     savedPredictions[matchId] = { homeGoals: Number(home), awayGoals: Number(away) }
   }
