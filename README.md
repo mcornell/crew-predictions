@@ -47,8 +47,21 @@ Open `http://localhost:5173`.
 ```bash
 go test ./...          # Go unit tests
 npm run test:unit      # Vue component tests (Vitest)
-npm test               # Full e2e suite (Playwright BDD)
+npm test               # Full e2e suite (Playwright BDD, runs against local emulator)
+npm run test:smoke     # Staging smoke suite (runs against crew-predictions-staging.web.app)
 ```
+
+**Staging smoke suite** requires `STAGING_API_KEY` and `SMOKE_TEST_PASSWORD` env vars. In CI these are GitHub secrets. Locally:
+```bash
+STAGING_API_KEY=... SMOKE_TEST_PASSWORD=... npm run test:smoke
+```
+
+**Google sign-in — manual verification required on staging:**
+The smoke suite verifies that clicking "Sign in with Google" initiates the redirect (page navigates to Google's OAuth flow). It cannot complete the full Google sign-in automatically because Google's OAuth consent screen blocks automated browsers. After any deploy that touches the auth flow, manually verify on `https://crew-predictions-staging.web.app`:
+1. Click "Sign in with Google" on desktop Chrome
+2. Complete the OAuth flow
+3. Confirm you land on `/matches` and your email appears in the header
+4. Repeat on mobile (iOS Safari and Android Chrome)
 
 ---
 
