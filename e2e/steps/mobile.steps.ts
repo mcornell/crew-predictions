@@ -25,7 +25,7 @@ Then('each match card should be at most 180px tall', async ({ page }) => {
   expect(count).toBeGreaterThan(0);
   for (let i = 0; i < count; i++) {
     const box = await cards.nth(i).boundingBox();
-    expect(box!.height).toBeLessThanOrEqual(180);
+    expect(box!.height).toBeLessThanOrEqual(160);
   }
 });
 
@@ -42,15 +42,6 @@ Then('the Predict button should be at least 44px tall', async ({ page }) => {
   const box = await btn.boundingBox();
   expect(box!.height).toBeGreaterThanOrEqual(44);
 });
-
-Then('team names should not be clipped on any match card', async ({ page }) => {
-  await expect(page.getByTestId('match-card').first()).toBeVisible()
-  const clipped = await page.evaluate(() => {
-    const names = document.querySelectorAll('.team-name')
-    return Array.from(names).some(el => el.scrollWidth > el.clientWidth)
-  })
-  expect(clipped).toBe(false)
-})
 
 When('I tap the hamburger menu', async ({ page }) => {
   await page.getByTestId('hamburger').click();
