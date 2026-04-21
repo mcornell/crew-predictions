@@ -2,13 +2,9 @@
 
 ## Up Next
 
-1. [x] **Team name truncation on 360px (Galaxy S24)** — fixed by stacking team names vertically (home top, scores middle, away bottom) at ≤600px; e2e covered
+1. [ ] **Profile page needs context** — currently just a display name form floating in space; add current prediction count, scoring summary, or other stats to make it worth visiting.
 
-2. [ ] **Guest predictions (no account required)** — users who don't want to sign up should be able to make predictions and see how they'd score. They won't appear on the leaderboard. Options: (a) store predictions in localStorage keyed by a generated guest token, compute score client-side, show a "you'd have X points" summary; (b) server-side guest session with a randomly-generated anonymous ID. Either way, guests should see a persistent "Sign in to save your predictions" nudge and be able to upgrade to a real account without losing picks.
-
-3. [ ] **Profile page needs context** — currently just a display name form floating in space; add current prediction count, scoring summary, or other stats to make it worth visiting.
-
-4. [ ] **Custom domain migration** — Firebase Hosting custom domain + Cloud Run domain mapping. Update `authDomain` and OAuth redirect URIs.
+2. [ ] **Custom domain migration** — Firebase Hosting custom domain + Cloud Run domain mapping. Update `authDomain` and OAuth redirect URIs.
 
 ---
 
@@ -22,7 +18,6 @@
 ## Test Infrastructure
 
 - [ ] **Playwright smoke suite for prod** — identify a small tagged subset of e2e scenarios that can run against the live prod URL after deploy (replaces the current `curl` liveness check in `deploy-prod`)
-- [ ] **Fix Vue Router warnings in unit tests** — test `makeRouter()` factories only register a few routes; components with `<router-link>` to unregistered paths (e.g. `/login`, `/signup`, `/reset`) trigger "No match found" warnings. Add stub routes to silence them.
 - [ ] **Per-worker server isolation** — if the e2e suite grows large enough that serial execution is too slow, give each Playwright worker its own server instance (separate ports) so parallel runs don't share in-memory state.
 
 ---
@@ -40,6 +35,9 @@
 
 ## Done
 
+- [x] **Guest predictions** — logged-out users can enter picks stored in localStorage; never hits server or leaderboard; nudge to create account after predicting
+- [x] **Vue Router warnings in unit tests** — shared `makeRouter()` utility with catch-all route silences all "No match found" warnings across test files
+- [x] **Team name truncation on 360px (Galaxy S24)** — stacks team names vertically at ≤600px; e2e covered
 - [x] **Typography overhaul** — replaced Bebas Neue with Barlow Condensed 800 (closer to official MLS/Crew aesthetic, works in mixed case); bumped font sizes across the board; fixed button vertical centering (flexbox, replacing asymmetric padding hack for Bebas Neue baseline quirk)
 - [x] **Official Crew brand colors** — `--gold: #fedd00` (sourced from columbuscrew.com computed styles); nav link and muted text contrast improved (`#888`)
 - [x] **Autocomplete attributes** — `autocomplete="email"` on all email inputs, `current-password` on login, `new-password` on signup; fixes password manager autofill and removes browser console warning
