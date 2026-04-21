@@ -3,12 +3,12 @@ name: CI/CD
 on:
   push:
     branches: [main, develop]
-  pull_request:
-    branches: [main]
+    paths-ignore:
+      - '**.md'
 
 jobs:
   test:
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/develop'
+    if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -29,7 +29,7 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '24'
           cache: npm
 
       # Firebase Auth emulator requires Java 25 (latest LTS)
@@ -147,12 +147,11 @@ jobs:
           curl -f "$STAGING_URL/"
           curl -f "$STAGING_URL/api/matches"
 
-      - uses: actions/setup-node@v6
-        with:
-          node-version: '22'
-          cache: npm
-
-      - run: npm ci && npm run build
+      - name: Extract frontend artifact from Docker image
+        run: |
+          docker create --name tmp us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions:sha-${{ github.sha }}
+          docker cp tmp:/app/dist ./dist
+          docker rm tmp
 
       - uses: actions/upload-artifact@v4
         with:
@@ -171,6 +170,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # parents[1] is the develop tip on a standard merge commit
       - name: Get develop SHA
         run: echo "DEVELOP_SHA=$(gh api repos/${{ github.repository }}/commits/${{ github.sha }} --jq '.parents[1].sha')" >> $GITHUB_ENV
         env:
@@ -192,11 +192,6 @@ jobs:
 
       - name: Find staging run ID
         run: echo "STAGING_RUN_ID=$(gh run list --workflow=ci.yml --branch=develop --event=push --commit=${{ env.DEVELOP_SHA }} --json=databaseId --jq='.[0].databaseId')" >> $GITHUB_ENV
-        env:
-          GH_TOKEN: ${{ github.token }}
-
-      - name: Wait for staging run to complete
-        run: gh run watch ${{ env.STAGING_RUN_ID }} --exit-status
         env:
           GH_TOKEN: ${{ github.token }}
 

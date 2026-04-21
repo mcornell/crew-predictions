@@ -17,6 +17,12 @@ const router = createRouter({
 })
 
 describe('LoginView', () => {
+  it('sets document title to Sign In — Crew Predictions', async () => {
+    mount(LoginView, { global: { plugins: [router] } })
+    await flushPromises()
+    expect(document.title).toBe('Sign In — Crew Predictions')
+  })
+
   it('renders an email/password form', () => {
     const wrapper = mount(LoginView, { global: { plugins: [router] } })
     expect(wrapper.find('form[data-testid="login-form"]').exists()).toBe(true)
@@ -42,6 +48,16 @@ describe('LoginView', () => {
     expect(router.currentRoute.value.path).toBe('/matches')
   })
 
+  it('email input has autocomplete="email"', () => {
+    const wrapper = mount(LoginView, { global: { plugins: [router] } })
+    expect(wrapper.find('input[type="email"]').attributes('autocomplete')).toBe('email')
+  })
+
+  it('password input has autocomplete="current-password"', () => {
+    const wrapper = mount(LoginView, { global: { plugins: [router] } })
+    expect(wrapper.find('input[type="password"]').attributes('autocomplete')).toBe('current-password')
+  })
+
   it('renders a Sign in with Google button', () => {
     const wrapper = mount(LoginView, { global: { plugins: [router] } })
     expect(wrapper.find('button[data-testid="google-signin"]').exists()).toBe(true)
@@ -61,10 +77,9 @@ describe('LoginView', () => {
     expect(link.text()).toBe('Forgot password?')
   })
 
-  it('calls signInWithGoogle and navigates to /matches on success', async () => {
+  it('calls signInWithGoogle on button click', async () => {
     const { signInWithGoogle } = await import('../../firebase')
-    vi.mocked(signInWithGoogle).mockResolvedValue('fake-token')
-    global.fetch = vi.fn().mockResolvedValue({ ok: true })
+    vi.mocked(signInWithGoogle).mockResolvedValue(undefined)
 
     await router.push('/login')
     const wrapper = mount(LoginView, { global: { plugins: [router] } })
@@ -73,6 +88,5 @@ describe('LoginView', () => {
     await flushPromises()
 
     expect(signInWithGoogle).toHaveBeenCalled()
-    expect(router.currentRoute.value.path).toBe('/matches')
   })
 })

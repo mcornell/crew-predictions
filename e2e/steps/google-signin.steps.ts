@@ -3,15 +3,15 @@ import { createBdd } from 'playwright-bdd';
 const { When } = createBdd();
 
 When('I sign in with Google as {string}', async ({ page }, email: string) => {
-  const popupPromise = page.waitForEvent('popup');
   await page.click('button[data-testid="google-signin"]');
-  const popup = await popupPromise;
-  await popup.waitForLoadState();
+  // signInWithRedirect navigates the main page to the emulator OAuth handler
+  await page.waitForURL(/9099.*handler/, { timeout: 10000 });
 
-  // Firebase Auth emulator OAuth handler: click "Add new account" to reveal
-  // the email form, fill the email, and confirm. Material Design Components
-  // styling hides the real <input>/<button> so force-click/fill.
-  await popup.getByText('Add new account').click();
-  await popup.fill('input[id="email-input"]', email, { force: true });
-  await popup.locator('button#sign-in').click({ force: true });
+  // Same emulator UI as popup but now full-page
+  await page.getByText('Add new account').click();
+  await page.fill('input[id="email-input"]', email, { force: true });
+  await page.locator('button#sign-in').click({ force: true });
+
+  // Wait for redirect back to the app and session to complete
+  await page.waitForURL(/localhost:8080/, { timeout: 10000 });
 });

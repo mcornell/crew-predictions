@@ -15,6 +15,22 @@ beforeEach(() => {
 })
 
 describe('LeaderboardView', () => {
+  it('sets document title to Leaderboard — Crew Predictions', async () => {
+    mount(LeaderboardView)
+    await flushPromises()
+    expect(document.title).toBe('Leaderboard — Crew Predictions')
+  })
+
+  it('shows a helpful message when no predictions scored yet', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ acesRadio: [], upper90Club: [] }),
+    }))
+    const wrapper = mount(LeaderboardView)
+    await flushPromises()
+    expect(wrapper.text()).toContain('No predictions scored yet')
+  })
+
   it('renders leaderboard rows for Aces Radio', async () => {
     const wrapper = mount(LeaderboardView)
     await flushPromises()

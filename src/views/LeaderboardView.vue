@@ -48,6 +48,7 @@ const leaderboard = reactive<{ acesRadio: Entry[]; upper90Club: Entry[] }>({
 })
 
 onMounted(async () => {
+  document.title = 'Leaderboard — Crew Predictions'
   const res = await fetch('/api/leaderboard')
   if (res.ok) {
     const data = await res.json()

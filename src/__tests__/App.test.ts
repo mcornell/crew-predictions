@@ -3,6 +3,10 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import App from '../App.vue'
 
+vi.mock('../firebase', () => ({
+  getGoogleRedirectResult: vi.fn().mockResolvedValue(null),
+}))
+
 function makeRouter() {
   return createRouter({
     history: createMemoryHistory(),
@@ -54,6 +58,18 @@ describe('App', () => {
     const wrapper = mount(App, { global: { plugins: [makeRouter()] } })
     await flushPromises()
     expect(wrapper.find('[data-testid="email-verification-banner"]').exists()).toBe(true)
+  })
+
+  it('still fetches /api/me when getGoogleRedirectResult throws', async () => {
+    const { getGoogleRedirectResult } = await import('../firebase')
+    vi.mocked(getGoogleRedirectResult).mockRejectedValueOnce(new Error('auth/popup-closed-by-user'))
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 401 })
+    vi.stubGlobal('fetch', fetchMock)
+
+    mount(App, { global: { plugins: [makeRouter()] } })
+    await flushPromises()
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/me')
   })
 
   it('re-fetches /api/me after route change to update auth state', async () => {

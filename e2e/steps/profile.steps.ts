@@ -1,7 +1,11 @@
 import { createBdd } from 'playwright-bdd';
 import { expect } from '@playwright/test';
 
-const { When } = createBdd();
+const { When, Then } = createBdd();
+
+Then('the display name field should contain {string}', async ({ page }, value: string) => {
+  await expect(page.getByTestId('display-name-input')).toHaveValue(value);
+});
 
 When('I visit the profile page', async ({ page }) => {
   await page.goto('/profile');

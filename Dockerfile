@@ -1,11 +1,11 @@
-FROM node:22-slim AS frontend
+FROM node:24-slim AS frontend
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM golang:latest AS backend
+FROM golang:1.26 AS backend
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download

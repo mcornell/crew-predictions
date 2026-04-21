@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
+import { ref } from 'vue'
 import MatchesView from '../MatchesView.vue'
+
+const loggedInProvide = {
+  currentUser: ref({ handle: 'testfan@crew.mock', emailVerified: true }),
+}
 
 const mockMatches = [
   { id: 'match-past', homeTeam: 'New England Revolution', awayTeam: 'Columbus Crew', kickoff: '2026-04-18T23:30:00Z', status: 'STATUS_FULL_TIME', homeScore: '2', awayScore: '1' },
@@ -16,6 +21,12 @@ beforeEach(() => {
 })
 
 describe('MatchesView', () => {
+  it('sets document title to Upcoming — Crew Predictions', async () => {
+    mount(MatchesView)
+    await flushPromises()
+    expect(document.title).toBe('Upcoming — Crew Predictions')
+  })
+
   it('renders an Upcoming heading', async () => {
     const wrapper = mount(MatchesView)
     await flushPromises()
@@ -35,7 +46,7 @@ describe('MatchesView', () => {
   })
 
   it('each card has home_goals and away_goals inputs and a Lock In button', async () => {
-    const wrapper = mount(MatchesView)
+    const wrapper = mount(MatchesView, { global: { provide: loggedInProvide } })
     await flushPromises()
     const card = wrapper.findAll('[data-testid="match-card"]')[0]
     expect(card.find('input[name="home_goals"]').exists()).toBe(true)
@@ -49,7 +60,7 @@ describe('MatchesView', () => {
       .mockResolvedValueOnce({ ok: true })
     vi.stubGlobal('fetch', fetchMock)
 
-    const wrapper = mount(MatchesView)
+    const wrapper = mount(MatchesView, { global: { provide: loggedInProvide } })
     await flushPromises()
 
     const card = wrapper.findAll('[data-testid="match-card"]')[0]
@@ -117,6 +128,15 @@ describe('MatchesView', () => {
     await flushPromises()
     const matchup = wrapper.find('[data-testid="result-card"] [data-testid="matchup"]')
     expect(matchup.text()).toMatch(/New England Revolution\s*2\s*vs\s*1\s*Columbus Crew/i)
+  })
+
+  it('logged-out user sees a disabled Predict button, not a Sign in link', async () => {
+    const wrapper = mount(MatchesView)
+    await flushPromises()
+    const card = wrapper.findAll('[data-testid="match-card"]')[0]
+    const btn = card.find('button')
+    expect(btn.text()).toBe('Predict')
+    expect(btn.attributes('disabled')).toBeDefined()
   })
 
   it('match more than 7 days away is not shown in upcoming', async () => {

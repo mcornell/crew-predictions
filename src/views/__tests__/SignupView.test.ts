@@ -23,6 +23,12 @@ beforeEach(() => {
 })
 
 describe('SignupView', () => {
+  it('sets document title to Sign Up — Crew Predictions', async () => {
+    mount(SignupView, { global: { plugins: [makeRouter()] } })
+    await flushPromises()
+    expect(document.title).toBe('Sign Up — Crew Predictions')
+  })
+
   it('renders an email/password form', () => {
     const wrapper = mount(SignupView, { global: { plugins: [makeRouter()] } })
     expect(wrapper.find('form[data-testid="signup-form"]').exists()).toBe(true)
@@ -49,6 +55,16 @@ describe('SignupView', () => {
     expect(router.currentRoute.value.path).toBe('/matches')
   })
 
+  it('email input has autocomplete="email"', () => {
+    const wrapper = mount(SignupView, { global: { plugins: [makeRouter()] } })
+    expect(wrapper.find('input[type="email"]').attributes('autocomplete')).toBe('email')
+  })
+
+  it('password input has autocomplete="new-password"', () => {
+    const wrapper = mount(SignupView, { global: { plugins: [makeRouter()] } })
+    expect(wrapper.find('input[type="password"]').attributes('autocomplete')).toBe('new-password')
+  })
+
   it('renders a Sign in with Google button', () => {
     const wrapper = mount(SignupView, { global: { plugins: [makeRouter()] } })
     expect(wrapper.find('button[data-testid="google-signin"]').exists()).toBe(true)
@@ -61,10 +77,9 @@ describe('SignupView', () => {
     expect(link.text()).toBe('Sign in')
   })
 
-  it('calls signInWithGoogle and navigates to /matches on success', async () => {
+  it('calls signInWithGoogle on button click', async () => {
     const { signInWithGoogle } = await import('../../firebase')
-    vi.mocked(signInWithGoogle).mockResolvedValue('fake-token')
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }))
+    vi.mocked(signInWithGoogle).mockResolvedValue(undefined)
 
     const router = makeRouter()
     await router.push('/signup')
@@ -74,7 +89,6 @@ describe('SignupView', () => {
     await flushPromises()
 
     expect(signInWithGoogle).toHaveBeenCalled()
-    expect(router.currentRoute.value.path).toBe('/matches')
   })
 
   it('shows a specific message when email is already registered', async () => {

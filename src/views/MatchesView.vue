@@ -21,7 +21,7 @@
               </div>
               <div class="match-meta">{{ formatKickoff(match.kickoff) }} — <span class="saved-label">Locked in</span></div>
             </template>
-            <template v-else>
+            <template v-else-if="currentUser">
               <div class="matchup matchup--input" data-testid="matchup">
                 <span class="team-name team-home">{{ match.homeTeam }}</span>
                 <input class="score-input" name="home_goals" type="number" min="0" max="99" v-model="inputs[match.id].home" placeholder="0" />
@@ -31,8 +31,19 @@
               </div>
               <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
             </template>
+            <template v-else>
+              <div class="matchup" data-testid="matchup">
+                <span class="team-name team-home">{{ match.homeTeam }}</span>
+                <span class="vs">vs</span>
+                <span class="team-name team-away">{{ match.awayTeam }}</span>
+              </div>
+              <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
+            </template>
           </div>
-          <button v-if="!savedPredictions[match.id]" class="btn-lock" @click="submit(match.id)">Predict</button>
+          <template v-if="!savedPredictions[match.id]">
+            <button v-if="currentUser" class="btn-lock" @click="submit(match.id)">Predict</button>
+            <button v-else class="btn-lock btn-lock--disabled" disabled>Predict</button>
+          </template>
         </div>
       </div>
     </section>
@@ -69,7 +80,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, inject, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import type { Ref } from 'vue'
+
+const currentUser = inject<Ref<{ handle: string; emailVerified: boolean } | null>>('currentUser')
+const router = useRouter()
 
 interface Match {
   id: string
@@ -110,6 +126,7 @@ function formatKickoff(iso: string): string {
 }
 
 onMounted(async () => {
+  document.title = 'Upcoming — Crew Predictions'
   const res = await fetch('/api/matches')
   if (res.ok) {
     const data = await res.json()
@@ -125,6 +142,10 @@ async function submit(matchId: string) {
   const { home, away } = inputs[matchId]
   const body = new URLSearchParams({ match_id: matchId, home_goals: home, away_goals: away })
   const res = await fetch('/api/predictions', { method: 'POST', body })
+  if (res.status === 401) {
+    router.push('/login')
+    return
+  }
   if (res.ok) {
     savedPredictions[matchId] = { homeGoals: Number(home), awayGoals: Number(away) }
   }

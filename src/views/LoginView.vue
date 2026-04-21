@@ -4,8 +4,8 @@
       <h1 class="login-title">Sign In</h1>
       <p class="login-sub">Pick your scores. Be wrong in public. It's tradition.</p>
       <form class="login-form" data-testid="login-form" @submit.prevent="handleSubmit">
-        <input class="form-input" v-model="email" type="email" placeholder="Email" required />
-        <input class="form-input" v-model="password" type="password" placeholder="Password" required />
+        <input class="form-input" v-model="email" type="email" placeholder="Email" autocomplete="email" required />
+        <input class="form-input" v-model="password" type="password" placeholder="Password" autocomplete="current-password" required />
         <p v-if="error" class="form-error">{{ error }}</p>
         <button class="btn-submit" type="submit">Sign In</button>
       </form>
@@ -24,9 +24,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { signIn, signInWithGoogle } from '../firebase'
+
+onMounted(() => { document.title = 'Sign In — Crew Predictions' })
 
 const router = useRouter()
 const email = ref('')
@@ -54,9 +56,7 @@ async function handleSubmit() {
 async function handleGoogle() {
   error.value = ''
   try {
-    const token = await signInWithGoogle()
-    await postSession(token)
-    router.push('/matches')
+    await signInWithGoogle()
   } catch {
     error.value = 'Google sign-in failed'
   }

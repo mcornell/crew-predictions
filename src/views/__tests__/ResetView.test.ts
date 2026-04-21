@@ -56,6 +56,11 @@ describe('ResetView', () => {
     expect(wrapper.find('[data-testid="reset-confirmation"]').exists()).toBe(false)
   })
 
+  it('email input has autocomplete="email"', () => {
+    const wrapper = mount(ResetView, { global: { plugins: [makeRouter()] } })
+    expect(wrapper.find('input[type="email"]').attributes('autocomplete')).toBe('email')
+  })
+
   it('renders a link back to the login page', () => {
     const wrapper = mount(ResetView, { global: { plugins: [makeRouter()] } })
     const link = wrapper.find('a[href="/login"]')
