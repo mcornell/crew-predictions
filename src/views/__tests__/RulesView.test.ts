@@ -1,14 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
-import { createRouter, createMemoryHistory } from 'vue-router'
 import RulesView from '../RulesView.vue'
-
-function makeRouter() {
-  return createRouter({
-    history: createMemoryHistory(),
-    routes: [{ path: '/rules', component: RulesView }],
-  })
-}
+import { makeRouter } from '../../test-utils/router'
 
 describe('RulesView', () => {
   it('sets document title to Rules — Crew Predictions', async () => {

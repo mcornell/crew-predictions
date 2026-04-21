@@ -2,9 +2,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { ref } from 'vue'
 import MatchesView from '../MatchesView.vue'
+import { makeRouter } from '../../test-utils/router'
 
+const loggedOutProvide = { currentUser: ref(null) }
 const loggedInProvide = {
   currentUser: ref({ handle: 'testfan@crew.mock', emailVerified: true }),
+}
+
+function mountMatches(provide = loggedOutProvide) {
+  return mount(MatchesView, { global: { plugins: [makeRouter()], provide } })
 }
 
 const mockMatches = [
@@ -22,31 +28,31 @@ beforeEach(() => {
 
 describe('MatchesView', () => {
   it('sets document title to Upcoming — Crew Predictions', async () => {
-    mount(MatchesView)
+    mountMatches()
     await flushPromises()
     expect(document.title).toBe('Upcoming — Crew Predictions')
   })
 
   it('renders an Upcoming heading', async () => {
-    const wrapper = mount(MatchesView)
+    const wrapper = mountMatches()
     await flushPromises()
     expect(wrapper.find('h1').text()).toBe('Upcoming')
   })
 
   it('renders a card for each match', async () => {
-    const wrapper = mount(MatchesView)
+    const wrapper = mountMatches()
     await flushPromises()
     expect(wrapper.findAll('[data-testid="match-card"]')).toHaveLength(2)
   })
 
   it('shows Columbus Crew in at least one card', async () => {
-    const wrapper = mount(MatchesView)
+    const wrapper = mountMatches()
     await flushPromises()
     expect(wrapper.text()).toContain('Columbus Crew')
   })
 
   it('each card has home_goals and away_goals inputs and a Lock In button', async () => {
-    const wrapper = mount(MatchesView, { global: { provide: loggedInProvide } })
+    const wrapper = mountMatches(loggedInProvide)
     await flushPromises()
     const card = wrapper.findAll('[data-testid="match-card"]')[0]
     expect(card.find('input[name="home_goals"]').exists()).toBe(true)
@@ -60,7 +66,7 @@ describe('MatchesView', () => {
       .mockResolvedValueOnce({ ok: true })
     vi.stubGlobal('fetch', fetchMock)
 
-    const wrapper = mount(MatchesView, { global: { provide: loggedInProvide } })
+    const wrapper = mountMatches(loggedInProvide)
     await flushPromises()
 
     const card = wrapper.findAll('[data-testid="match-card"]')[0]
@@ -81,7 +87,7 @@ describe('MatchesView', () => {
         predictions: { 'match-1': { homeGoals: 2, awayGoals: 0 } },
       }),
     }))
-    const wrapper = mount(MatchesView)
+    const wrapper = mountMatches()
     await flushPromises()
     const card = wrapper.findAll('[data-testid="match-card"]')[0]
     // New layout: Columbus Crew [2] vs [0] LA Galaxy
@@ -89,7 +95,7 @@ describe('MatchesView', () => {
   })
 
   it('shows a Results section for completed matches', async () => {
-    const wrapper = mount(MatchesView)
+    const wrapper = mountMatches()
     await flushPromises()
     expect(wrapper.text()).toContain('Results')
   })
@@ -105,7 +111,7 @@ describe('MatchesView', () => {
         predictions: {},
       }),
     }))
-    const wrapper = mount(MatchesView)
+    const wrapper = mountMatches()
     await flushPromises()
     const cards = wrapper.findAll('[data-testid="result-card"]')
     expect(cards[0].text()).toContain('Atlanta United')
@@ -113,7 +119,7 @@ describe('MatchesView', () => {
   })
 
   it('completed match appears in results section, not upcoming', async () => {
-    const wrapper = mount(MatchesView)
+    const wrapper = mountMatches()
     await flushPromises()
     const resultsSection = wrapper.find('[data-testid="results-section"]')
     expect(resultsSection.exists()).toBe(true)
@@ -121,18 +127,17 @@ describe('MatchesView', () => {
   })
 
   it('upcoming match does not appear in results section', async () => {
-    const wrapper = mount(MatchesView)
+    const wrapper = mountMatches()
     await flushPromises()
     const resultsSection = wrapper.find('[data-testid="results-section"]')
     expect(resultsSection.text()).not.toContain('LA Galaxy')
   })
 
   it('shows final score between team names on result cards', async () => {
-    const wrapper = mount(MatchesView)
+    const wrapper = mountMatches()
     await flushPromises()
     const card = wrapper.find('[data-testid="result-card"]')
     const text = card.text().replace(/\s+/g, ' ')
-    // Score must appear between the two team names
     const neIdx = text.indexOf('New England Revolution')
     const clbIdx = text.indexOf('Columbus Crew')
     const scoreIdx = text.indexOf('2')
@@ -142,14 +147,14 @@ describe('MatchesView', () => {
   })
 
   it('result card matchup line contains score inline', async () => {
-    const wrapper = mount(MatchesView)
+    const wrapper = mountMatches()
     await flushPromises()
     const matchup = wrapper.find('[data-testid="result-card"] [data-testid="matchup"]')
     expect(matchup.text()).toMatch(/New England Revolution\s*2\s*vs\s*1\s*Columbus Crew/i)
   })
 
   it('logged-out user sees a disabled Predict button, not a Sign in link', async () => {
-    const wrapper = mount(MatchesView)
+    const wrapper = mountMatches()
     await flushPromises()
     const card = wrapper.findAll('[data-testid="match-card"]')[0]
     const btn = card.find('button')
@@ -165,7 +170,7 @@ describe('MatchesView', () => {
       ok: true,
       json: () => Promise.resolve({ matches: [farMatch], predictions: {} }),
     }))
-    const wrapper = mount(MatchesView)
+    const wrapper = mountMatches()
     await flushPromises()
     expect(wrapper.findAll('[data-testid="match-card"]')).toHaveLength(0)
   })
