@@ -8,12 +8,10 @@
 
 <script setup lang="ts">
 import { ref, provide, onMounted, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import AppHeader from './components/AppHeader.vue'
-import { getGoogleRedirectResult } from './firebase'
 
 const route = useRoute()
-const router = useRouter()
 const currentUser = ref<{ handle: string; emailVerified: boolean } | null>(null)
 const authLoading = ref(true)
 
@@ -25,23 +23,7 @@ async function fetchUser() {
   authLoading.value = false
 }
 
-onMounted(async () => {
-  try {
-    const token = await getGoogleRedirectResult()
-    if (token) {
-      await fetch('/auth/session', {
-        method: 'POST',
-        body: new URLSearchParams({ idToken: token }),
-      })
-      await fetchUser()
-      router.push('/matches')
-      return
-    }
-  } catch {
-    // redirect result failed — fall through and fetch current session state
-  }
-  await fetchUser()
-})
+onMounted(fetchUser)
 
 watch(() => route.path, fetchUser)
 </script>

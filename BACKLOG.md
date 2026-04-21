@@ -6,7 +6,7 @@
 
 2. [ ] **Guest predictions (no account required)** — users who don't want to sign up should be able to make predictions and see how they'd score. They won't appear on the leaderboard. Options: (a) store predictions in localStorage keyed by a generated guest token, compute score client-side, show a "you'd have X points" summary; (b) server-side guest session with a randomly-generated anonymous ID. Either way, guests should see a persistent "Sign in to save your predictions" nudge and be able to upgrade to a real account without losing picks.
 
-3. [ ] **Custom domain migration** — Firebase Hosting custom domain + Cloud Run domain mapping. Update `authDomain` and OAuth redirect URIs.
+3. [ ] **Custom domain** — add `crew-predictions.mcornell.dev` as Firebase Hosting custom domain (prod); add CNAME in mcornell.dev DNS; update `FIREBASE_AUTH_DOMAIN` in Cloud Run env.
 
 4. [ ] **Team name truncation on 360px (Galaxy S24)** — "COLUMBUS CREW" clips at the narrowest CSS viewport; physical screen is 1080px but CSS pixels are 360px due to 3× device pixel ratio. Need a layout solution: smaller inputs, abbreviated names, or two-line team display.
 
@@ -45,7 +45,7 @@
 - [x] **Typography overhaul** — replaced Bebas Neue with Barlow Condensed 800 (closer to official MLS/Crew aesthetic, works in mixed case); bumped font sizes across the board; fixed button vertical centering (flexbox, replacing asymmetric padding hack for Bebas Neue baseline quirk)
 - [x] **Official Crew brand colors** — `--gold: #fedd00` (sourced from columbuscrew.com computed styles); nav link and muted text contrast improved (`#888`)
 - [x] **Autocomplete attributes** — `autocomplete="email"` on all email inputs, `current-password` on login, `new-password` on signup; fixes password manager autofill and removes browser console warning
-- [x] **Google sign-in redirect** — switched from `signInWithPopup` to `signInWithRedirect` everywhere; `getRedirectResult()` called in App.vue onMounted with try/catch so fetchUser always runs even if redirect result fails
+- [x] **Google sign-in** — switched to `signInWithPopup`; token returned directly; removed `getRedirectResult` from App.vue; fixes cross-origin storage issue on staging and Cloud Run URLs
 - [x] **Mobile responsive layout** — cards stack at 390px and 412px; header stays single-row; Predict button full-width at 48px
 - [x] **UX fixes — broken flows** — logged-out predict redirects to `/login`; 404 NotFoundView; score inputs gated behind auth; profile display name pre-populated; Google sign-in popup fixed
 - [x] **Auth UX polish** — login/signup cross-links; error-state differentiation; logout UI; password-reset flow; display name / profile page; email verification banner
