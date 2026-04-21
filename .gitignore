@@ -41,6 +41,7 @@ yarn-error.log*
 .npm/
 .pnpm-debug.log*
 playwright-report/
+smoke-report/
 test-results/
 .playwright-mcp/
 .features-gen/
