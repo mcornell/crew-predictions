@@ -3,6 +3,8 @@ name: CI/CD
 on:
   push:
     branches: [main, develop]
+    paths-ignore:
+      - '**.md'
 
 jobs:
   test:
