@@ -1,5 +1,5 @@
 <template>
-  <AppHeader :user="currentUser" />
+  <AppHeader :user="currentUser" :loading="authLoading" />
   <div v-if="currentUser && !currentUser.emailVerified" data-testid="email-verification-banner" class="verification-banner">
     Please verify your email — check your inbox for the verification link.
   </div>
@@ -15,12 +15,14 @@ import { getGoogleRedirectResult } from './firebase'
 const route = useRoute()
 const router = useRouter()
 const currentUser = ref<{ handle: string; emailVerified: boolean } | null>(null)
+const authLoading = ref(true)
 
 provide('currentUser', currentUser)
 
 async function fetchUser() {
   const res = await fetch('/api/me')
   currentUser.value = res.ok ? await res.json() : null
+  authLoading.value = false
 }
 
 onMounted(async () => {

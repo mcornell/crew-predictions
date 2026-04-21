@@ -1,7 +1,7 @@
 <template>
   <div class="page">
     <h1 class="page-title">Rules</h1>
-    <p class="rules-intro">Two ways to be wrong. Pick your poison.</p>
+    <p class="rules-intro">Two ways to be wrong. Pick your poison — actually, you don't have a choice, you're in all of the contests.</p>
 
     <section class="rules-section">
       <h2 class="section-title">Aces Radio</h2>

@@ -41,4 +41,9 @@ describe('AppHeader', () => {
     const wrapper = mount(AppHeader, { props: { user: null } })
     expect(wrapper.find('a[href="/leaderboard"]').exists()).toBe(true)
   })
+
+  it('hides Sign In when auth is loading', () => {
+    const wrapper = mount(AppHeader, { props: { user: null, loading: true } })
+    expect(wrapper.find('a[href="/login"]').exists()).toBe(false)
+  })
 })
