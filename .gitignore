@@ -33,6 +33,9 @@ firestore-debug.log
 .DS_Store
 Thumbs.db
 
+# Coverage
+coverage/
+
 # Node (Playwright / BDD)
 node_modules/
 npm-debug.log*
