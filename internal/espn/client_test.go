@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"strings"
 	"testing"
 )
 
@@ -140,5 +142,41 @@ func TestIsCrewMatch_TrueWhenAway(t *testing.T) {
 func TestIsCrewMatch_FalseWhenNeither(t *testing.T) {
 	if isCrewMatch(matchRecord{home: "Portland Timbers", away: "Atlanta United"}) {
 		t.Error("expected false when Columbus Crew is not in the match")
+	}
+}
+
+func TestFetchCrewMatchesFrom_ReturnsCrewMatchesFromFixtures(t *testing.T) {
+	schedule, err := os.ReadFile("testdata/mls_schedule.json")
+	if err != nil {
+		t.Fatalf("reading schedule fixture: %v", err)
+	}
+	scoreboard, err := os.ReadFile("testdata/mls_scoreboard.json")
+	if err != nil {
+		t.Fatalf("reading scoreboard fixture: %v", err)
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.Contains(r.URL.Path, "schedule"):
+			w.Write(schedule)
+		case strings.Contains(r.URL.Path, "scoreboard"):
+			w.Write(scoreboard)
+		default:
+			json.NewEncoder(w).Encode(espnResponse{})
+		}
+	}))
+	defer srv.Close()
+
+	matches, err := fetchCrewMatchesFrom(srv.URL)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(matches) == 0 {
+		t.Fatal("expected at least one match from fixtures")
+	}
+	for _, m := range matches {
+		if m.HomeTeam != "Columbus Crew" && m.AwayTeam != "Columbus Crew" {
+			t.Errorf("non-Crew match returned: %q vs %q", m.HomeTeam, m.AwayTeam)
+		}
 	}
 }

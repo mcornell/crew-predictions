@@ -76,15 +76,15 @@ func parseKickoff(s string) (time.Time, error) {
 	return time.Parse("2006-01-02T15:04Z07:00", s)
 }
 
-func scheduleURL(league string) string {
-	return fmt.Sprintf("%s/%s/teams/%s/schedule", espnBase, league, teamID)
+func scheduleURL(base, league string) string {
+	return fmt.Sprintf("%s/%s/teams/%s/schedule", base, league, teamID)
 }
 
-func upcomingURL(league string, from time.Time) string {
+func upcomingURL(base, league string, from time.Time) string {
 	end := from.AddDate(0, 0, 7)
 	return fmt.Sprintf(
 		"%s/%s/scoreboard?dates=%s-%s&limit=500",
-		espnBase, league,
+		base, league,
 		from.Format("20060102"),
 		end.Format("20060102"),
 	)
@@ -153,12 +153,12 @@ func isCrewMatch(r matchRecord) bool {
 	return r.home == "Columbus Crew" || r.away == "Columbus Crew"
 }
 
-func FetchCrewMatches() ([]models.Match, error) {
+func fetchCrewMatchesFrom(base string) ([]models.Match, error) {
 	now := time.Now().UTC()
 	var all []matchRecord
 
 	for _, league := range leagueSlugs {
-		past, err := fetchAndParse(scheduleURL(league))
+		past, err := fetchAndParse(scheduleURL(base, league))
 		if err != nil {
 			return nil, fmt.Errorf("espn schedule fetch (%s): %w", league, err)
 		}
@@ -168,7 +168,7 @@ func FetchCrewMatches() ([]models.Match, error) {
 			}
 		}
 
-		upcoming, err := fetchAndParse(upcomingURL(league, now))
+		upcoming, err := fetchAndParse(upcomingURL(base, league, now))
 		if err != nil {
 			return nil, fmt.Errorf("espn scoreboard fetch (%s): %w", league, err)
 		}
@@ -197,4 +197,8 @@ func FetchCrewMatches() ([]models.Match, error) {
 		}
 	}
 	return matches, nil
+}
+
+func FetchCrewMatches() ([]models.Match, error) {
+	return fetchCrewMatchesFrom(espnBase)
 }
