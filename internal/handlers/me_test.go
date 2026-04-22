@@ -12,6 +12,22 @@ import (
 	"github.com/mcornell/crew-predictions/internal/repository"
 )
 
+func TestMeHandler_ReturnsUserID(t *testing.T) {
+	data, _ := json.Marshal(map[string]interface{}{"userID": "firebase:abc", "handle": "Fan"})
+	req := httptest.NewRequest(http.MethodGet, "/api/me", nil)
+	req.AddCookie(&http.Cookie{Name: "__session", Value: base64.StdEncoding.EncodeToString(data)})
+	w := httptest.NewRecorder()
+	handlers.NewMeHandler(repository.NewMemoryUserStore()).Get(w, req)
+
+	var body struct {
+		UserID string `json:"userID"`
+	}
+	json.NewDecoder(w.Body).Decode(&body)
+	if body.UserID != "firebase:abc" {
+		t.Errorf("expected userID firebase:abc in response, got %q", body.UserID)
+	}
+}
+
 func TestMeHandler_UpsertsProviderFromSession(t *testing.T) {
 	users := repository.NewMemoryUserStore()
 	h := handlers.NewMeHandler(users)

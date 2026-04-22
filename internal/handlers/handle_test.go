@@ -59,6 +59,23 @@ func TestHandleHandler_UpdatesUserStoreAndRewritesCookie(t *testing.T) {
 	}
 }
 
+func TestHandleHandler_SavesLocationToUserStore(t *testing.T) {
+	users := repository.NewMemoryUserStore()
+	h := NewHandleHandler(users)
+
+	form := url.Values{"handle": {"CrewForever"}, "location": {"Columbus, OH"}}
+	req := httptest.NewRequest(http.MethodPost, "/auth/handle", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(sessionCookie("firebase:abc", "oldfan"))
+	w := httptest.NewRecorder()
+	h.Update(w, req)
+
+	u, _ := users.GetByID(context.Background(), "firebase:abc")
+	if u == nil || u.Location != "Columbus, OH" {
+		t.Errorf("expected location Columbus, OH stored, got %+v", u)
+	}
+}
+
 func TestHandleHandler_RequiresSession(t *testing.T) {
 	h := NewHandleHandler(repository.NewMemoryUserStore())
 	req := httptest.NewRequest(http.MethodPost, "/auth/handle", strings.NewReader("handle=x"))

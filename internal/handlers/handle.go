@@ -28,11 +28,13 @@ func (h *HandleHandler) Update(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "handle is required", http.StatusBadRequest)
 		return
 	}
+	location := r.FormValue("location")
 
 	if err := h.users.Upsert(r.Context(), repository.User{
 		UserID:   user.UserID,
 		Handle:   handle,
 		Provider: user.Provider,
+		Location: location,
 	}); err != nil {
 		http.Error(w, "could not save handle", http.StatusInternalServerError)
 		return
