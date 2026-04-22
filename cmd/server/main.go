@@ -127,6 +127,8 @@ func main() {
 	}
 	rmh := handlers.NewRefreshMatchesHandler(matchStore, refreshFetcher, onRefresh)
 	mux.HandleFunc("POST /admin/refresh-matches", rmh.Refresh)
+	bfh := handlers.NewBackfillUsersHandler(predStore, userStore)
+	mux.HandleFunc("POST /admin/backfill-users", bfh.Backfill)
 	psh := handlers.NewPollScoresHandler(matchStore, resultStore, refreshFetcher)
 	mux.HandleFunc("POST /admin/poll-scores", psh.Poll)
 
