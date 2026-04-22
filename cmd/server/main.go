@@ -29,6 +29,17 @@ func main() {
 
 	ctx := context.Background()
 
+	var userStore repository.UserStore
+	if project := os.Getenv("GOOGLE_CLOUD_PROJECT"); project != "" {
+		fs, err := repository.NewFirestoreUserStore(ctx, project)
+		if err != nil {
+			log.Fatalf("failed to connect to Firestore users: %v", err)
+		}
+		userStore = fs
+	} else {
+		userStore = repository.NewMemoryUserStore()
+	}
+
 	var predStore repository.PredictionStore
 	if project := os.Getenv("GOOGLE_CLOUD_PROJECT"); project != "" {
 		fs, err := repository.NewFirestorePredictionStore(ctx, project)
@@ -72,12 +83,28 @@ func main() {
 		verifier = handlers.NewFirebaseTokenVerifier(authClient)
 		log.Printf("Firebase Auth initialized (project: %s)", projectID)
 	}
-	sh := handlers.NewSessionHandler(verifier)
+	sh := handlers.NewSessionHandler(verifier, userStore)
+	hh := handlers.NewHandleHandler(userStore)
 
 	mux := http.NewServeMux()
 
-	// Match store: source of truth for cached matches
-	matchStore := repository.NewMemoryMatchStore()
+	// Match store: memory is primary (fast reads); Firestore secondary persists across restarts
+	memMatchStore := repository.NewMemoryMatchStore()
+	var matchStore repository.MatchStore = memMatchStore
+	if project := os.Getenv("GOOGLE_CLOUD_PROJECT"); project != "" {
+		fsMatches, err := repository.NewFirestoreMatchStore(project)
+		if err != nil {
+			log.Fatalf("failed to connect to Firestore matches: %v", err)
+		}
+		matchStore = repository.NewWriteThroughMatchStore(memMatchStore, fsMatches)
+		// Pre-populate memory from Firestore so match data survives restarts
+		if stored, err := fsMatches.GetAll(); err != nil {
+			log.Printf("warning: could not load matches from Firestore: %v", err)
+		} else if len(stored) > 0 {
+			memMatchStore.SaveAll(stored)
+			log.Printf("loaded %d matches from Firestore", len(stored))
+		}
+	}
 
 	// ESPN fetcher used by the refresh endpoint; in TEST_MODE reads from seeded store
 	var refreshFetcher func() ([]models.Match, error)
@@ -93,11 +120,14 @@ func main() {
 	// API endpoints (JSON)
 	mh := handlers.NewMatchesHandler(predStore, matchStore)
 	mux.HandleFunc("GET /api/matches", mh.APIList)
-	mux.HandleFunc("GET /api/me", handlers.Me)
+	meh := handlers.NewMeHandler(userStore)
+	mux.HandleFunc("GET /api/me", meh.Get)
 	ph := handlers.NewPredictionsHandler(predStore, matchFetcher)
 	mux.HandleFunc("POST /api/predictions", ph.Submit)
-	lh := handlers.NewLeaderboardHandler(predStore, resultStore, "Columbus Crew")
+	lh := handlers.NewLeaderboardHandler(predStore, resultStore, userStore, "Columbus Crew")
 	mux.HandleFunc("GET /api/leaderboard", lh.APIList)
+	prh := handlers.NewProfileHandler(predStore, resultStore, userStore, "Columbus Crew")
+	mux.HandleFunc("GET /api/profile/{userID}", prh.Get)
 	rh := handlers.NewResultsHandler(resultStore)
 	mux.HandleFunc("POST /admin/results", rh.Submit)
 	var matchPoller *poll.MatchPoller
@@ -115,11 +145,14 @@ func main() {
 	}
 	rmh := handlers.NewRefreshMatchesHandler(matchStore, refreshFetcher, onRefresh)
 	mux.HandleFunc("POST /admin/refresh-matches", rmh.Refresh)
+	bfh := handlers.NewBackfillUsersHandler(predStore, userStore)
+	mux.HandleFunc("POST /admin/backfill-users", bfh.Backfill)
 	psh := handlers.NewPollScoresHandler(matchStore, resultStore, refreshFetcher)
 	mux.HandleFunc("POST /admin/poll-scores", psh.Poll)
 
 	// Auth endpoints
 	mux.HandleFunc("POST /auth/session", sh.Create)
+	mux.HandleFunc("POST /auth/handle", hh.Update)
 	mux.HandleFunc("GET /auth/logout", handlers.Logout)
 	mux.HandleFunc("GET /auth/config.js", serveFirebaseConfig)
 
@@ -144,7 +177,7 @@ func main() {
 			mux.HandleFunc("POST /admin/seed-prediction", seedH.Submit)
 			log.Printf("test seed endpoint registered at POST /admin/seed-prediction")
 		}
-		seedMH := handlers.NewSeedMatchHandler(matchStore)
+		seedMH := handlers.NewSeedMatchHandler(memMatchStore)
 		mux.HandleFunc("POST /admin/seed-match", seedMH.Submit)
 		log.Printf("test seed endpoint registered at POST /admin/seed-match")
 	}

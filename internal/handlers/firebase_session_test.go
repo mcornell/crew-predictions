@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/mcornell/crew-predictions/internal/handlers"
+	"github.com/mcornell/crew-predictions/internal/repository"
 )
 
 type mockVerifier struct {
@@ -20,8 +21,26 @@ func (m *mockVerifier) VerifyIDToken(ctx context.Context, idToken string) (*hand
 	return m.token, m.err
 }
 
+func newSession(v handlers.TokenVerifier) *handlers.SessionHandler {
+	return handlers.NewSessionHandler(v, repository.NewMemoryUserStore())
+}
+
+func TestSessionHandler_UpsertUserOnCreate(t *testing.T) {
+	tok := &handlers.FirebaseToken{UID: "uid123", DisplayName: "CrewFan", Provider: "google.com"}
+	users := repository.NewMemoryUserStore()
+	h := handlers.NewSessionHandler(&mockVerifier{token: tok}, users)
+	req := httptest.NewRequest(http.MethodPost, "/auth/session", strings.NewReader("idToken=valid"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	h.Create(httptest.NewRecorder(), req)
+
+	u, _ := users.GetByID(context.Background(), "firebase:uid123")
+	if u == nil || u.Handle != "CrewFan" {
+		t.Errorf("expected user upserted with handle CrewFan, got %+v", u)
+	}
+}
+
 func TestSessionHandler_Returns400WhenNoToken(t *testing.T) {
-	h := handlers.NewSessionHandler(&mockVerifier{})
+	h := newSession(&mockVerifier{})
 	req := httptest.NewRequest(http.MethodPost, "/auth/session", strings.NewReader(""))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
@@ -32,7 +51,7 @@ func TestSessionHandler_Returns400WhenNoToken(t *testing.T) {
 }
 
 func TestSessionHandler_Returns401WhenTokenInvalid(t *testing.T) {
-	h := handlers.NewSessionHandler(&mockVerifier{err: errors.New("bad token")})
+	h := newSession(&mockVerifier{err: errors.New("bad token")})
 	req := httptest.NewRequest(http.MethodPost, "/auth/session", strings.NewReader("idToken=invalid"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
@@ -44,7 +63,7 @@ func TestSessionHandler_Returns401WhenTokenInvalid(t *testing.T) {
 
 func TestSessionHandler_SetsSessionCookieOnValidToken(t *testing.T) {
 	tok := &handlers.FirebaseToken{UID: "uid123", Email: "user@example.com", Provider: "google.com"}
-	h := handlers.NewSessionHandler(&mockVerifier{token: tok})
+	h := newSession(&mockVerifier{token: tok})
 	req := httptest.NewRequest(http.MethodPost, "/auth/session", strings.NewReader("idToken=valid"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
@@ -63,7 +82,7 @@ func TestSessionHandler_SetsSessionCookieOnValidToken(t *testing.T) {
 
 func TestSessionHandler_Returns200OnSuccess(t *testing.T) {
 	tok := &handlers.FirebaseToken{UID: "uid123", Email: "user@example.com", Provider: "google.com"}
-	h := handlers.NewSessionHandler(&mockVerifier{token: tok})
+	h := newSession(&mockVerifier{token: tok})
 	req := httptest.NewRequest(http.MethodPost, "/auth/session", strings.NewReader("idToken=valid"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
@@ -76,7 +95,7 @@ func TestSessionHandler_Returns200OnSuccess(t *testing.T) {
 
 func TestSessionHandler_HandleIsDisplayNameWhenSet(t *testing.T) {
 	tok := &handlers.FirebaseToken{UID: "uid456", Email: "user@example.com", DisplayName: "Nordecke Regular", Provider: "password"}
-	h := handlers.NewSessionHandler(&mockVerifier{token: tok})
+	h := newSession(&mockVerifier{token: tok})
 	req := httptest.NewRequest(http.MethodPost, "/auth/session", strings.NewReader("idToken=valid"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
@@ -98,7 +117,7 @@ func TestSessionHandler_HandleIsDisplayNameWhenSet(t *testing.T) {
 
 func TestSessionHandler_HandleFallsBackToEmailWhenNoDisplayName(t *testing.T) {
 	tok := &handlers.FirebaseToken{UID: "uid789", Email: "user@example.com", Provider: "password"}
-	h := handlers.NewSessionHandler(&mockVerifier{token: tok})
+	h := newSession(&mockVerifier{token: tok})
 	req := httptest.NewRequest(http.MethodPost, "/auth/session", strings.NewReader("idToken=valid"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
@@ -120,7 +139,7 @@ func TestSessionHandler_HandleFallsBackToEmailWhenNoDisplayName(t *testing.T) {
 
 func TestSessionHandler_SessionContainsEmailVerifiedTrue(t *testing.T) {
 	tok := &handlers.FirebaseToken{UID: "uid1", Email: "user@example.com", EmailVerified: true, Provider: "password"}
-	h := handlers.NewSessionHandler(&mockVerifier{token: tok})
+	h := newSession(&mockVerifier{token: tok})
 	req := httptest.NewRequest(http.MethodPost, "/auth/session", strings.NewReader("idToken=valid"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
@@ -142,13 +161,12 @@ func TestSessionHandler_SessionContainsEmailVerifiedTrue(t *testing.T) {
 
 func TestSessionHandler_SessionContainsFirebaseUID(t *testing.T) {
 	tok := &handlers.FirebaseToken{UID: "uid123", Email: "user@example.com", Provider: "google.com"}
-	h := handlers.NewSessionHandler(&mockVerifier{token: tok})
+	h := newSession(&mockVerifier{token: tok})
 	req := httptest.NewRequest(http.MethodPost, "/auth/session", strings.NewReader("idToken=valid"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
 	h.Create(w, req)
 
-	// Verify the session cookie can be decoded by userFromSession
 	resp := w.Result()
 	req2 := httptest.NewRequest(http.MethodGet, "/", nil)
 	for _, c := range resp.Cookies() {

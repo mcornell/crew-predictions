@@ -5,7 +5,7 @@
       <a class="btn-ghost" href="/leaderboard">Leaderboard</a>
       <a class="btn-ghost" href="/rules">Rules</a>
       <template v-if="user">
-        <a class="btn-ghost" href="/profile">{{ user.handle }}</a>
+        <a class="btn-ghost" :href="`/profile/${user.userID}`">{{ user.handle }}</a>
         <a class="btn-ghost" href="/auth/logout">Sign out</a>
       </template>
       <a v-else-if="!loading" class="btn-primary" href="/login">Sign In</a>
@@ -22,7 +22,7 @@
       <a href="/leaderboard" @click="drawerOpen = false">Leaderboard</a>
       <a href="/rules" @click="drawerOpen = false">Rules</a>
       <template v-if="user">
-        <a href="/profile" @click="drawerOpen = false">{{ user.handle }}</a>
+        <a :href="`/profile/${user.userID}`" @click="drawerOpen = false">{{ user.handle }}</a>
         <a href="/auth/logout" @click="drawerOpen = false">Sign out</a>
       </template>
       <a v-else-if="!loading" href="/login" @click="drawerOpen = false">Sign In</a>
@@ -34,7 +34,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 
 defineProps<{
-  user: { handle: string } | null
+  user: { userID: string; handle: string } | null
   loading?: boolean
 }>()
 
