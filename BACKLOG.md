@@ -4,11 +4,9 @@
 
 1. [ ] **Prod smoke suite** — unauthenticated-only scenarios (app loads, leaderboard/matches API responds, Vue hydrates); replaces current `curl` liveness check in `deploy-prod`.
 
-3. [x] **Leaderboard: show users with ≥1 prediction at 0 pts before results land** — seed leaderboard from unique userIDs in predictions rather than only from scored pairs; smoke test accounts won't appear since they never predict.
+2. [ ] **Cache leaderboard scoring** — currently recalculated on every request; fine now but will need in-memory caching or pre-computation at scale.
 
-4. [ ] **Cache leaderboard scoring** — currently recalculated on every request; fine now but will need in-memory caching or pre-computation at scale.
-
-5. [ ] **Remove stale `handle` from predictions** — `handle` on prediction documents is legacy; leaderboard now sources display names from `UserStore` by `userID`. Stop writing it on new predictions and remove the `p.Handle` fallback in the leaderboard once confirmed no UID-less predictions exist in prod.
+3. [ ] **Remove stale `handle` from predictions** — `handle` on prediction documents is legacy; leaderboard now sources display names from `UserStore` by `userID`. Stop writing it on new predictions and remove the `p.Handle` fallback in the leaderboard once confirmed no UID-less predictions exist in prod.
 
 ---
 
@@ -44,6 +42,7 @@
 
 ## Done
 
+- [x] **Leaderboard: show users with ≥1 prediction at 0 pts before results land** — seeded from all predictions on every request; smoke/admin accounts never appear since they don't predict.
 - [x] **Profile page** — `/profile/:userID` shows handle, location, prediction count, and leaderboard standing (points + rank for both formats); edit form on own profile only; leaderboard handles link to profiles; location field added to `POST /auth/handle`.
 - [x] **Staging smoke cleanup** — switched to permanent accounts only; no more account creation in smoke tests; `users` collection no longer accumulates stale entries per CI run.
 - [x] **Handle management + UserStore** — `users/{userID}` Firestore collection as source of truth for display names; leaderboard groups by `userID` and joins `UserStore` for current handle; `POST /auth/handle` upserts on profile save; `GET /api/me` lazily upserts returning users on app open (catches users who were logged in before the feature shipped); `POST /admin/backfill-users` seeds `users` from existing predictions.
