@@ -14,19 +14,23 @@ func NewFirebaseTokenVerifier(client *firebaseauth.Client) *FirebaseTokenVerifie
 	return &FirebaseTokenVerifier{client: client}
 }
 
+func tokenToFirebaseToken(uid string, claims map[string]interface{}, provider string) *FirebaseToken {
+	email, _ := claims["email"].(string)
+	displayName, _ := claims["name"].(string)
+	emailVerified, _ := claims["email_verified"].(bool)
+	return &FirebaseToken{
+		UID:           uid,
+		Email:         email,
+		DisplayName:   displayName,
+		EmailVerified: emailVerified,
+		Provider:      provider,
+	}
+}
+
 func (v *FirebaseTokenVerifier) VerifyIDToken(ctx context.Context, idToken string) (*FirebaseToken, error) {
 	token, err := v.client.VerifyIDToken(ctx, idToken)
 	if err != nil {
 		return nil, err
 	}
-	email, _ := token.Claims["email"].(string)
-	displayName, _ := token.Claims["name"].(string)
-	emailVerified, _ := token.Claims["email_verified"].(bool)
-	return &FirebaseToken{
-		UID:           token.UID,
-		Email:         email,
-		DisplayName:   displayName,
-		EmailVerified: emailVerified,
-		Provider:      token.Firebase.SignInProvider,
-	}, nil
+	return tokenToFirebaseToken(token.UID, token.Claims, token.Firebase.SignInProvider), nil
 }
