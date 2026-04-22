@@ -23,7 +23,7 @@ func (h *MeHandler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if user.UserID != "" {
-		if err := h.users.Upsert(r.Context(), repository.User{UserID: user.UserID, Handle: user.Handle}); err != nil {
+		if err := h.users.Upsert(r.Context(), repository.User{UserID: user.UserID, Handle: user.Handle, Provider: user.Provider}); err != nil {
 			log.Printf("me: lazy upsert failed for %s: %v", user.UserID, err)
 		}
 	}

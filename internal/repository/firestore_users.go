@@ -19,10 +19,11 @@ func NewFirestoreUserStore(ctx context.Context, projectID string) (*FirestoreUse
 }
 
 func (s *FirestoreUserStore) Upsert(ctx context.Context, u User) error {
-	_, err := s.client.Collection("users").Doc(u.UserID).Set(ctx, map[string]any{
-		"handle":   u.Handle,
-		"provider": u.Provider,
-	})
+	data := map[string]any{"handle": u.Handle}
+	if u.Provider != "" {
+		data["provider"] = u.Provider
+	}
+	_, err := s.client.Collection("users").Doc(u.UserID).Set(ctx, data, firestore.MergeAll)
 	return err
 }
 

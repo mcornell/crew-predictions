@@ -12,6 +12,20 @@ import (
 	"github.com/mcornell/crew-predictions/internal/repository"
 )
 
+func TestMeHandler_UpsertsProviderFromSession(t *testing.T) {
+	users := repository.NewMemoryUserStore()
+	h := handlers.NewMeHandler(users)
+	data, _ := json.Marshal(map[string]interface{}{"userID": "google:abc", "handle": "Fan", "provider": "google.com"})
+	req := httptest.NewRequest(http.MethodGet, "/api/me", nil)
+	req.AddCookie(&http.Cookie{Name: "__session", Value: base64.StdEncoding.EncodeToString(data)})
+	h.Get(httptest.NewRecorder(), req)
+
+	u, _ := users.GetByID(context.Background(), "google:abc")
+	if u == nil || u.Provider != "google.com" {
+		t.Errorf("expected provider google.com stored, got %+v", u)
+	}
+}
+
 func TestMeHandler_UpsertsUserToStoreOnValidSession(t *testing.T) {
 	users := repository.NewMemoryUserStore()
 	h := handlers.NewMeHandler(users)

@@ -54,6 +54,19 @@ func TestMemoryUserStore_GetAll(t *testing.T) {
 	}
 }
 
+func TestMemoryUserStore_UpsertPreservesProviderWhenEmpty(t *testing.T) {
+	s := repository.NewMemoryUserStore()
+	ctx := context.Background()
+
+	s.Upsert(ctx, repository.User{UserID: "u1", Handle: "fan", Provider: "google.com"})
+	s.Upsert(ctx, repository.User{UserID: "u1", Handle: "fan"}) // no provider
+
+	got, _ := s.GetByID(ctx, "u1")
+	if got == nil || got.Provider != "google.com" {
+		t.Errorf("expected provider google.com preserved, got %+v", got)
+	}
+}
+
 func TestMemoryUserStore_GetByID_NotFound(t *testing.T) {
 	s := repository.NewMemoryUserStore()
 	got, err := repository.NewMemoryUserStore().GetByID(context.Background(), "nope")

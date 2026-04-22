@@ -30,6 +30,10 @@ func NewMemoryUserStore() *MemoryUserStore {
 func (s *MemoryUserStore) Upsert(_ context.Context, u User) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	existing := s.data[u.UserID]
+	if u.Provider == "" {
+		u.Provider = existing.Provider
+	}
 	s.data[u.UserID] = u
 	return nil
 }
