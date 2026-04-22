@@ -2,7 +2,7 @@
 
 ## Up Next
 
-1. [ ] **Profile page needs context** — currently just a display name form floating in space; add current prediction count, scoring summary, or other stats to make it worth visiting.
+1. [ ] **Prod smoke suite** — unauthenticated-only scenarios (app loads, leaderboard/matches API responds, Vue hydrates); replaces current `curl` liveness check in `deploy-prod`.
 
 3. [ ] **Leaderboard: show users with ≥1 prediction at 0 pts before results land** — seed leaderboard from unique userIDs in predictions rather than only from scored pairs; smoke test accounts won't appear since they never predict.
 
@@ -23,7 +23,6 @@
 
 ## Test Infrastructure
 
-- [ ] **Playwright smoke suite for prod** — identify a small tagged subset of e2e scenarios that can run against the live prod URL after deploy (replaces the current `curl` liveness check in `deploy-prod`)
 - [ ] **Per-worker server isolation** — current parallelism runs two Playwright projects (`auth` + `app`) against a shared server. If the app group grows too slow, give each worker its own Go server instance on a separate port so they don't share in-memory state.
 
 ---
@@ -45,6 +44,8 @@
 
 ## Done
 
+- [x] **Profile page** — `/profile/:userID` shows handle, location, prediction count, and leaderboard standing (points + rank for both formats); edit form on own profile only; leaderboard handles link to profiles; location field added to `POST /auth/handle`.
+- [x] **Staging smoke cleanup** — switched to permanent accounts only; no more account creation in smoke tests; `users` collection no longer accumulates stale entries per CI run.
 - [x] **Handle management + UserStore** — `users/{userID}` Firestore collection as source of truth for display names; leaderboard groups by `userID` and joins `UserStore` for current handle; `POST /auth/handle` upserts on profile save; `GET /api/me` lazily upserts returning users on app open (catches users who were logged in before the feature shipped); `POST /admin/backfill-users` seeds `users` from existing predictions.
 - [x] **Match persistence across restarts** — `FirestoreMatchStore` persists full season match data to `matches/{matchID}`; `WriteThroughMatchStore` wraps memory (fast reads) + Firestore (durable writes); on startup, loads stored matches from Firestore into memory before ESPN fires; past-kickoff matches immediately scheduled for catch-up polling.
 - [x] **Unlock picks + countdown** — Unlock button clears a saved prediction and pre-populates inputs with the previous pick; client-side only (server 403 after kickoff is the real gate). Live "locks in Xd Yh / Xh Ym / Xm" countdown on each match card using browser clock (cosmetic). Upcoming window extended to 8 days.

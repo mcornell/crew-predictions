@@ -55,8 +55,9 @@ Entry point: `cmd/server/main.go`
 | `GET` | `/api/matches` | optional | Upcoming matches + caller's predictions |
 | `POST` | `/api/predictions` | required | Submit a score prediction (form data) |
 | `GET` | `/api/leaderboard` | none | Ranked scores for both formats |
-| `GET` | `/api/me` | optional | Current session user `{handle}` or 401; lazily upserts user to `UserStore` |
-| `POST` | `/auth/handle` | required | Update display name; upserts to `UserStore`, rewrites session cookie |
+| `GET` | `/api/me` | optional | Current session user `{userID, handle}` or 401; lazily upserts user to `UserStore` |
+| `GET` | `/api/profile/:userID` | required | Public profile: handle, location, predictionCount, Aces Radio + Upper 90 Club standing |
+| `POST` | `/auth/handle` | required | Update display name + location; upserts to `UserStore`, rewrites session cookie |
 | `POST` | `/auth/session` | — | Exchange Firebase ID token for session cookie (form data) |
 | `GET` | `/auth/logout` | — | Clear session cookie, redirect to /matches |
 | `GET` | `/auth/config.js` | — | Firebase client config as JS (`window.__firebaseConfig`) |
@@ -112,8 +113,8 @@ Entry: `src/main.ts` → loads `/auth/config.js` → mounts Vue app
 | `src/views/LoginView.vue` | `/login` | Email/password sign-in + Google SSO |
 | `src/views/SignupView.vue` | `/signup` | New account creation (email/password + Google SSO) |
 | `src/views/ResetView.vue` | `/reset` | Password reset request |
-| `src/views/LeaderboardView.vue` | `/leaderboard` | Aces Radio + Upper 90 Club rankings |
-| `src/views/ProfileView.vue` | `/profile` | Display name edit |
+| `src/views/LeaderboardView.vue` | `/leaderboard` | Aces Radio + Upper 90 Club rankings; handles link to `/profile/:userID` |
+| `src/views/ProfileView.vue` | `/profile/:userID` | Public profile (stats + location); edit form shown only on own profile |
 | `src/views/RulesView.vue` | `/rules` | Scoring format explainer |
 | `src/views/NotFoundView.vue` | `*` | 404 catch-all |
 | `src/components/AppHeader.vue` | (all) | Nav header; desktop nav + hamburger drawer at ≤480px |
@@ -141,6 +142,7 @@ results/{matchID}
 users/{userID}
   handle:     string   // current display name (source of truth)
   provider:   string   // "google.com", "password", etc.
+  location:   string   // optional, user-supplied (e.g. "Columbus, OH")
 
 matches/{matchID}
   homeTeam:   string
@@ -166,7 +168,7 @@ push to develop
     └── deploy-staging ── Docker build → Artifact Registry
                           Cloud Run deploy (crew-predictions-staging, us-east5)
                           Firebase Hosting deploy → crew-predictions-staging.web.app
-                          Smoke test suite (real staging URL, screenshots always on)
+                          Smoke test suite (real staging URL, permanent accounts only — no account creation)
                           Frontend artifact uploaded (retained 90 days)
 
 push to main (merge from develop)
