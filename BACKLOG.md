@@ -6,9 +6,6 @@
 
 2. [ ] **Custom domain migration** — Firebase Hosting custom domain + Cloud Run domain mapping. Update `authDomain` and OAuth redirect URIs.
 
-3. [ ] **Allow unlocking a pick up to kickoff** — after a user locks in a prediction, let them edit and re-submit it any time before kickoff. Server already enforces the 403 after kickoff; this is purely a UI unlock flow.
-   - **Countdown to lock** — show a live countdown on each match card so users know how long they have. The tricky part: browser clocks drift and can be manipulated, so the countdown is cosmetic only. Cheat-proofing options: (a) fetch server time once on page load and compute an offset (`serverTime - clientTime`), then apply that offset to all countdowns — cheap and good enough for casual play; (b) re-validate the kickoff time on submit via the server's 403 (already in place) so even a manipulated countdown can't actually lock in a late pick.
-
 ---
 
 ## Data & Polling
@@ -43,6 +40,7 @@
 
 ## Done
 
+- [x] **Unlock picks + countdown** — Unlock button clears a saved prediction and pre-populates inputs with the previous pick; client-side only (server 403 after kickoff is the real gate). Live "locks in Xd Yh / Xh Ym / Xm" countdown on each match card using browser clock (cosmetic). Upcoming window extended to 8 days.
 - [x] **Fix Upper 90 Club scoring rules** — +1 correct outcome, +1 correct Crew goals, +1 correct opponent goals (max 3 pts). Real-data tests updated.
 - [x] **Match cache + ESPN fetch** — in-memory `MatchStore` populated via `POST /admin/refresh-matches`; ESPN fetcher injected (TEST_MODE reads seeded store); `fetchCrewMatchesFrom(base)` tested via `httptest.Server` + captured fixture JSON; 97% ESPN package coverage
 - [x] **E2e parallelisation** — two Playwright projects (`auth` + `app`) run in parallel; `@reset` tag gates the `Before` reset hook to app features only
