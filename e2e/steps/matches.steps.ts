@@ -29,6 +29,11 @@ When('the admin triggers a match refresh', async ({ request }) => {
   expect(resp.status()).toBe(204);
 });
 
+When('the admin triggers a score poll', async ({ request }) => {
+  const resp = await request.post('/admin/poll-scores');
+  expect(resp.status()).toBe(204);
+});
+
 Then('the matches API includes match {string}', async ({ request }, matchId: string) => {
   const resp = await request.get('/api/matches');
   const body = await resp.json();

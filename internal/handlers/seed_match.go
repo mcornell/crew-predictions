@@ -24,12 +24,14 @@ func (h *SeedMatchHandler) Submit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.store.Seed([]models.Match{{
-		ID:       r.FormValue("id"),
-		HomeTeam: r.FormValue("home_team"),
-		AwayTeam: r.FormValue("away_team"),
-		Kickoff:  kickoff,
-		Status:   r.FormValue("status"),
-		State:    r.FormValue("state"),
+		ID:        r.FormValue("id"),
+		HomeTeam:  r.FormValue("home_team"),
+		AwayTeam:  r.FormValue("away_team"),
+		Kickoff:   kickoff,
+		Status:    r.FormValue("status"),
+		State:     r.FormValue("state"),
+		HomeScore: r.FormValue("home_score"),
+		AwayScore: r.FormValue("away_score"),
 	}})
 	w.WriteHeader(http.StatusNoContent)
 }

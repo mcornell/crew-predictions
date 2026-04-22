@@ -26,6 +26,8 @@ Given('the following matches are seeded:', async ({ request }, table: any) => {
         kickoff: kickoffForStatus(row.status, row.state),
         status: row.status,
         state: row.state ?? '',
+        home_score: row.homeScore ?? '',
+        away_score: row.awayScore ?? '',
       },
     });
   }

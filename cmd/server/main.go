@@ -14,6 +14,7 @@ import (
 	"github.com/mcornell/crew-predictions/internal/espn"
 	"github.com/mcornell/crew-predictions/internal/handlers"
 	"github.com/mcornell/crew-predictions/internal/models"
+	"github.com/mcornell/crew-predictions/internal/poll"
 	"github.com/mcornell/crew-predictions/internal/repository"
 	"google.golang.org/api/option"
 )
@@ -101,6 +102,8 @@ func main() {
 	mux.HandleFunc("POST /admin/results", rh.Submit)
 	rmh := handlers.NewRefreshMatchesHandler(matchStore, refreshFetcher)
 	mux.HandleFunc("POST /admin/refresh-matches", rmh.Refresh)
+	psh := handlers.NewPollScoresHandler(matchStore, resultStore, refreshFetcher)
+	mux.HandleFunc("POST /admin/poll-scores", psh.Poll)
 
 	// Auth endpoints
 	mux.HandleFunc("POST /auth/session", sh.Create)
@@ -136,6 +139,8 @@ func main() {
 	if os.Getenv("TEST_MODE") != "1" {
 		stop := startBackgroundRefresh(matchStore, refreshFetcher, 24*time.Hour)
 		defer close(stop)
+		stopPoll := startScorePolling(matchStore, resultStore, refreshFetcher, 2*time.Minute)
+		defer close(stopPoll)
 	}
 
 	log.Printf("listening on :%s", port)
@@ -166,6 +171,40 @@ func startBackgroundRefresh(store repository.MatchStore, fetcher func() ([]model
 			select {
 			case <-ticker.C:
 				refresh()
+			case <-stop:
+				return
+			}
+		}
+	}()
+	return stop
+}
+
+func startScorePolling(matchStore repository.MatchStore, resultStore repository.ResultStore, fetcher func() ([]models.Match, error), interval time.Duration) chan struct{} {
+	stop := make(chan struct{})
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				matches, err := matchStore.GetAll()
+				if err != nil {
+					log.Printf("score poll: failed to read match store: %v", err)
+					continue
+				}
+				hasLive := false
+				for _, m := range matches {
+					if m.State == "in" {
+						hasLive = true
+						break
+					}
+				}
+				if !hasLive {
+					continue
+				}
+				if err := poll.PollOnce(context.Background(), matchStore, resultStore, fetcher); err != nil {
+					log.Printf("score poll failed: %v", err)
+				}
 			case <-stop:
 				return
 			}
