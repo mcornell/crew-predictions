@@ -76,6 +76,15 @@ func TestWriteThroughMatchStore_SaveAllContinuesWhenSecondaryFails(t *testing.T)
 	}
 }
 
+func TestWriteThroughMatchStore_SaveAllReturnsErrorWhenPrimaryFails(t *testing.T) {
+	s := repository.NewWriteThroughMatchStore(&failingMatchStore{}, repository.NewMemoryMatchStore())
+
+	matches := []models.Match{{ID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", Kickoff: time.Now()}}
+	if err := s.SaveAll(matches); err == nil {
+		t.Errorf("expected error when primary fails, got nil")
+	}
+}
+
 type failingMatchStore struct{}
 
 func (f *failingMatchStore) SaveAll(_ []models.Match) error          { return fmt.Errorf("firestore down") }
