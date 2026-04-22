@@ -74,21 +74,22 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	// Match fetcher: in TEST_MODE, seeded matches take priority over ESPN
-	var matchStore *repository.MemoryMatchStore
-	matchFetcher := espn.FetchCrewMatches
+	// Match store: source of truth for cached matches
+	matchStore := repository.NewMemoryMatchStore()
+
+	// ESPN fetcher used by the refresh endpoint; in TEST_MODE reads from seeded store
+	var refreshFetcher func() ([]models.Match, error)
 	if os.Getenv("TEST_MODE") == "1" {
-		matchStore = repository.NewMemoryMatchStore()
-		matchFetcher = func() ([]models.Match, error) {
-			if m, _ := matchStore.GetAll(); len(m) > 0 {
-				return m, nil
-			}
-			return espn.FetchCrewMatches()
-		}
+		refreshFetcher = matchStore.GetAll
+	} else {
+		refreshFetcher = espn.FetchCrewMatches
 	}
 
+	// Fetcher for PredictionsHandler kickoff validation — reads from the same store
+	matchFetcher := func() ([]models.Match, error) { return matchStore.GetAll() }
+
 	// API endpoints (JSON)
-	mh := handlers.NewMatchesHandler(predStore, matchFetcher)
+	mh := handlers.NewMatchesHandler(predStore, matchStore)
 	mux.HandleFunc("GET /api/matches", mh.APIList)
 	mux.HandleFunc("GET /api/me", handlers.Me)
 	ph := handlers.NewPredictionsHandler(predStore, matchFetcher)
@@ -97,6 +98,8 @@ func main() {
 	mux.HandleFunc("GET /api/leaderboard", lh.APIList)
 	rh := handlers.NewResultsHandler(resultStore)
 	mux.HandleFunc("POST /admin/results", rh.Submit)
+	rmh := handlers.NewRefreshMatchesHandler(matchStore, refreshFetcher)
+	mux.HandleFunc("POST /admin/refresh-matches", rmh.Refresh)
 
 	// Auth endpoints
 	mux.HandleFunc("POST /auth/session", sh.Create)
@@ -116,9 +119,7 @@ func main() {
 				if memResult, ok := resultStore.(*repository.MemoryResultStore); ok {
 					memResult.Reset()
 				}
-				if matchStore != nil {
-					matchStore.Reset()
-				}
+				matchStore.Reset()
 				w.WriteHeader(http.StatusNoContent)
 			})
 			log.Printf("test reset endpoint registered at DELETE /admin/reset")
@@ -126,11 +127,9 @@ func main() {
 			mux.HandleFunc("POST /admin/seed-prediction", seedH.Submit)
 			log.Printf("test seed endpoint registered at POST /admin/seed-prediction")
 		}
-		if matchStore != nil {
-			seedMH := handlers.NewSeedMatchHandler(matchStore)
-			mux.HandleFunc("POST /admin/seed-match", seedMH.Submit)
-			log.Printf("test seed endpoint registered at POST /admin/seed-match")
-		}
+		seedMH := handlers.NewSeedMatchHandler(matchStore)
+		mux.HandleFunc("POST /admin/seed-match", seedMH.Submit)
+		log.Printf("test seed endpoint registered at POST /admin/seed-match")
 	}
 
 	log.Printf("listening on :%s", port)

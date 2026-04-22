@@ -4,17 +4,16 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/mcornell/crew-predictions/internal/models"
 	"github.com/mcornell/crew-predictions/internal/repository"
 )
 
 type MatchesHandler struct {
-	store   repository.PredictionStore
-	fetcher func() ([]models.Match, error)
+	store      repository.PredictionStore
+	matchStore repository.MatchStore
 }
 
-func NewMatchesHandler(store repository.PredictionStore, fetcher func() ([]models.Match, error)) *MatchesHandler {
-	return &MatchesHandler{store: store, fetcher: fetcher}
+func NewMatchesHandler(store repository.PredictionStore, matchStore repository.MatchStore) *MatchesHandler {
+	return &MatchesHandler{store: store, matchStore: matchStore}
 }
 
 type apiMatch struct {
@@ -33,7 +32,7 @@ type apiPrediction struct {
 }
 
 func (h *MatchesHandler) APIList(w http.ResponseWriter, r *http.Request) {
-	matches, err := h.fetcher()
+	matches, err := h.matchStore.GetAll()
 	if err != nil {
 		http.Error(w, "couldn't fetch matches", http.StatusInternalServerError)
 		return
