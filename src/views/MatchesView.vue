@@ -12,6 +12,7 @@
         >
           <div class="match-info">
             <span v-if="match.state === 'in'" class="live-indicator" data-testid="live-indicator">● LIVE</span>
+            <span v-else class="match-countdown" data-testid="match-countdown">{{ countdowns[match.id] }}</span>
             <template v-if="savedPredictions[match.id]">
               <div class="matchup matchup--input" data-testid="matchup">
                 <span class="team-name team-home">{{ match.homeTeam }}</span>
@@ -33,7 +34,8 @@
               <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
             </template>
           </div>
-          <button v-if="!savedPredictions[match.id]" class="btn-lock" @click="submit(match.id)">Predict</button>
+          <button v-if="savedPredictions[match.id]" class="btn-lock btn-unlock" @click="unlock(match.id)">Unlock</button>
+          <button v-else class="btn-lock" @click="submit(match.id)">Predict</button>
         </div>
       </div>
     </section>
@@ -74,8 +76,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, inject, onMounted } from 'vue'
+import { ref, reactive, computed, inject, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { formatCountdown } from '../utils/countdown'
 import type { Ref } from 'vue'
 
 const currentUser = inject<Ref<{ handle: string; emailVerified: boolean } | null>>('currentUser')
@@ -102,16 +105,26 @@ const GUEST_KEY = 'guestPredictions'
 const matches = ref<Match[]>([])
 const savedPredictions = reactive<Record<string, Prediction | null>>({})
 const inputs = reactive<Record<string, { home: string; away: string }>>({})
+const countdowns = reactive<Record<string, string>>({})
 const showNudge = ref(false)
 
 const upcomingMatches = computed(() => {
   const cutoff = new Date()
-  cutoff.setDate(cutoff.getDate() + 7)
+  cutoff.setDate(cutoff.getDate() + 8)
   return matches.value.filter(m => {
     if (m.status !== 'STATUS_SCHEDULED' && m.status !== 'STATUS_IN_PROGRESS') return false
     return new Date(m.kickoff) <= cutoff
   })
 })
+
+function updateCountdowns() {
+  const now = Date.now()
+  for (const m of upcomingMatches.value) {
+    countdowns[m.id] = formatCountdown(new Date(m.kickoff).getTime() - now)
+  }
+}
+
+let countdownTimer: ReturnType<typeof setInterval> | null = null
 
 const completedMatches = computed(() =>
   matches.value
@@ -136,8 +149,22 @@ onMounted(async () => {
       inputs[m.id] = { home: '', away: '' }
       savedPredictions[m.id] = data.predictions[m.id] ?? guestPredictions[m.id] ?? null
     }
+    updateCountdowns()
+    countdownTimer = setInterval(updateCountdowns, 1000)
   }
 })
+
+onUnmounted(() => {
+  if (countdownTimer !== null) clearInterval(countdownTimer)
+})
+
+function unlock(matchId: string) {
+  const prev = savedPredictions[matchId]
+  if (prev) {
+    inputs[matchId] = { home: String(prev.homeGoals), away: String(prev.awayGoals) }
+  }
+  savedPredictions[matchId] = null
+}
 
 async function submit(matchId: string) {
   const { home, away } = inputs[matchId]

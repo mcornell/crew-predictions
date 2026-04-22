@@ -83,7 +83,7 @@ func scheduleURL(base, league string) string {
 }
 
 func upcomingURL(base, league string, from time.Time) string {
-	end := from.AddDate(0, 0, 7)
+	end := from.AddDate(0, 0, 8)
 	return fmt.Sprintf(
 		"%s/%s/scoreboard?dates=%s-%s&limit=500",
 		base, league,

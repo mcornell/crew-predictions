@@ -50,11 +50,11 @@ func TestUpcomingURL_ContainsScoreboard(t *testing.T) {
 	}
 }
 
-func TestUpcomingURL_EndDate7DaysAhead(t *testing.T) {
+func TestUpcomingURL_EndDate8DaysAhead(t *testing.T) {
 	from := time.Date(2026, 4, 19, 0, 0, 0, 0, time.UTC)
 	url := upcomingURL(espnBase, "usa.1", from)
-	if !strings.Contains(url, "20260426") {
-		t.Errorf("upcomingURL %q missing end date 7 days ahead (20260426)", url)
+	if !strings.Contains(url, "20260427") {
+		t.Errorf("upcomingURL %q missing end date 8 days ahead (20260427)", url)
 	}
 }
 

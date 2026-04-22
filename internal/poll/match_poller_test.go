@@ -2,6 +2,7 @@ package poll_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -162,6 +163,52 @@ func TestMatchPoller_Tick_KeepsActiveForUnknownStatus(t *testing.T) {
 
 	if p.ActiveCount() != 1 {
 		t.Errorf("expected match to remain active for unknown status (4am reset will clean up), got %d active", p.ActiveCount())
+	}
+}
+
+func TestMatchPoller_Tick_NoopWhenFetcherFails(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	resultStore := repository.NewMemoryResultStore()
+
+	callCount := 0
+	fetcher := func() ([]models.Match, error) {
+		callCount++
+		return nil, fmt.Errorf("ESPN down")
+	}
+	p := poll.NewMatchPoller(matchStore, resultStore, fetcher, immediateTimer)
+
+	pastMatch := models.Match{
+		ID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",
+		Status: "STATUS_SCHEDULED", State: "in",
+		Kickoff: time.Now().Add(-1 * time.Hour),
+	}
+	p.Schedule([]models.Match{pastMatch})
+	p.Tick(context.Background())
+
+	result, _ := resultStore.GetResult(context.Background(), "m1")
+	if result != nil {
+		t.Errorf("expected no result saved when fetcher fails, got %+v", result)
+	}
+}
+
+func TestMatchPoller_Run_StopsOnContextCancel(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	resultStore := repository.NewMemoryResultStore()
+	fetcher := func() ([]models.Match, error) { return nil, nil }
+	p := poll.NewMatchPoller(matchStore, resultStore, fetcher, func(time.Duration, func()) {})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() {
+		p.Run(ctx, 10*time.Millisecond)
+		close(done)
+	}()
+
+	cancel()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Error("Run did not stop after context cancel within 1 second")
 	}
 }
 

@@ -44,3 +44,7 @@ Then('the matches API includes match {string}', async ({ request }, matchId: str
 Then('I should see a LIVE indicator on the match card', async ({ page }) => {
   await expect(page.locator('[data-testid="live-indicator"]').first()).toBeVisible();
 });
+
+Then('I should see a countdown on the match card', async ({ page }) => {
+  await expect(page.locator('[data-testid="match-countdown"]').first()).toBeVisible();
+});

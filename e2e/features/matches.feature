@@ -17,6 +17,14 @@ Feature: Match listings
     When the admin triggers a match refresh
     Then the matches API includes match "m-cached"
 
+  Scenario: Upcoming match card shows a countdown to kickoff
+    Given the following matches are seeded:
+      | id      | homeTeam      | awayTeam  | status           |
+      | m-cnt-1 | Columbus Crew | FC Dallas | STATUS_SCHEDULED |
+    And I am not logged in
+    When I visit the matches page
+    Then I should see a countdown on the match card
+
   Scenario: User sees LIVE indicator on an in-progress match
     Given the following matches are seeded:
       | id     | homeTeam      | awayTeam  | status           | state |

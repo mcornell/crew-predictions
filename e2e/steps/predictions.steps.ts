@@ -80,3 +80,15 @@ When('I reload the page', async ({ page }) => {
 Then('I should see a sign-in nudge', async ({ page }) => {
   await expect(page.locator('[data-testid="guest-nudge"]')).toBeVisible();
 });
+
+Then('I should see an enabled {string} button', async ({ page }, label: string) => {
+  const btn = page.getByRole('button', { name: label, exact: true }).first();
+  await expect(btn).toBeVisible();
+  await expect(btn).toBeEnabled();
+});
+
+Then('the first match score inputs should show {int} and {int}', async ({ page }, home: number, away: number) => {
+  const card = page.locator('[data-testid="match-card"]').first();
+  await expect(card.locator('input[name="home_goals"]')).toHaveValue(String(home));
+  await expect(card.locator('input[name="away_goals"]')).toHaveValue(String(away));
+});

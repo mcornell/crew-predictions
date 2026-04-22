@@ -2,6 +2,7 @@ package poll_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/mcornell/crew-predictions/internal/models"
@@ -113,6 +114,26 @@ func TestPollOnce_WritesResultForFinalPEN(t *testing.T) {
 		t.Errorf("expected result for STATUS_FINAL_PEN, got nil")
 	}
 }
+
+func TestPollOnce_ReturnsErrorWhenSaveAllFails(t *testing.T) {
+	resultStore := repository.NewMemoryResultStore()
+	matches := []models.Match{
+		{ID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", Status: "STATUS_FULL_TIME", HomeScore: "1", AwayScore: "0"},
+	}
+	fetcher := func() ([]models.Match, error) { return matches, nil }
+
+	errStore := &errMatchStore{}
+	err := poll.PollOnce(context.Background(), errStore, resultStore, fetcher)
+	if err == nil {
+		t.Error("expected error when SaveAll fails, got nil")
+	}
+}
+
+type errMatchStore struct{}
+
+func (e *errMatchStore) GetAll() ([]models.Match, error)    { return nil, nil }
+func (e *errMatchStore) SaveAll(_ []models.Match) error     { return fmt.Errorf("store failed") }
+func (e *errMatchStore) Reset()                             {}
 
 func TestPollOnce_IsIdempotent(t *testing.T) {
 	matchStore := repository.NewMemoryMatchStore()
