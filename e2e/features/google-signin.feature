@@ -1,4 +1,3 @@
-@no-reset
 Feature: Google sign-in
 
   Scenario: User can sign in with Google from the login page

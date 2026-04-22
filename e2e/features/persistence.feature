@@ -1,3 +1,4 @@
+@reset
 Feature: Prediction persistence
 
   Background:

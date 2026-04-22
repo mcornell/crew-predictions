@@ -1,4 +1,3 @@
-@no-reset
 Feature: Authentication
 
   Scenario: Unauthenticated user sees sign-in option

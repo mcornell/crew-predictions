@@ -1,3 +1,4 @@
+@reset
 Feature: Mobile layout
 
   Background:

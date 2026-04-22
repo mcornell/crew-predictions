@@ -19,11 +19,11 @@ export default defineConfig({
   projects: [
     {
       name: 'auth',
-      grep: /@no-reset/,
+      grepInvert: /@reset/,
     },
     {
       name: 'app',
-      grepInvert: /@no-reset/,
+      grep: /@reset/,
       workers: 1,
     },
   ],

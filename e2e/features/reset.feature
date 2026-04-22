@@ -1,4 +1,3 @@
-@no-reset
 Feature: Password Reset
 
   Scenario: User can request a password reset email

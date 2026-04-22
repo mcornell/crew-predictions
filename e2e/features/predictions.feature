@@ -1,3 +1,4 @@
+@reset
 Feature: Score predictions
 
   Background:

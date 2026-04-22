@@ -1,4 +1,3 @@
-@no-reset
 Feature: Page layout
 
   Scenario: Unknown route shows a not-found page

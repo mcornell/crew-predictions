@@ -1,3 +1,4 @@
+@reset
 Feature: Match listings
 
   Scenario: Unauthenticated user sees upcoming Columbus Crew matches

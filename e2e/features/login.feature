@@ -1,4 +1,3 @@
-@no-reset
 Feature: Login
 
   Scenario: User can sign in with email and password
