@@ -39,8 +39,8 @@ Entry point: `cmd/server/main.go`
 
 | Package | Responsibility |
 |---|---|
-| `internal/handlers` | HTTP handlers — matches, predictions, leaderboard, auth, session |
-| `internal/repository` | Data access — Firestore and in-memory stores |
+| `internal/handlers` | HTTP handlers — matches, predictions, leaderboard, auth, session, handle update |
+| `internal/repository` | Data access — Firestore and in-memory stores; `WriteThroughMatchStore` |
 | `internal/scoring` | Scoring engines — AcesRadio and Upper90Club |
 | `internal/espn` | ESPN API client — fetches upcoming Crew matches |
 | `internal/poll` | Score polling — `MatchPoller` schedules per-match kickoff timers; `PollOnce` for manual/test triggers |
@@ -55,7 +55,8 @@ Entry point: `cmd/server/main.go`
 | `GET` | `/api/matches` | optional | Upcoming matches + caller's predictions |
 | `POST` | `/api/predictions` | required | Submit a score prediction (form data) |
 | `GET` | `/api/leaderboard` | none | Ranked scores for both formats |
-| `GET` | `/api/me` | optional | Current session user `{handle}` or 401 |
+| `GET` | `/api/me` | optional | Current session user `{handle}` or 401; lazily upserts user to `UserStore` |
+| `POST` | `/auth/handle` | required | Update display name; upserts to `UserStore`, rewrites session cookie |
 | `POST` | `/auth/session` | — | Exchange Firebase ID token for session cookie (form data) |
 | `GET` | `/auth/logout` | — | Clear session cookie, redirect to /matches |
 | `GET` | `/auth/config.js` | — | Firebase client config as JS (`window.__firebaseConfig`) |
@@ -63,6 +64,7 @@ Entry point: `cmd/server/main.go`
 | `POST` | `/admin/poll-scores` | — | Trigger a score poll immediately (fetch ESPN, update store, write terminal results) |
 | `DELETE` | `/admin/reset` | — | Reset in-memory stores (TEST_MODE=1 only) |
 | `POST` | `/admin/results` | — | Record a final match result for scoring |
+| `POST` | `/admin/backfill-users` | — | One-time: populate `users` collection from existing predictions |
 | `POST` | `/admin/seed-match` | — | Inject a fixture match (TEST_MODE=1 only) |
 | `POST` | `/admin/seed-prediction` | — | Inject a fixture prediction (TEST_MODE=1 only) |
 
@@ -72,13 +74,13 @@ Entry point: `cmd/server/main.go`
 
 ## Match Cache
 
-The server holds an in-memory `MatchStore` (populated via `POST /admin/refresh-matches` or the daily background refresh). In `TEST_MODE=1`, the refresh fetcher reads from the seeded store rather than calling ESPN — so e2e tests inject fixtures via `POST /admin/seed-match` and trigger a refresh to populate the cache.
+The server holds a `MatchStore` backed by `WriteThroughMatchStore` — an in-memory primary (fast reads) wrapped around a `FirestoreMatchStore` secondary (durable writes). On startup, stored matches are loaded from Firestore into memory so match data survives restarts without waiting for the ESPN fetch. In `TEST_MODE=1`, a bare `MemoryMatchStore` is used and the seed handler writes directly to it.
 
 ESPN data is fetched via `internal/espn.FetchCrewMatches`, which hits four league endpoints (MLS, US Open Cup, Leagues Cup, CONCACAF Champions). The HTTP base URL is injectable for testing — `fetchCrewMatchesFrom(base)` is covered by `httptest.Server` + captured fixture JSON.
 
-**Daily refresh:** `startDailyRefresh` fires at 4am ET on startup and every subsequent 24h. It fetches ESPN, updates `MatchStore`, and calls `poller.Reset(matches)` to reschedule all match pollers from fresh data.
+**Daily refresh:** `startDailyRefresh` fires at 4am ET on startup and every subsequent 24h. It fetches ESPN, updates `MatchStore` (writing through to Firestore), and calls `poller.Reset(matches)` to reschedule all match pollers from fresh data.
 
-**Score polling:** `internal/poll.MatchPoller` schedules a `time.AfterFunc` at each match's kickoff time. When the timer fires, the match enters the active set and `Tick()` polls ESPN every 2 minutes. On a terminal status (`STATUS_FULL_TIME` / `STATUS_FINAL_AET` / `STATUS_FINAL_PEN`), the result is written to `ResultStore` and the match is deactivated. Matches with unknown/postponed status stay active until the next 4am reset clears them.
+**Score polling:** `internal/poll.MatchPoller` schedules a `time.AfterFunc` at each match's kickoff time. When the timer fires, the match enters the active set and `Tick()` polls ESPN every 2 minutes. On a terminal status (`STATUS_FULL_TIME` / `STATUS_FINAL_AET` / `STATUS_FINAL_PEN`), the result is written to `ResultStore` and the match is deactivated. Matches with unknown/postponed status stay active until the next 4am reset clears them. Matches loaded from Firestore with a past kickoff are scheduled at zero delay (immediate catch-up polling).
 
 ---
 
@@ -135,6 +137,19 @@ predictions/{predictionId}
 results/{matchID}
   homeScore:  int
   awayScore:  int
+
+users/{userID}
+  handle:     string   // current display name (source of truth)
+  provider:   string   // "google.com", "password", etc.
+
+matches/{matchID}
+  homeTeam:   string
+  awayTeam:   string
+  kickoff:    timestamp
+  status:     string
+  homeScore:  string
+  awayScore:  string
+  state:      string   // "pre" / "in" / "post"
 ```
 
 ---
