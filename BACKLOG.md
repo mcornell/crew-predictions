@@ -43,6 +43,7 @@
 ## Done
 
 - [x] **Leaderboard: show users with ≥1 prediction at 0 pts before results land** — seeded from all predictions on every request; smoke/admin accounts never appear since they don't predict.
+- [x] **Leaderboard: disable profile link for legacy handle-only users** — `hasProfile` field added to leaderboard API response; false when user has no `UserStore` entry (predates UserStore). Frontend renders plain `<span>` instead of `<RouterLink>` to avoid a 404 profile page.
 - [x] **Profile page** — `/profile/:userID` shows handle, location, prediction count, and leaderboard standing (points + rank for both formats); edit form on own profile only; leaderboard handles link to profiles; location field added to `POST /auth/handle`. Full Industrial Black & Gold Brutalism styling: stats grid with gold top borders, DM Mono values, Barlow Condensed handle.
 - [x] **Staging smoke cleanup** — switched to permanent accounts only; no more account creation in smoke tests; `users` collection no longer accumulates stale entries per CI run.
 - [x] **Handle management + UserStore** — `users/{userID}` Firestore collection as source of truth for display names; leaderboard groups by `userID` and joins `UserStore` for current handle; `POST /auth/handle` upserts on profile save; `GET /api/me` lazily upserts returning users on app open (catches users who were logged in before the feature shipped); `POST /admin/backfill-users` seeds `users` from existing predictions.

@@ -54,7 +54,7 @@ Entry point: `cmd/server/main.go`
 |---|---|---|---|
 | `GET` | `/api/matches` | optional | Upcoming matches + caller's predictions |
 | `POST` | `/api/predictions` | required | Submit a score prediction (form data) |
-| `GET` | `/api/leaderboard` | none | Ranked scores for both formats; all users with ≥1 prediction appear (0 pts until results land) |
+| `GET` | `/api/leaderboard` | none | Ranked scores for both formats; all users with ≥1 prediction appear (0 pts until results land); `hasProfile: bool` per entry — false for legacy handle-only users with no `UserStore` entry |
 | `GET` | `/api/me` | optional | Current session user `{userID, handle}` or 401; lazily upserts user to `UserStore` |
 | `GET` | `/api/profile/:userID` | required | Public profile: handle, location, predictionCount, Aces Radio + Upper 90 Club standing |
 | `POST` | `/auth/handle` | required | Update display name + location; upserts to `UserStore`, rewrites session cookie |
