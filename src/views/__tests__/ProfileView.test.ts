@@ -10,6 +10,7 @@ vi.mock('../../firebase', () => ({
 describe('ProfileView', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }))
   })
 
   it('renders a display name input and submit button', () => {
@@ -19,7 +20,7 @@ describe('ProfileView', () => {
     expect(wrapper.find('button[type="submit"]').exists()).toBe(true)
   })
 
-  it('calls updateDisplayName and navigates to /matches on success', async () => {
+  it('calls updateDisplayName, posts to /auth/handle, and navigates to /matches', async () => {
     const { updateDisplayName } = await import('../../firebase')
     vi.mocked(updateDisplayName).mockResolvedValue()
 
@@ -32,6 +33,7 @@ describe('ProfileView', () => {
     await flushPromises()
 
     expect(updateDisplayName).toHaveBeenCalledWith('Nordecke Regular')
+    expect(vi.mocked(fetch)).toHaveBeenCalledWith('/auth/handle', expect.objectContaining({ method: 'POST' }))
     expect(r.currentRoute.value.path).toBe('/matches')
   })
 

@@ -39,6 +39,8 @@ async function handleSubmit() {
   error.value = ''
   try {
     await updateDisplayName(displayName.value)
+    const body = new URLSearchParams({ handle: displayName.value })
+    await fetch('/auth/handle', { method: 'POST', body })
     router.push('/matches')
   } catch {
     error.value = 'Could not save display name. Please try again.'
