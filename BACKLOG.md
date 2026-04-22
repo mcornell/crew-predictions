@@ -14,7 +14,7 @@
 ## Data & Polling
 
 - [ ] **Real-data scoring accuracy test** — e2e scenario using actual 2025 Columbus Crew match results to validate the scoring engine against real outcomes. Get match data from user before writing.
-- [ ] **Score polling** — when `match.state == "in"`, poll ESPN every 2 minutes; update MatchStore with live scores so `/api/matches` shows current score; write to ResultStore on `STATUS_FULL_TIME` / `STATUS_FINAL_AET` / `STATUS_FINAL_PEN`, then stop polling. Injectable `scoreFetcher` for testing.
+- [x] **Score polling** — when `match.state == "in"`, poll ESPN every 2 minutes; update MatchStore with live scores so `/api/matches` shows current score; write to ResultStore on `STATUS_FULL_TIME` / `STATUS_FINAL_AET` / `STATUS_FINAL_PEN`, then stop polling. Injectable `scoreFetcher` for testing.
 - [x] **Live match state** — `state` field (`"pre"/"in"/"post"`) parsed from ESPN `status.state`; propagated through model → API → Vue; pulsing LIVE badge on in-progress match cards.
 - [x] **24h background match refresh** — `startBackgroundRefresh` goroutine fetches on startup then every 24h; skipped in TEST_MODE. Tested with injectable interval.
 
