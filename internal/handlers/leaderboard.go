@@ -41,16 +41,12 @@ func (h *LeaderboardHandler) APIList(w http.ResponseWriter, r *http.Request) {
 		handleByUserID[u.UserID] = u.Handle
 	}
 
-	// Group scores by userID (or handle for legacy predictions with no userID).
+	// Seed totals from all predictions so users with ≥1 prediction appear at 0 pts before results land.
 	acesTotals := map[string]int{}
 	u90Totals := map[string]int{}
 	keyHandle := map[string]string{} // key → display handle
 
 	for _, p := range allPredictions {
-		result, err := h.results.GetResult(ctx, p.MatchID)
-		if err != nil || result == nil {
-			continue
-		}
 		key := p.UserID
 		if key == "" {
 			key = p.Handle
@@ -61,6 +57,14 @@ func (h *LeaderboardHandler) APIList(w http.ResponseWriter, r *http.Request) {
 			} else {
 				keyHandle[key] = p.Handle
 			}
+		}
+		if _, seen := acesTotals[key]; !seen {
+			acesTotals[key] = 0
+			u90Totals[key] = 0
+		}
+		result, err := h.results.GetResult(ctx, p.MatchID)
+		if err != nil || result == nil {
+			continue
 		}
 		pred := scoring.Prediction{Home: p.HomeGoals, Away: p.AwayGoals}
 		res := scoring.Result{Home: result.HomeGoals, Away: result.AwayGoals}

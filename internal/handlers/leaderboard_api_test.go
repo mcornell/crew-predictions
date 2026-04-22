@@ -148,6 +148,48 @@ func TestLeaderboardAPIHandler_IncludesUserID(t *testing.T) {
 	}
 }
 
+func TestLeaderboardAPIHandler_ShowsUsersWithUnscoredPredictionsAtZero(t *testing.T) {
+	predictions := repository.NewMemoryPredictionStore()
+	results := repository.NewMemoryResultStore()
+	users := repository.NewMemoryUserStore()
+	ctx := context.Background()
+
+	// u1 has a prediction but no result yet
+	predictions.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "u1", Handle: "EarlyFan", HomeGoals: 2, AwayGoals: 0})
+	// u2 has a scored prediction
+	predictions.Save(ctx, repository.Prediction{MatchID: "m2", UserID: "u2", Handle: "ScoredFan", HomeGoals: 2, AwayGoals: 0})
+	results.SaveResult(ctx, repository.Result{MatchID: "m2", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", HomeGoals: 1, AwayGoals: 0})
+	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "EarlyFan"})
+	users.Upsert(ctx, repository.User{UserID: "u2", Handle: "ScoredFan"})
+
+	lh := handlers.NewLeaderboardHandler(predictions, results, users, "Columbus Crew")
+	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
+	w := httptest.NewRecorder()
+	lh.APIList(w, req)
+
+	var body struct {
+		AcesRadio []struct {
+			UserID string `json:"userID"`
+			Points int    `json:"points"`
+		} `json:"acesRadio"`
+	}
+	json.NewDecoder(w.Body).Decode(&body)
+
+	found := map[string]int{}
+	for _, e := range body.AcesRadio {
+		found[e.UserID] = e.Points
+	}
+	if _, ok := found["u1"]; !ok {
+		t.Errorf("expected u1 (unscored prediction) to appear in leaderboard, got %+v", body.AcesRadio)
+	}
+	if found["u1"] != 0 {
+		t.Errorf("expected u1 points=0, got %d", found["u1"])
+	}
+	if found["u2"] != 10 {
+		t.Errorf("expected u2 points=10 (correct winner), got %d", found["u2"])
+	}
+}
+
 func TestLeaderboardAPIHandler_FallsBackToPredictionHandleWhenNoUserRecord(t *testing.T) {
 	predictions := repository.NewMemoryPredictionStore()
 	results := repository.NewMemoryResultStore()

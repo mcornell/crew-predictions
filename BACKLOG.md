@@ -4,7 +4,7 @@
 
 1. [ ] **Prod smoke suite** — unauthenticated-only scenarios (app loads, leaderboard/matches API responds, Vue hydrates); replaces current `curl` liveness check in `deploy-prod`.
 
-3. [ ] **Leaderboard: show users with ≥1 prediction at 0 pts before results land** — seed leaderboard from unique userIDs in predictions rather than only from scored pairs; smoke test accounts won't appear since they never predict.
+3. [x] **Leaderboard: show users with ≥1 prediction at 0 pts before results land** — seed leaderboard from unique userIDs in predictions rather than only from scored pairs; smoke test accounts won't appear since they never predict.
 
 4. [ ] **Cache leaderboard scoring** — currently recalculated on every request; fine now but will need in-memory caching or pre-computation at scale.
 
