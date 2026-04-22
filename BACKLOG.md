@@ -6,6 +6,8 @@
 
 2. [ ] **Custom domain migration** — Firebase Hosting custom domain + Cloud Run domain mapping. Update `authDomain` and OAuth redirect URIs.
 
+3. [ ] **Allow unlocking a pick up to kickoff** — after a user locks in a prediction, let them edit and re-submit it any time before kickoff. Server already enforces the 403 after kickoff; this is purely a UI unlock flow.
+
 ---
 
 ## Data & Polling
