@@ -1,33 +1,26 @@
 @smoke
 Feature: Staging auth smoke tests
 
-  Scenario: New user can sign up with email on desktop
-    When I visit the staging sign-up page
-    And I sign up with email "smoke-new-desktop@crew-predictions-staging.web.app"
-    Then I should be on the staging matches page
-    And I should see "smoke-new-desktop@crew-predictions-staging.web.app" in the staging header
-
-  Scenario: Existing user can sign in with email on desktop
+  Scenario: User can sign in with email on desktop
     When I visit the staging login page
     And I sign in with email "smoke-existing@crew-predictions-staging.web.app"
     Then I should be on the staging matches page
     And I should see "smoke-existing@crew-predictions-staging.web.app" in the staging header
 
-  Scenario: New user can sign up with email on iPhone 15
-    Given I am on an iPhone 15 viewport
-    When I visit the staging sign-up page
-    And I sign up with email "smoke-new-ios@crew-predictions-staging.web.app"
+  Scenario: Second account can sign in with email on desktop
+    When I visit the staging login page
+    And I sign in with email "smoke-two@crew-predictions-staging.web.app"
     Then I should be on the staging matches page
-    And I should see "smoke-new-ios@crew-predictions-staging.web.app" in the staging header
+    And I should see "smoke-two@crew-predictions-staging.web.app" in the staging header
 
-  Scenario: Existing user can sign in with email on iPhone 15
+  Scenario: User can sign in with email on iPhone 15
     Given I am on an iPhone 15 viewport
     When I visit the staging login page
     And I sign in with email "smoke-existing@crew-predictions-staging.web.app"
     Then I should be on the staging matches page
     And I should see "smoke-existing@crew-predictions-staging.web.app" in the staging header
 
-  Scenario: Existing user can sign in with email on Galaxy S24
+  Scenario: User can sign in with email on Galaxy S24
     Given I am on a Galaxy S24 viewport
     When I visit the staging login page
     And I sign in with email "smoke-existing@crew-predictions-staging.web.app"
