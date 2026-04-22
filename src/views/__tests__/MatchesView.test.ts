@@ -316,8 +316,8 @@ describe('MatchesView', () => {
     await card.find('button').trigger('click') // Unlock
     await flushPromises()
 
-    expect(card.find('input[name="home_goals"]').element.value).toBe('2')
-    await expect(card.find('input[name="away_goals"]').element.value).toBe('1')
+    expect((card.find('input[name="home_goals"]').element as HTMLInputElement).value).toBe('2')
+    expect((card.find('input[name="away_goals"]').element as HTMLInputElement).value).toBe('1')
     expect(card.find('button').text()).toBe('Predict')
   })
 })
