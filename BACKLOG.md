@@ -11,6 +11,12 @@
 
 ---
 
+## Scoring Fixes
+
+- [ ] **Fix Upper 90 Club scoring rules** — current implementation is wrong. Correct rules: +1 for correct outcome (win/loss/draw), +1 for correct Columbus Crew goal count, +1 if away goals are also correct. Example: Portland 3–2 Crew. Picks scored: `1–0` → 1pt (correct outcome), `1–2` → 1pt (correct Crew goals=2), `4–2` → 2pts (correct outcome + Crew goals), `3–2` → 3pts (all correct). Fix both the scoring engine (`internal/scoring/`) and the real-data e2e test once added.
+
+---
+
 ## Data & Polling
 
 - [ ] **Real-data scoring accuracy test** — e2e scenario using actual 2025 Columbus Crew match results to validate the scoring engine against real outcomes. Get match data from user before writing.
