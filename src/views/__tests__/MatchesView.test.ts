@@ -215,6 +215,24 @@ describe('MatchesView', () => {
     localStorage.removeItem('guestPredictions')
   })
 
+  it('shows LIVE indicator on match card when state is "in"', async () => {
+    const now = new Date()
+    const liveMatch = { id: 'live-1', homeTeam: 'Columbus Crew', awayTeam: 'FC Dallas', kickoff: new Date(now.getTime() - 60 * 60 * 1000).toISOString(), status: 'STATUS_SCHEDULED', homeScore: '', awayScore: '', state: 'in' }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ matches: [liveMatch], predictions: {} }),
+    }))
+    const wrapper = mountMatches()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="live-indicator"]').exists()).toBe(true)
+  })
+
+  it('does not show LIVE indicator when state is not "in"', async () => {
+    const wrapper = mountMatches()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="live-indicator"]').exists()).toBe(false)
+  })
+
   it('match more than 7 days away is not shown in upcoming', async () => {
     const farFuture = new Date()
     farFuture.setDate(farFuture.getDate() + 10)

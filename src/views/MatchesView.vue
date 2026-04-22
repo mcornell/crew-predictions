@@ -11,6 +11,7 @@
           data-testid="match-card"
         >
           <div class="match-info">
+            <span v-if="match.state === 'in'" class="live-indicator" data-testid="live-indicator">● LIVE</span>
             <template v-if="savedPredictions[match.id]">
               <div class="matchup matchup--input" data-testid="matchup">
                 <span class="team-name team-home">{{ match.homeTeam }}</span>
@@ -88,6 +89,7 @@ interface Match {
   status: string
   homeScore: string
   awayScore: string
+  state?: string
 }
 
 interface Prediction {
