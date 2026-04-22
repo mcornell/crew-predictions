@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+
+	"github.com/mcornell/crew-predictions/internal/repository"
 )
 
 type FirebaseToken struct {
@@ -28,10 +30,11 @@ func (NoopTokenVerifier) VerifyIDToken(ctx context.Context, idToken string) (*Fi
 
 type SessionHandler struct {
 	verifier TokenVerifier
+	users    repository.UserStore
 }
 
-func NewSessionHandler(v TokenVerifier) *SessionHandler {
-	return &SessionHandler{verifier: v}
+func NewSessionHandler(v TokenVerifier, users repository.UserStore) *SessionHandler {
+	return &SessionHandler{verifier: v, users: users}
 }
 
 func (h *SessionHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -53,8 +56,17 @@ func (h *SessionHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if handle == "" {
 		handle = tok.Email
 	}
+	userID := "firebase:" + tok.UID
+	if err := h.users.Upsert(r.Context(), repository.User{
+		UserID:   userID,
+		Handle:   handle,
+		Provider: tok.Provider,
+	}); err != nil {
+		log.Printf("upsert user on session create failed: %v", err)
+	}
+
 	writeSessionCookie(w, sessionPayload{
-		UserID:        "firebase:" + tok.UID,
+		UserID:        userID,
 		Handle:        handle,
 		Provider:      tok.Provider,
 		EmailVerified: tok.EmailVerified,

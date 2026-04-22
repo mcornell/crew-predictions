@@ -29,6 +29,17 @@ func main() {
 
 	ctx := context.Background()
 
+	var userStore repository.UserStore
+	if project := os.Getenv("GOOGLE_CLOUD_PROJECT"); project != "" {
+		fs, err := repository.NewFirestoreUserStore(ctx, project)
+		if err != nil {
+			log.Fatalf("failed to connect to Firestore users: %v", err)
+		}
+		userStore = fs
+	} else {
+		userStore = repository.NewMemoryUserStore()
+	}
+
 	var predStore repository.PredictionStore
 	if project := os.Getenv("GOOGLE_CLOUD_PROJECT"); project != "" {
 		fs, err := repository.NewFirestorePredictionStore(ctx, project)
@@ -72,7 +83,8 @@ func main() {
 		verifier = handlers.NewFirebaseTokenVerifier(authClient)
 		log.Printf("Firebase Auth initialized (project: %s)", projectID)
 	}
-	sh := handlers.NewSessionHandler(verifier)
+	sh := handlers.NewSessionHandler(verifier, userStore)
+	hh := handlers.NewHandleHandler(userStore)
 
 	mux := http.NewServeMux()
 
@@ -120,6 +132,7 @@ func main() {
 
 	// Auth endpoints
 	mux.HandleFunc("POST /auth/session", sh.Create)
+	mux.HandleFunc("POST /auth/handle", hh.Update)
 	mux.HandleFunc("GET /auth/logout", handlers.Logout)
 	mux.HandleFunc("GET /auth/config.js", serveFirebaseConfig)
 
