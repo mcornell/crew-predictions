@@ -33,6 +33,26 @@ func TestRefreshMatchesHandler_SavesFetcherResultsToStore(t *testing.T) {
 	}
 }
 
+type errSaveMatchStore struct{ repository.MatchStore }
+
+func (e *errSaveMatchStore) SaveAll(_ []models.Match) error { return fmt.Errorf("store write failed") }
+
+func TestRefreshMatchesHandler_Returns500WhenStoreSaveFails(t *testing.T) {
+	store := &errSaveMatchStore{MatchStore: repository.NewMemoryMatchStore()}
+	fetcher := func() ([]models.Match, error) {
+		return []models.Match{{ID: "m1", Kickoff: time.Now()}}, nil
+	}
+
+	h := handlers.NewRefreshMatchesHandler(store, fetcher)
+	req := httptest.NewRequest(http.MethodPost, "/admin/refresh-matches", nil)
+	w := httptest.NewRecorder()
+	h.Refresh(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("expected 500, got %d", w.Code)
+	}
+}
+
 func TestRefreshMatchesHandler_Returns500WhenFetcherFails(t *testing.T) {
 	store := repository.NewMemoryMatchStore()
 	fetcher := func() ([]models.Match, error) { return nil, fmt.Errorf("espn down") }
