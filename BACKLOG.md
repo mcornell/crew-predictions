@@ -14,7 +14,7 @@
 ## Data & Polling
 
 - [ ] **Real-data scoring accuracy test** — e2e scenario using actual 2025 Columbus Crew match results to validate the scoring engine against real outcomes. Get match data from user before writing.
-- [ ] **Firestore match cache + score polling** — cache ESPN schedule in Firestore. Weekly refresh fires Tuesday midnight ET (cron) regardless of whether there's a match that week. When `kickoff + 2h <= now` and match not yet `STATUS_FINAL`, poll ESPN every ~5 min and write to ResultStore when final, then stop. ESPN already returns `status.type.name`.
+- [ ] **Score polling** — when `kickoff + 2h <= now` and match not yet `STATUS_FINAL`, poll ESPN every ~5 min and write to ResultStore when final, then stop. ESPN already returns `status.type.name`.
 
 ---
 
@@ -26,6 +26,9 @@
 ---
 
 ## Decisions Made / Won't Do
+
+- **Cloud Scheduler for match refresh** — `POST /admin/refresh-matches` is called manually after deploy. No cron job needed.
+
 
 - **Match result entry UI** — admin page not needed; `POST /admin/results` API is sufficient for now.
 - **Bluesky AT Protocol auth** — dropped for v1. Complex, adds no value for first release.
