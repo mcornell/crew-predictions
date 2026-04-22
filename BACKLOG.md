@@ -11,12 +11,6 @@
 
 ---
 
-## Scoring Fixes
-
-- [ ] **Fix Upper 90 Club scoring rules** — current implementation is wrong. Correct rules: +1 for correct outcome (win/loss/draw), +1 for correct Columbus Crew goal count, +1 if away goals are also correct. Example: Portland 3–2 Crew. Picks scored: `1–0` → 1pt (correct outcome), `1–2` → 1pt (correct Crew goals=2), `4–2` → 2pts (correct outcome + Crew goals), `3–2` → 3pts (all correct). Fix both the scoring engine (`internal/scoring/`) and the real-data e2e test once added.
-
----
-
 ## Data & Polling
 
 - [ ] **Real-data scoring accuracy test** — e2e scenario using actual 2025 Columbus Crew match results to validate the scoring engine against real outcomes. Get match data from user before writing.
@@ -27,7 +21,7 @@
 ## Test Infrastructure
 
 - [ ] **Playwright smoke suite for prod** — identify a small tagged subset of e2e scenarios that can run against the live prod URL after deploy (replaces the current `curl` liveness check in `deploy-prod`)
-- [ ] **Per-worker server isolation** — if the e2e suite grows large enough that serial execution is too slow, give each Playwright worker its own server instance (separate ports) so parallel runs don't share in-memory state.
+- [ ] **Per-worker server isolation** — current parallelism runs two Playwright projects (`auth` + `app`) against a shared server. If the app group grows too slow, give each worker its own Go server instance on a separate port so they don't share in-memory state.
 
 ---
 
@@ -44,6 +38,10 @@
 
 ## Done
 
+- [x] **Fix Upper 90 Club scoring rules** — +1 correct outcome, +1 correct Crew goals, +1 correct opponent goals (max 3 pts). Real-data tests updated.
+- [x] **Match cache + ESPN fetch** — in-memory `MatchStore` populated via `POST /admin/refresh-matches`; ESPN fetcher injected (TEST_MODE reads seeded store); `fetchCrewMatchesFrom(base)` tested via `httptest.Server` + captured fixture JSON; 97% ESPN package coverage
+- [x] **E2e parallelisation** — two Playwright projects (`auth` + `app`) run in parallel; `@reset` tag gates the `Before` reset hook to app features only
+- [x] **Coverage drive** — handlers 95%, espn 97%, scoring 100%; extracted `toPredictions`/`toResult`/`isNotFound`/`tokenToFirebaseToken` to make SDK mapping logic unit-testable
 - [x] **Guest predictions** — logged-out users can enter picks stored in localStorage; never hits server or leaderboard; nudge to create account after predicting
 - [x] **Vue Router warnings in unit tests** — shared `makeRouter()` utility with catch-all route silences all "No match found" warnings across test files
 - [x] **Team name truncation on 360px (Galaxy S24)** — stacks team names vertically at ≤600px; e2e covered

@@ -89,7 +89,7 @@ The smoke suite (`npm run test:smoke`) runs in CI after `deploy-staging` — it 
 - `FIREBASE_PROJECT_ID` — Firebase Admin SDK init only, does **not** trigger Firestore
 - `GOOGLE_CLOUD_PROJECT` — triggers Firestore; do **not** set in playwright `webServer` env
 
-**E2e test isolation:** `e2e/global-setup.ts` calls `DELETE /admin/reset` (TEST_MODE=1) and clears Firebase Auth emulator accounts between runs.
+**E2e test isolation:** `e2e/global-setup.ts` clears Firebase Auth emulator accounts once before the suite. A `Before` hook in `hooks.steps.ts` calls `DELETE /admin/reset` before each scenario tagged `@reset`. Features that mutate the match/prediction/result stores must carry `@reset`. Auth-only features omit it and run in parallel with the app group via two Playwright projects (`auth` + `app`).
 
 ---
 

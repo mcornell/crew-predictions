@@ -58,12 +58,21 @@ Entry point: `cmd/server/main.go`
 | `POST` | `/auth/session` | — | Exchange Firebase ID token for session cookie (form data) |
 | `GET` | `/auth/logout` | — | Clear session cookie, redirect to /matches |
 | `GET` | `/auth/config.js` | — | Firebase client config as JS (`window.__firebaseConfig`) |
+| `POST` | `/admin/refresh-matches` | — | Fetch matches from ESPN and populate the in-memory match cache |
 | `DELETE` | `/admin/reset` | — | Reset in-memory stores (TEST_MODE=1 only) |
 | `POST` | `/admin/results` | — | Record a final match result for scoring |
 | `POST` | `/admin/seed-match` | — | Inject a fixture match (TEST_MODE=1 only) |
 | `POST` | `/admin/seed-prediction` | — | Inject a fixture prediction (TEST_MODE=1 only) |
 
 **Form data convention:** `POST /api/predictions` and `POST /auth/session` use `application/x-www-form-urlencoded` (Go's `r.ParseForm()`). Send via `URLSearchParams`, not JSON.
+
+---
+
+## Match Cache
+
+The server holds an in-memory `MatchStore` (populated via `POST /admin/refresh-matches`). In production, call this endpoint after deploy and schedule it weekly via Cloud Scheduler. In `TEST_MODE=1`, the refresh fetcher reads from the seeded store rather than calling ESPN — so e2e tests inject fixtures via `POST /admin/seed-match` and trigger a refresh to populate the cache.
+
+ESPN data is fetched via `internal/espn.FetchCrewMatches`, which hits four league endpoints (MLS, US Open Cup, Leagues Cup, CONCACAF Champions). The HTTP base URL is injectable for testing — `fetchCrewMatchesFrom(base)` is covered by `httptest.Server` + captured fixture JSON.
 
 ---
 
