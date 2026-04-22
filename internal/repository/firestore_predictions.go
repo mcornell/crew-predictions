@@ -4,8 +4,6 @@ import (
 	"context"
 
 	"cloud.google.com/go/firestore"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type FirestorePredictionStore struct {
@@ -45,17 +43,12 @@ func (s *FirestorePredictionStore) GetAll(ctx context.Context) ([]Prediction, er
 }
 
 func (s *FirestorePredictionStore) GetByMatchAndUser(ctx context.Context, matchID, userID string) (*Prediction, error) {
-	doc := s.client.Collection("predictions").Doc(matchID + "|" + userID)
-	snap, err := doc.Get(ctx)
+	snap, err := s.client.Collection("predictions").Doc(matchID + "|" + userID).Get(ctx)
 	if err != nil {
-		if status.Code(err) == codes.NotFound {
+		if isNotFound(err) {
 			return nil, nil
 		}
 		return nil, err
 	}
-	var p Prediction
-	if err := snap.DataTo(&p); err != nil {
-		return nil, err
-	}
-	return &p, nil
+	return toPrediction(snap)
 }
