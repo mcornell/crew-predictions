@@ -14,7 +14,7 @@
 ## Data & Polling
 
 - [ ] **Real-data scoring accuracy test** — e2e scenario using actual 2025 Columbus Crew match results to validate the scoring engine against real outcomes. Get match data from user before writing.
-- [ ] **Score polling** — when `kickoff + 2h <= now` and match not yet `STATUS_FINAL`, poll ESPN every ~5 min and write to ResultStore when final, then stop. ESPN already returns `status.type.name`.
+- [ ] **Score polling** — when `kickoff + 2h <= now` and match not yet `STATUS_FINAL`, poll ESPN every 2 minutes and write to ResultStore when final, then stop polling. ESPN already returns `status.type.name`.
 
 ---
 
