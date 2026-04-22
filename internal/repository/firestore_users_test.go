@@ -36,6 +36,22 @@ func TestFirestoreUserStore_UpsertPreservesProviderWhenEmpty(t *testing.T) {
 	}
 }
 
+func TestFirestoreUserStore_UpsertPreservesLocationWhenEmpty(t *testing.T) {
+	store := firestoreUserStoreOrSkip(t)
+	ctx := context.Background()
+
+	_ = store.Upsert(ctx, repository.User{UserID: "fs-user-location", Handle: "fan", Location: "Columbus, OH"})
+	_ = store.Upsert(ctx, repository.User{UserID: "fs-user-location", Handle: "fan"}) // no location
+
+	got, err := store.GetByID(ctx, "fs-user-location")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got == nil || got.Location != "Columbus, OH" {
+		t.Errorf("expected location Columbus, OH preserved, got %+v", got)
+	}
+}
+
 func TestFirestoreUserStore_UpsertUpdatesHandle(t *testing.T) {
 	store := firestoreUserStoreOrSkip(t)
 	ctx := context.Background()

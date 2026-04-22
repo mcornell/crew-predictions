@@ -23,6 +23,9 @@ func (s *FirestoreUserStore) Upsert(ctx context.Context, u User) error {
 	if u.Provider != "" {
 		data["provider"] = u.Provider
 	}
+	if u.Location != "" {
+		data["location"] = u.Location
+	}
 	_, err := s.client.Collection("users").Doc(u.UserID).Set(ctx, data, firestore.MergeAll)
 	return err
 }
@@ -58,9 +61,10 @@ func toUser(userID string, snap *firestore.DocumentSnapshot) (*User, error) {
 	var doc struct {
 		Handle   string `firestore:"handle"`
 		Provider string `firestore:"provider"`
+		Location string `firestore:"location"`
 	}
 	if err := snap.DataTo(&doc); err != nil {
 		return nil, err
 	}
-	return &User{UserID: userID, Handle: doc.Handle, Provider: doc.Provider}, nil
+	return &User{UserID: userID, Handle: doc.Handle, Provider: doc.Provider, Location: doc.Location}, nil
 }
