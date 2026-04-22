@@ -63,6 +63,11 @@ Feature: User profile
     Given a test user exists with email "viewer@crew.mock" and password "GoCrewGo1"
     And a test user exists with email "other@crew.mock" and password "GoCrewGo1"
     And I visit the login page
+    And I sign in with email "other@crew.mock" and password "GoCrewGo1"
+    And I should be on the matches page
+    And I have a seeded prediction of 2-1 for match "match-p-1"
+    And I sign out
+    And I visit the login page
     And I sign in with email "viewer@crew.mock" and password "GoCrewGo1"
     And I should be on the matches page
     And I have a seeded prediction of 1-0 for match "match-p-1"

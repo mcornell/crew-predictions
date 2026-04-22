@@ -32,3 +32,8 @@ When('I sign in with email {string} and password {string}', async ({ page }, ema
 Then('I should be on the matches page', async ({ page }) => {
   await expect(page).toHaveURL('/matches', { timeout: 10000 });
 });
+
+When('I sign out', async ({ page }) => {
+  await page.goto('/auth/logout');
+  await page.waitForURL('/matches', { timeout: 5000 });
+});
