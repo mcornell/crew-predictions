@@ -100,7 +100,20 @@ func main() {
 	mux.HandleFunc("GET /api/leaderboard", lh.APIList)
 	rh := handlers.NewResultsHandler(resultStore)
 	mux.HandleFunc("POST /admin/results", rh.Submit)
-	rmh := handlers.NewRefreshMatchesHandler(matchStore, refreshFetcher)
+	var matchPoller *poll.MatchPoller
+	if os.Getenv("TEST_MODE") != "1" {
+		matchPoller = poll.NewMatchPoller(
+			matchStore, resultStore, refreshFetcher,
+			func(d time.Duration, f func()) { time.AfterFunc(d, f) },
+		)
+	}
+
+	onRefresh := func(matches []models.Match) {
+		if matchPoller != nil {
+			matchPoller.Reset(matches)
+		}
+	}
+	rmh := handlers.NewRefreshMatchesHandler(matchStore, refreshFetcher, onRefresh)
 	mux.HandleFunc("POST /admin/refresh-matches", rmh.Refresh)
 	psh := handlers.NewPollScoresHandler(matchStore, resultStore, refreshFetcher)
 	mux.HandleFunc("POST /admin/poll-scores", psh.Poll)
@@ -137,10 +150,16 @@ func main() {
 	}
 
 	if os.Getenv("TEST_MODE") != "1" {
-		stop := startBackgroundRefresh(matchStore, refreshFetcher, 24*time.Hour)
+		etLoc, err := time.LoadLocation("America/New_York")
+		if err != nil {
+			log.Fatalf("failed to load ET timezone: %v", err)
+		}
+		stop := startDailyRefresh(matchStore, refreshFetcher, matchPoller, etLoc)
 		defer close(stop)
-		stopPoll := startScorePolling(matchStore, resultStore, refreshFetcher, 2*time.Minute)
-		defer close(stopPoll)
+
+		pollerCtx, cancelPoller := context.WithCancel(context.Background())
+		defer cancelPoller()
+		go matchPoller.Run(pollerCtx, 2*time.Minute)
 	}
 
 	log.Printf("listening on :%s", port)
@@ -149,63 +168,40 @@ func main() {
 	}
 }
 
-func startBackgroundRefresh(store repository.MatchStore, fetcher func() ([]models.Match, error), interval time.Duration) chan struct{} {
+func next4amET(now time.Time, loc *time.Location) time.Time {
+	t := now.In(loc)
+	candidate := time.Date(t.Year(), t.Month(), t.Day(), 4, 0, 0, 0, loc)
+	if !candidate.After(now) {
+		candidate = candidate.Add(24 * time.Hour)
+	}
+	return candidate
+}
+
+func startDailyRefresh(store repository.MatchStore, fetcher func() ([]models.Match, error), poller *poll.MatchPoller, etLoc *time.Location) chan struct{} {
 	stop := make(chan struct{})
 	go func() {
 		refresh := func() {
 			matches, err := fetcher()
 			if err != nil {
-				log.Printf("background match refresh failed: %v", err)
+				log.Printf("daily match refresh failed: %v", err)
 				return
 			}
 			if err := store.SaveAll(matches); err != nil {
-				log.Printf("background match refresh save failed: %v", err)
+				log.Printf("daily match refresh save failed: %v", err)
 				return
 			}
-			log.Printf("background match refresh: %d matches cached", len(matches))
+			log.Printf("daily match refresh: %d matches cached", len(matches))
+			poller.Reset(matches)
 		}
 		refresh()
-		ticker := time.NewTicker(interval)
-		defer ticker.Stop()
 		for {
+			delay := time.Until(next4amET(time.Now(), etLoc))
+			timer := time.NewTimer(delay)
 			select {
-			case <-ticker.C:
+			case <-timer.C:
 				refresh()
 			case <-stop:
-				return
-			}
-		}
-	}()
-	return stop
-}
-
-func startScorePolling(matchStore repository.MatchStore, resultStore repository.ResultStore, fetcher func() ([]models.Match, error), interval time.Duration) chan struct{} {
-	stop := make(chan struct{})
-	go func() {
-		ticker := time.NewTicker(interval)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ticker.C:
-				matches, err := matchStore.GetAll()
-				if err != nil {
-					log.Printf("score poll: failed to read match store: %v", err)
-					continue
-				}
-				hasLive := false
-				for _, m := range matches {
-					if m.State == "in" {
-						hasLive = true
-						break
-					}
-				}
-				if !hasLive {
-					continue
-				}
-				if err := poll.PollOnce(context.Background(), matchStore, resultStore, fetcher); err != nil {
-					log.Printf("score poll failed: %v", err)
-				}
-			case <-stop:
+				timer.Stop()
 				return
 			}
 		}

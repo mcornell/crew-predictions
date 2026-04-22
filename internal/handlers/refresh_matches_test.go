@@ -12,6 +12,24 @@ import (
 	"github.com/mcornell/crew-predictions/internal/repository"
 )
 
+func TestRefreshMatchesHandler_CallsOnRefreshCallback(t *testing.T) {
+	store := repository.NewMemoryMatchStore()
+	matches := []models.Match{
+		{ID: "m-espn", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", Kickoff: time.Now()},
+	}
+	fetcher := func() ([]models.Match, error) { return matches, nil }
+
+	var called []models.Match
+	h := handlers.NewRefreshMatchesHandler(store, fetcher, func(m []models.Match) { called = m })
+	req := httptest.NewRequest(http.MethodPost, "/admin/refresh-matches", nil)
+	w := httptest.NewRecorder()
+	h.Refresh(w, req)
+
+	if len(called) != 1 || called[0].ID != "m-espn" {
+		t.Errorf("expected onRefresh called with fetched matches, got %+v", called)
+	}
+}
+
 func TestRefreshMatchesHandler_SavesFetcherResultsToStore(t *testing.T) {
 	store := repository.NewMemoryMatchStore()
 	matches := []models.Match{
@@ -19,7 +37,7 @@ func TestRefreshMatchesHandler_SavesFetcherResultsToStore(t *testing.T) {
 	}
 	fetcher := func() ([]models.Match, error) { return matches, nil }
 
-	h := handlers.NewRefreshMatchesHandler(store, fetcher)
+	h := handlers.NewRefreshMatchesHandler(store, fetcher, nil)
 	req := httptest.NewRequest(http.MethodPost, "/admin/refresh-matches", nil)
 	w := httptest.NewRecorder()
 	h.Refresh(w, req)
@@ -43,7 +61,7 @@ func TestRefreshMatchesHandler_Returns500WhenStoreSaveFails(t *testing.T) {
 		return []models.Match{{ID: "m1", Kickoff: time.Now()}}, nil
 	}
 
-	h := handlers.NewRefreshMatchesHandler(store, fetcher)
+	h := handlers.NewRefreshMatchesHandler(store, fetcher, nil)
 	req := httptest.NewRequest(http.MethodPost, "/admin/refresh-matches", nil)
 	w := httptest.NewRecorder()
 	h.Refresh(w, req)
@@ -57,7 +75,7 @@ func TestRefreshMatchesHandler_Returns500WhenFetcherFails(t *testing.T) {
 	store := repository.NewMemoryMatchStore()
 	fetcher := func() ([]models.Match, error) { return nil, fmt.Errorf("espn down") }
 
-	h := handlers.NewRefreshMatchesHandler(store, fetcher)
+	h := handlers.NewRefreshMatchesHandler(store, fetcher, nil)
 	req := httptest.NewRequest(http.MethodPost, "/admin/refresh-matches", nil)
 	w := httptest.NewRecorder()
 	h.Refresh(w, req)

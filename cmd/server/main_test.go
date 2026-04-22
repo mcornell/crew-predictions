@@ -10,18 +10,52 @@ import (
 	"time"
 
 	"github.com/mcornell/crew-predictions/internal/models"
+	"github.com/mcornell/crew-predictions/internal/poll"
 	"github.com/mcornell/crew-predictions/internal/repository"
 )
 
-func TestStartBackgroundRefresh_PopulatesStoreImmediately(t *testing.T) {
+func TestNext4amET_BeforeFourAM_ReturnsTodayAt4AM(t *testing.T) {
+	etLoc, _ := time.LoadLocation("America/New_York")
+	now := time.Date(2026, 4, 22, 2, 0, 0, 0, etLoc) // 2am ET
+	next := next4amET(now, etLoc)
+	want := time.Date(2026, 4, 22, 4, 0, 0, 0, etLoc)
+	if !next.Equal(want) {
+		t.Errorf("expected %v, got %v", want, next)
+	}
+}
+
+func TestNext4amET_AfterFourAM_ReturnsTomorrowAt4AM(t *testing.T) {
+	etLoc, _ := time.LoadLocation("America/New_York")
+	now := time.Date(2026, 4, 22, 5, 0, 0, 0, etLoc) // 5am ET
+	next := next4amET(now, etLoc)
+	want := time.Date(2026, 4, 23, 4, 0, 0, 0, etLoc)
+	if !next.Equal(want) {
+		t.Errorf("expected %v, got %v", want, next)
+	}
+}
+
+func TestNext4amET_ExactlyFourAM_ReturnsTomorrowAt4AM(t *testing.T) {
+	etLoc, _ := time.LoadLocation("America/New_York")
+	now := time.Date(2026, 4, 22, 4, 0, 0, 0, etLoc)
+	next := next4amET(now, etLoc)
+	want := time.Date(2026, 4, 23, 4, 0, 0, 0, etLoc)
+	if !next.Equal(want) {
+		t.Errorf("expected %v, got %v", want, next)
+	}
+}
+
+func TestStartDailyRefresh_PopulatesStoreImmediately(t *testing.T) {
+	etLoc, _ := time.LoadLocation("America/New_York")
 	store := repository.NewMemoryMatchStore()
 	called := make(chan struct{}, 1)
 	fetcher := func() ([]models.Match, error) {
 		called <- struct{}{}
 		return []models.Match{{ID: "bg-match", Kickoff: time.Now().Add(24 * time.Hour)}}, nil
 	}
+	poller := poll.NewMatchPoller(store, repository.NewMemoryResultStore(), fetcher,
+		func(time.Duration, func()) {})
 
-	stop := startBackgroundRefresh(store, fetcher, time.Hour)
+	stop := startDailyRefresh(store, fetcher, poller, etLoc)
 	defer close(stop)
 
 	select {
@@ -33,23 +67,6 @@ func TestStartBackgroundRefresh_PopulatesStoreImmediately(t *testing.T) {
 	matches, _ := store.GetAll()
 	if len(matches) != 1 || matches[0].ID != "bg-match" {
 		t.Errorf("expected bg-match in store, got %+v", matches)
-	}
-}
-
-func TestStartBackgroundRefresh_RefetchesOnTick(t *testing.T) {
-	store := repository.NewMemoryMatchStore()
-	callCount := 0
-	fetcher := func() ([]models.Match, error) {
-		callCount++
-		return []models.Match{{ID: "tick-match"}}, nil
-	}
-
-	stop := startBackgroundRefresh(store, fetcher, 50*time.Millisecond)
-	defer close(stop)
-
-	time.Sleep(180 * time.Millisecond)
-	if callCount < 2 {
-		t.Errorf("expected at least 2 fetcher calls (initial + tick), got %d", callCount)
 	}
 }
 
