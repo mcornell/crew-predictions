@@ -8,7 +8,7 @@ const testDir = defineBddConfig({
 
 export default defineConfig({
   testDir,
-  workers: 1,
+  workers: 2,
   globalSetup: './e2e/global-setup.ts',
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
@@ -16,6 +16,17 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
   },
+  projects: [
+    {
+      name: 'auth',
+      grep: /@no-reset/,
+    },
+    {
+      name: 'app',
+      grepInvert: /@no-reset/,
+      workers: 1,
+    },
+  ],
   webServer: {
     command: 'vite build --logLevel silent && go run ./cmd/server',
     port: 8080,

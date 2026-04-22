@@ -1,3 +1,4 @@
+@no-reset
 Feature: User profile
 
   Scenario: Profile page pre-populates the display name field with current handle

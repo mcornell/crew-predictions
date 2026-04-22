@@ -1,3 +1,4 @@
+@no-reset
 Feature: Sign up
 
   Scenario: New user can create an account with email and password

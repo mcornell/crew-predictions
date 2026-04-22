@@ -2,6 +2,6 @@ import { createBdd } from 'playwright-bdd';
 
 const { Before } = createBdd();
 
-Before(async ({ request }) => {
+Before({ tags: 'not @no-reset' }, async ({ request }) => {
   await request.delete('/admin/reset');
 });
