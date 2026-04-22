@@ -2,8 +2,6 @@ package handlers
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -55,19 +53,11 @@ func (h *SessionHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if handle == "" {
 		handle = tok.Email
 	}
-	sessionData, _ := json.Marshal(sessionPayload{
+	writeSessionCookie(w, sessionPayload{
 		UserID:        "firebase:" + tok.UID,
 		Handle:        handle,
 		Provider:      tok.Provider,
 		EmailVerified: tok.EmailVerified,
-	})
-	http.SetCookie(w, &http.Cookie{
-		Name:     "__session",
-		Value:    base64.StdEncoding.EncodeToString(sessionData),
-		Path:     "/",
-		MaxAge:   86400 * 7,
-		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
 	})
 	w.WriteHeader(http.StatusOK)
 }
