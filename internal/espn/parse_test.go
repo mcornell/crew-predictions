@@ -136,7 +136,8 @@ func TestParseEvents_SkipsEventWithNoCompetitions(t *testing.T) {
 				} `json:"team"`
 			} `json:"competitors"`
 			Status struct {
-				Type struct {
+				State string `json:"state"`
+				Type  struct {
 					Name string `json:"name"`
 				} `json:"type"`
 			} `json:"status"`

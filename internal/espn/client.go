@@ -51,7 +51,8 @@ type espnResponse struct {
 				} `json:"team"`
 			} `json:"competitors"`
 			Status struct {
-				Type struct {
+				State string `json:"state"`
+				Type  struct {
 					Name string `json:"name"`
 				} `json:"type"`
 			} `json:"status"`
@@ -67,6 +68,7 @@ type matchRecord struct {
 	homeScore string
 	awayScore string
 	status    string
+	state     string
 }
 
 func parseKickoff(s string) (time.Time, error) {
@@ -128,6 +130,7 @@ func parseEvents(data espnResponse) []matchRecord {
 			homeScore: homeScore,
 			awayScore: awayScore,
 			status:    comp.Status.Type.Name,
+			state:     comp.Status.State,
 		})
 	}
 	return records
@@ -194,6 +197,7 @@ func fetchCrewMatchesFrom(base string) ([]models.Match, error) {
 			Status:    r.status,
 			HomeScore: r.homeScore,
 			AwayScore: r.awayScore,
+			State:     r.state,
 		}
 	}
 	return matches, nil
