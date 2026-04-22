@@ -21,9 +21,10 @@ func NewLeaderboardHandler(predictions repository.PredictionStore, results repos
 }
 
 type leaderboardEntry struct {
-	UserID string `json:"userID"`
-	Handle string `json:"handle"`
-	Points int    `json:"points"`
+	UserID     string `json:"userID"`
+	Handle     string `json:"handle"`
+	Points     int    `json:"points"`
+	HasProfile bool   `json:"hasProfile"`
 }
 
 func (h *LeaderboardHandler) APIList(w http.ResponseWriter, r *http.Request) {
@@ -37,8 +38,10 @@ func (h *LeaderboardHandler) APIList(w http.ResponseWriter, r *http.Request) {
 	// Build userID → current handle map from UserStore; fall back to prediction handle when absent.
 	allUsers, _ := h.users.GetAll(ctx)
 	handleByUserID := make(map[string]string, len(allUsers))
+	knownUsers := make(map[string]bool, len(allUsers))
 	for _, u := range allUsers {
 		handleByUserID[u.UserID] = u.Handle
+		knownUsers[u.UserID] = true
 	}
 
 	// Seed totals from all predictions so users with ≥1 prediction appear at 0 pts before results land.
@@ -76,15 +79,15 @@ func (h *LeaderboardHandler) APIList(w http.ResponseWriter, r *http.Request) {
 	keys := allKeys(acesTotals, u90Totals)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
-		"acesRadio":   toEntries(keys, keyHandle, acesTotals),
-		"upper90Club": toEntries(keys, keyHandle, u90Totals),
+		"acesRadio":   toEntries(keys, keyHandle, acesTotals, knownUsers),
+		"upper90Club": toEntries(keys, keyHandle, u90Totals, knownUsers),
 	})
 }
 
-func toEntries(keys []string, keyHandle map[string]string, totals map[string]int) []leaderboardEntry {
+func toEntries(keys []string, keyHandle map[string]string, totals map[string]int, knownUsers map[string]bool) []leaderboardEntry {
 	entries := make([]leaderboardEntry, 0, len(keys))
 	for _, k := range keys {
-		entries = append(entries, leaderboardEntry{UserID: k, Handle: keyHandle[k], Points: totals[k]})
+		entries = append(entries, leaderboardEntry{UserID: k, Handle: keyHandle[k], Points: totals[k], HasProfile: knownUsers[k]})
 	}
 	sort.Slice(entries, func(i, j int) bool { return entries[i].Points > entries[j].Points })
 	return entries

@@ -11,7 +11,8 @@
         data-testid="leaderboard-row"
       >
         <span class="leaderboard-rank">{{ i + 1 }}</span>
-        <RouterLink :to="`/profile/${entry.userID}`" class="leaderboard-handle">{{ entry.handle }}</RouterLink>
+        <RouterLink v-if="entry.hasProfile" :to="`/profile/${entry.userID}`" class="leaderboard-handle" data-testid="leaderboard-handle">{{ entry.handle }}</RouterLink>
+        <span v-else class="leaderboard-handle" data-testid="leaderboard-handle">{{ entry.handle }}</span>
         <span class="leaderboard-points" data-testid="leaderboard-points">{{ entry.points }}</span>
       </div>
       <p v-if="leaderboard.acesRadio.length === 0" class="empty">No predictions scored yet.</p>
@@ -26,7 +27,8 @@
         data-testid="leaderboard-row"
       >
         <span class="leaderboard-rank">{{ i + 1 }}</span>
-        <RouterLink :to="`/profile/${entry.userID}`" class="leaderboard-handle">{{ entry.handle }}</RouterLink>
+        <RouterLink v-if="entry.hasProfile" :to="`/profile/${entry.userID}`" class="leaderboard-handle" data-testid="leaderboard-handle">{{ entry.handle }}</RouterLink>
+        <span v-else class="leaderboard-handle" data-testid="leaderboard-handle">{{ entry.handle }}</span>
         <span class="leaderboard-points" data-testid="leaderboard-points">{{ entry.points }}</span>
       </div>
       <p v-if="leaderboard.upper90Club.length === 0" class="empty">No predictions scored yet.</p>
@@ -41,6 +43,7 @@ interface Entry {
   userID: string
   handle: string
   points: number
+  hasProfile: boolean
 }
 
 const leaderboard = reactive<{ acesRadio: Entry[]; upper90Club: Entry[] }>({

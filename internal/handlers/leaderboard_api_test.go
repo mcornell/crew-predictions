@@ -190,6 +190,44 @@ func TestLeaderboardAPIHandler_ShowsUsersWithUnscoredPredictionsAtZero(t *testin
 	}
 }
 
+func TestLeaderboardAPIHandler_HasProfileTrueWhenUserInStore(t *testing.T) {
+	predictions := repository.NewMemoryPredictionStore()
+	results := repository.NewMemoryResultStore()
+	users := repository.NewMemoryUserStore()
+	ctx := context.Background()
+
+	// known: has a UserStore entry
+	predictions.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "firebase:abc", Handle: "known", HomeGoals: 1, AwayGoals: 0})
+	users.Upsert(ctx, repository.User{UserID: "firebase:abc", Handle: "known"})
+	// legacy: no UserStore entry, key falls back to handle
+	predictions.Save(ctx, repository.Prediction{MatchID: "m2", UserID: "", Handle: "legacyfan", HomeGoals: 1, AwayGoals: 0})
+
+	lh := handlers.NewLeaderboardHandler(predictions, results, users, "Columbus Crew")
+	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
+	w := httptest.NewRecorder()
+	lh.APIList(w, req)
+
+	var body struct {
+		AcesRadio []struct {
+			UserID     string `json:"userID"`
+			Handle     string `json:"handle"`
+			HasProfile bool   `json:"hasProfile"`
+		} `json:"acesRadio"`
+	}
+	json.NewDecoder(w.Body).Decode(&body)
+
+	byHandle := map[string]bool{}
+	for _, e := range body.AcesRadio {
+		byHandle[e.Handle] = e.HasProfile
+	}
+	if !byHandle["known"] {
+		t.Errorf("expected hasProfile=true for user in UserStore, got %+v", body.AcesRadio)
+	}
+	if byHandle["legacyfan"] {
+		t.Errorf("expected hasProfile=false for legacy handle-only user, got %+v", body.AcesRadio)
+	}
+}
+
 func TestLeaderboardAPIHandler_FallsBackToPredictionHandleWhenNoUserRecord(t *testing.T) {
 	predictions := repository.NewMemoryPredictionStore()
 	results := repository.NewMemoryResultStore()
