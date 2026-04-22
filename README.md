@@ -18,11 +18,12 @@ Predictions lock at published kickoff time. No excuses.
 | Flipped same scoreline (predict Crew 3–2, actual opponent 3–2 Crew) | −15 |
 | Anything else | 0 |
 
-**Upper 90 Club** — two independent points per match:
+**Upper 90 Club** — three independent points per match:
 | Condition | Points |
 |---|---|
 | Correct match result (win/draw/loss) | +1 |
 | Correct Columbus Crew goal count | +1 |
+| Correct opponent goal count | +1 |
 
 ---
 

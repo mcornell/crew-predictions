@@ -1,3 +1,4 @@
+@reset
 Feature: Score predictions
 
   Background:
@@ -44,3 +45,15 @@ Feature: Score predictions
     And I enter a home score of 2 and away score of 0 for the first match
     And I click "Predict"
     Then I should see a sign-in nudge
+
+  Scenario: Logged-in user can unlock and re-submit a prediction
+    Given I am logged in as "BlackAndGold@bsky.mock"
+    When I visit the matches page
+    And I enter a home score of 2 and away score of 1 for the first match
+    And I click "Predict"
+    And I click "Unlock"
+    Then I should see an enabled "Predict" button
+    And the first match score inputs should show 2 and 1
+    When I enter a home score of 3 and away score of 0 for the first match
+    And I click "Predict"
+    Then I should see my prediction of "3" on the first match card

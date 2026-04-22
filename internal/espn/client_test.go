@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"strings"
 	"testing"
 )
 
@@ -27,7 +29,8 @@ func crewEvent(id, date, status string) espnResponse {
 				} `json:"team"`
 			} `json:"competitors"`
 			Status struct {
-				Type struct {
+				State string `json:"state"`
+				Type  struct {
 					Name string `json:"name"`
 				} `json:"type"`
 			} `json:"status"`
@@ -45,7 +48,8 @@ func crewEvent(id, date, status string) espnResponse {
 					} `json:"team"`
 				} `json:"competitors"`
 				Status struct {
-					Type struct {
+					State string `json:"state"`
+					Type  struct {
 						Name string `json:"name"`
 					} `json:"type"`
 				} `json:"status"`
@@ -66,7 +70,8 @@ func crewEvent(id, date, status string) espnResponse {
 						}{DisplayName: "Portland Timbers"}},
 					},
 					Status: struct {
-						Type struct {
+						State string `json:"state"`
+						Type  struct {
 							Name string `json:"name"`
 						} `json:"type"`
 					}{Type: struct {
@@ -140,5 +145,114 @@ func TestIsCrewMatch_TrueWhenAway(t *testing.T) {
 func TestIsCrewMatch_FalseWhenNeither(t *testing.T) {
 	if isCrewMatch(matchRecord{home: "Portland Timbers", away: "Atlanta United"}) {
 		t.Error("expected false when Columbus Crew is not in the match")
+	}
+}
+
+func TestFetchAndParse_ReturnsErrorOnNetworkFailure(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv.Close()
+
+	_, err := fetchAndParse(srv.URL)
+	if err == nil {
+		t.Error("expected error on network failure, got nil")
+	}
+}
+
+func TestFetchAndParse_ReturnsErrorOnInvalidJSON(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("not json"))
+	}))
+	defer srv.Close()
+
+	_, err := fetchAndParse(srv.URL)
+	if err == nil {
+		t.Error("expected error on invalid JSON, got nil")
+	}
+}
+
+func TestFetchCrewMatchesFrom_ReturnsErrorWhenScheduleFetchFails(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "schedule") {
+			w.Write([]byte("not json"))
+		} else {
+			json.NewEncoder(w).Encode(espnResponse{})
+		}
+	}))
+	defer srv.Close()
+
+	_, err := fetchCrewMatchesFrom(srv.URL)
+	if err == nil {
+		t.Error("expected error when schedule fetch returns invalid JSON")
+	}
+}
+
+func TestFetchCrewMatchesFrom_ReturnsErrorWhenScoreboardFetchFails(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "scoreboard") {
+			w.Write([]byte("not json"))
+		} else {
+			json.NewEncoder(w).Encode(espnResponse{})
+		}
+	}))
+	defer srv.Close()
+
+	_, err := fetchCrewMatchesFrom(srv.URL)
+	if err == nil {
+		t.Error("expected error when scoreboard fetch returns invalid JSON")
+	}
+}
+
+func TestFetchCrewMatchesFrom_PopulatesMatchState(t *testing.T) {
+	liveJSON := `{"events":[{"id":"live-1","date":"2026-05-01T23:00Z","competitions":[{"competitors":[{"homeAway":"home","score":{},"team":{"displayName":"Columbus Crew"}},{"homeAway":"away","score":{},"team":{"displayName":"Portland Timbers"}}],"status":{"state":"in","type":{"name":"STATUS_IN_PROGRESS"}}}]}]}`
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(liveJSON))
+	}))
+	defer srv.Close()
+
+	matches, err := fetchCrewMatchesFrom(srv.URL)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(matches) == 0 {
+		t.Fatal("expected at least one match")
+	}
+	if matches[0].State != "in" {
+		t.Errorf("expected state=in, got %q", matches[0].State)
+	}
+}
+
+func TestFetchCrewMatchesFrom_ReturnsCrewMatchesFromFixtures(t *testing.T) {
+	schedule, err := os.ReadFile("testdata/mls_schedule.json")
+	if err != nil {
+		t.Fatalf("reading schedule fixture: %v", err)
+	}
+	scoreboard, err := os.ReadFile("testdata/mls_scoreboard.json")
+	if err != nil {
+		t.Fatalf("reading scoreboard fixture: %v", err)
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.Contains(r.URL.Path, "schedule"):
+			w.Write(schedule)
+		case strings.Contains(r.URL.Path, "scoreboard"):
+			w.Write(scoreboard)
+		default:
+			json.NewEncoder(w).Encode(espnResponse{})
+		}
+	}))
+	defer srv.Close()
+
+	matches, err := fetchCrewMatchesFrom(srv.URL)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(matches) == 0 {
+		t.Fatal("expected at least one match from fixtures")
+	}
+	for _, m := range matches {
+		if m.HomeTeam != "Columbus Crew" && m.AwayTeam != "Columbus Crew" {
+			t.Errorf("non-Crew match returned: %q vs %q", m.HomeTeam, m.AwayTeam)
+		}
 	}
 }

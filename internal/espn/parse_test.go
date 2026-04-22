@@ -36,7 +36,7 @@ func TestParseKickoff_InvalidReturnsError(t *testing.T) {
 
 func TestUpcomingURL_ContainsStartDate(t *testing.T) {
 	from := time.Date(2026, 4, 19, 0, 0, 0, 0, time.UTC)
-	url := upcomingURL("usa.1", from)
+	url := upcomingURL(espnBase, "usa.1", from)
 	if !strings.Contains(url, "20260419") {
 		t.Errorf("upcomingURL %q missing start date 20260419", url)
 	}
@@ -44,17 +44,17 @@ func TestUpcomingURL_ContainsStartDate(t *testing.T) {
 
 func TestUpcomingURL_ContainsScoreboard(t *testing.T) {
 	from := time.Date(2026, 4, 19, 0, 0, 0, 0, time.UTC)
-	url := upcomingURL("usa.1", from)
+	url := upcomingURL(espnBase, "usa.1", from)
 	if !strings.Contains(url, "scoreboard") {
 		t.Errorf("upcomingURL %q not pointing at scoreboard endpoint", url)
 	}
 }
 
-func TestUpcomingURL_EndDate7DaysAhead(t *testing.T) {
+func TestUpcomingURL_EndDate8DaysAhead(t *testing.T) {
 	from := time.Date(2026, 4, 19, 0, 0, 0, 0, time.UTC)
-	url := upcomingURL("usa.1", from)
-	if !strings.Contains(url, "20260426") {
-		t.Errorf("upcomingURL %q missing end date 7 days ahead (20260426)", url)
+	url := upcomingURL(espnBase, "usa.1", from)
+	if !strings.Contains(url, "20260427") {
+		t.Errorf("upcomingURL %q missing end date 8 days ahead (20260427)", url)
 	}
 }
 
@@ -119,5 +119,33 @@ func TestScoreField_ParsesIntegerForm(t *testing.T) {
 	}
 	if s.Display != "" {
 		t.Errorf("expected empty display for zero integer, got %q", s.Display)
+	}
+}
+
+func TestParseEvents_SkipsEventWithNoCompetitions(t *testing.T) {
+	data := espnResponse{}
+	data.Events = append(data.Events, struct {
+		ID           string `json:"id"`
+		Date         string `json:"date"`
+		Competitions []struct {
+			Competitors []struct {
+				HomeAway string     `json:"homeAway"`
+				Score    scoreField `json:"score"`
+				Team     struct {
+					DisplayName string `json:"displayName"`
+				} `json:"team"`
+			} `json:"competitors"`
+			Status struct {
+				State string `json:"state"`
+				Type  struct {
+					Name string `json:"name"`
+				} `json:"type"`
+			} `json:"status"`
+		} `json:"competitions"`
+	}{ID: "e1", Date: "2026-05-01T20:00Z"})
+
+	records := parseEvents(data)
+	if len(records) != 0 {
+		t.Errorf("expected 0 records for event with no competitions, got %d", len(records))
 	}
 }

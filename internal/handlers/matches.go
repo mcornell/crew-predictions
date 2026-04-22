@@ -4,17 +4,16 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/mcornell/crew-predictions/internal/models"
 	"github.com/mcornell/crew-predictions/internal/repository"
 )
 
 type MatchesHandler struct {
-	store   repository.PredictionStore
-	fetcher func() ([]models.Match, error)
+	store      repository.PredictionStore
+	matchStore repository.MatchStore
 }
 
-func NewMatchesHandler(store repository.PredictionStore, fetcher func() ([]models.Match, error)) *MatchesHandler {
-	return &MatchesHandler{store: store, fetcher: fetcher}
+func NewMatchesHandler(store repository.PredictionStore, matchStore repository.MatchStore) *MatchesHandler {
+	return &MatchesHandler{store: store, matchStore: matchStore}
 }
 
 type apiMatch struct {
@@ -25,6 +24,7 @@ type apiMatch struct {
 	Status    string `json:"status"`
 	HomeScore string `json:"homeScore"`
 	AwayScore string `json:"awayScore"`
+	State     string `json:"state"`
 }
 
 type apiPrediction struct {
@@ -33,7 +33,7 @@ type apiPrediction struct {
 }
 
 func (h *MatchesHandler) APIList(w http.ResponseWriter, r *http.Request) {
-	matches, err := h.fetcher()
+	matches, err := h.matchStore.GetAll()
 	if err != nil {
 		http.Error(w, "couldn't fetch matches", http.StatusInternalServerError)
 		return
@@ -49,6 +49,7 @@ func (h *MatchesHandler) APIList(w http.ResponseWriter, r *http.Request) {
 			Status:    m.Status,
 			HomeScore: m.HomeScore,
 			AwayScore: m.AwayScore,
+			State:     m.State,
 		}
 	}
 

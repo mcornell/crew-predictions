@@ -10,10 +10,38 @@ import (
 // Away goals = Columbus goals.
 
 func TestUpper90Club_ExactScore(t *testing.T) {
-	// Exact score implies both correct winner and correct Columbus goals → +2
+	// Exact score: correct outcome + correct Crew goals + correct opponent goals → +3
 	got := scoring.Upper90Club(scoring.Result{Home: 2, Away: 0}, scoring.Prediction{Home: 2, Away: 0}, false)
+	if got != 3 {
+		t.Errorf("expected 3 for exact score, got %d", got)
+	}
+}
+
+func TestUpper90Club_CorrectOutcomeAndOpponentGoals(t *testing.T) {
+	// Portland 3-2 Crew, pick Portland 3-0: correct outcome + correct opponent goals, wrong Crew goals → +2
+	got := scoring.Upper90Club(scoring.Result{Home: 3, Away: 2}, scoring.Prediction{Home: 3, Away: 0}, false)
 	if got != 2 {
-		t.Errorf("expected 2 for exact score, got %d", got)
+		t.Errorf("expected 2, got %d", got)
+	}
+}
+
+func TestUpper90Club_UserExamples_Portland3Crew2(t *testing.T) {
+	result := scoring.Result{Home: 3, Away: 2} // Portland 3-2 Crew, Crew is away
+	cases := []struct {
+		pred scoring.Prediction
+		want int
+		desc string
+	}{
+		{scoring.Prediction{Home: 1, Away: 0}, 1, "Portland 1-0: correct outcome only"},
+		{scoring.Prediction{Home: 1, Away: 2}, 1, "Portland 1-2: correct Crew goals only"},
+		{scoring.Prediction{Home: 4, Away: 2}, 2, "Portland 4-2: correct outcome + Crew goals"},
+		{scoring.Prediction{Home: 3, Away: 2}, 3, "Portland 3-2: exact"},
+	}
+	for _, c := range cases {
+		got := scoring.Upper90Club(result, c.pred, false)
+		if got != c.want {
+			t.Errorf("%s: expected %d, got %d", c.desc, c.want, got)
+		}
 	}
 }
 

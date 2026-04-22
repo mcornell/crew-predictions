@@ -2,32 +2,32 @@
 
 ## Up Next
 
-1. [x] **Team name truncation on 360px (Galaxy S24)** — fixed by stacking team names vertically (home top, scores middle, away bottom) at ≤600px; e2e covered
+1. [ ] **Profile page needs context** — currently just a display name form floating in space; add current prediction count, scoring summary, or other stats to make it worth visiting.
 
-2. [ ] **Guest predictions (no account required)** — users who don't want to sign up should be able to make predictions and see how they'd score. They won't appear on the leaderboard. Options: (a) store predictions in localStorage keyed by a generated guest token, compute score client-side, show a "you'd have X points" summary; (b) server-side guest session with a randomly-generated anonymous ID. Either way, guests should see a persistent "Sign in to save your predictions" nudge and be able to upgrade to a real account without losing picks.
-
-3. [ ] **Profile page needs context** — currently just a display name form floating in space; add current prediction count, scoring summary, or other stats to make it worth visiting.
-
-4. [ ] **Custom domain migration** — Firebase Hosting custom domain + Cloud Run domain mapping. Update `authDomain` and OAuth redirect URIs.
+2. [ ] **Custom domain migration** — Firebase Hosting custom domain + Cloud Run domain mapping. Update `authDomain` and OAuth redirect URIs.
 
 ---
 
 ## Data & Polling
 
 - [ ] **Real-data scoring accuracy test** — e2e scenario using actual 2025 Columbus Crew match results to validate the scoring engine against real outcomes. Get match data from user before writing.
-- [ ] **Firestore match cache + score polling** — cache ESPN schedule in Firestore. Weekly refresh fires Tuesday midnight ET (cron) regardless of whether there's a match that week. When `kickoff + 2h <= now` and match not yet `STATUS_FINAL`, poll ESPN every ~5 min and write to ResultStore when final, then stop. ESPN already returns `status.type.name`.
+- [x] **Score polling** — `MatchPoller` schedules a per-match timer at kickoff; ticks ESPN every 2 minutes while active; writes ResultStore on terminal status then deactivates. Unknown/postponed matches run until 4am reset. `POST /admin/poll-scores` for manual triggers and e2e.
+- [x] **Live match state** — `state` field (`"pre"/"in"/"post"`) parsed from ESPN `status.state`; propagated through model → API → Vue; pulsing LIVE badge on in-progress match cards.
+- [x] **Daily match refresh at 4am ET** — replaces 24h-from-startup ticker; calls `poller.Reset` so match pollers are rescheduled from fresh data after each refresh. Manual `POST /admin/refresh-matches` has the same effect.
 
 ---
 
 ## Test Infrastructure
 
 - [ ] **Playwright smoke suite for prod** — identify a small tagged subset of e2e scenarios that can run against the live prod URL after deploy (replaces the current `curl` liveness check in `deploy-prod`)
-- [ ] **Fix Vue Router warnings in unit tests** — test `makeRouter()` factories only register a few routes; components with `<router-link>` to unregistered paths (e.g. `/login`, `/signup`, `/reset`) trigger "No match found" warnings. Add stub routes to silence them.
-- [ ] **Per-worker server isolation** — if the e2e suite grows large enough that serial execution is too slow, give each Playwright worker its own server instance (separate ports) so parallel runs don't share in-memory state.
+- [ ] **Per-worker server isolation** — current parallelism runs two Playwright projects (`auth` + `app`) against a shared server. If the app group grows too slow, give each worker its own Go server instance on a separate port so they don't share in-memory state.
 
 ---
 
 ## Decisions Made / Won't Do
+
+- **Cloud Scheduler for match refresh** — `POST /admin/refresh-matches` is called manually after deploy. No cron job needed.
+
 
 - **Match result entry UI** — admin page not needed; `POST /admin/results` API is sufficient for now.
 - **Bluesky AT Protocol auth** — dropped for v1. Complex, adds no value for first release.
@@ -40,6 +40,14 @@
 
 ## Done
 
+- [x] **Unlock picks + countdown** — Unlock button clears a saved prediction and pre-populates inputs with the previous pick; client-side only (server 403 after kickoff is the real gate). Live "locks in Xd Yh / Xh Ym / Xm" countdown on each match card using browser clock (cosmetic). Upcoming window extended to 8 days.
+- [x] **Fix Upper 90 Club scoring rules** — +1 correct outcome, +1 correct Crew goals, +1 correct opponent goals (max 3 pts). Real-data tests updated.
+- [x] **Match cache + ESPN fetch** — in-memory `MatchStore` populated via `POST /admin/refresh-matches`; ESPN fetcher injected (TEST_MODE reads seeded store); `fetchCrewMatchesFrom(base)` tested via `httptest.Server` + captured fixture JSON; 97% ESPN package coverage
+- [x] **E2e parallelisation** — two Playwright projects (`auth` + `app`) run in parallel; `@reset` tag gates the `Before` reset hook to app features only
+- [x] **Coverage drive** — handlers 95%, espn 97%, scoring 100%; extracted `toPredictions`/`toResult`/`isNotFound`/`tokenToFirebaseToken` to make SDK mapping logic unit-testable
+- [x] **Guest predictions** — logged-out users can enter picks stored in localStorage; never hits server or leaderboard; nudge to create account after predicting
+- [x] **Vue Router warnings in unit tests** — shared `makeRouter()` utility with catch-all route silences all "No match found" warnings across test files
+- [x] **Team name truncation on 360px (Galaxy S24)** — stacks team names vertically at ≤600px; e2e covered
 - [x] **Typography overhaul** — replaced Bebas Neue with Barlow Condensed 800 (closer to official MLS/Crew aesthetic, works in mixed case); bumped font sizes across the board; fixed button vertical centering (flexbox, replacing asymmetric padding hack for Bebas Neue baseline quirk)
 - [x] **Official Crew brand colors** — `--gold: #fedd00` (sourced from columbuscrew.com computed styles); nav link and muted text contrast improved (`#888`)
 - [x] **Autocomplete attributes** — `autocomplete="email"` on all email inputs, `current-password` on login, `new-password` on signup; fixes password manager autofill and removes browser console warning

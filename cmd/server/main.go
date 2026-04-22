@@ -7,12 +7,14 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	firebase "firebase.google.com/go/v4"
 	"github.com/joho/godotenv"
 	"github.com/mcornell/crew-predictions/internal/espn"
 	"github.com/mcornell/crew-predictions/internal/handlers"
 	"github.com/mcornell/crew-predictions/internal/models"
+	"github.com/mcornell/crew-predictions/internal/poll"
 	"github.com/mcornell/crew-predictions/internal/repository"
 	"google.golang.org/api/option"
 )
@@ -74,21 +76,22 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	// Match fetcher: in TEST_MODE, seeded matches take priority over ESPN
-	var matchStore *repository.MemoryMatchStore
-	matchFetcher := espn.FetchCrewMatches
+	// Match store: source of truth for cached matches
+	matchStore := repository.NewMemoryMatchStore()
+
+	// ESPN fetcher used by the refresh endpoint; in TEST_MODE reads from seeded store
+	var refreshFetcher func() ([]models.Match, error)
 	if os.Getenv("TEST_MODE") == "1" {
-		matchStore = repository.NewMemoryMatchStore()
-		matchFetcher = func() ([]models.Match, error) {
-			if m, _ := matchStore.GetAll(); len(m) > 0 {
-				return m, nil
-			}
-			return espn.FetchCrewMatches()
-		}
+		refreshFetcher = matchStore.GetAll
+	} else {
+		refreshFetcher = espn.FetchCrewMatches
 	}
 
+	// Fetcher for PredictionsHandler kickoff validation — reads from the same store
+	matchFetcher := func() ([]models.Match, error) { return matchStore.GetAll() }
+
 	// API endpoints (JSON)
-	mh := handlers.NewMatchesHandler(predStore, matchFetcher)
+	mh := handlers.NewMatchesHandler(predStore, matchStore)
 	mux.HandleFunc("GET /api/matches", mh.APIList)
 	mux.HandleFunc("GET /api/me", handlers.Me)
 	ph := handlers.NewPredictionsHandler(predStore, matchFetcher)
@@ -97,6 +100,23 @@ func main() {
 	mux.HandleFunc("GET /api/leaderboard", lh.APIList)
 	rh := handlers.NewResultsHandler(resultStore)
 	mux.HandleFunc("POST /admin/results", rh.Submit)
+	var matchPoller *poll.MatchPoller
+	if os.Getenv("TEST_MODE") != "1" {
+		matchPoller = poll.NewMatchPoller(
+			matchStore, resultStore, refreshFetcher,
+			func(d time.Duration, f func()) { time.AfterFunc(d, f) },
+		)
+	}
+
+	onRefresh := func(matches []models.Match) {
+		if matchPoller != nil {
+			matchPoller.Reset(matches)
+		}
+	}
+	rmh := handlers.NewRefreshMatchesHandler(matchStore, refreshFetcher, onRefresh)
+	mux.HandleFunc("POST /admin/refresh-matches", rmh.Refresh)
+	psh := handlers.NewPollScoresHandler(matchStore, resultStore, refreshFetcher)
+	mux.HandleFunc("POST /admin/poll-scores", psh.Poll)
 
 	// Auth endpoints
 	mux.HandleFunc("POST /auth/session", sh.Create)
@@ -116,9 +136,7 @@ func main() {
 				if memResult, ok := resultStore.(*repository.MemoryResultStore); ok {
 					memResult.Reset()
 				}
-				if matchStore != nil {
-					matchStore.Reset()
-				}
+				matchStore.Reset()
 				w.WriteHeader(http.StatusNoContent)
 			})
 			log.Printf("test reset endpoint registered at DELETE /admin/reset")
@@ -126,17 +144,69 @@ func main() {
 			mux.HandleFunc("POST /admin/seed-prediction", seedH.Submit)
 			log.Printf("test seed endpoint registered at POST /admin/seed-prediction")
 		}
-		if matchStore != nil {
-			seedMH := handlers.NewSeedMatchHandler(matchStore)
-			mux.HandleFunc("POST /admin/seed-match", seedMH.Submit)
-			log.Printf("test seed endpoint registered at POST /admin/seed-match")
+		seedMH := handlers.NewSeedMatchHandler(matchStore)
+		mux.HandleFunc("POST /admin/seed-match", seedMH.Submit)
+		log.Printf("test seed endpoint registered at POST /admin/seed-match")
+	}
+
+	if os.Getenv("TEST_MODE") != "1" {
+		etLoc, err := time.LoadLocation("America/New_York")
+		if err != nil {
+			log.Fatalf("failed to load ET timezone: %v", err)
 		}
+		stop := startDailyRefresh(matchStore, refreshFetcher, matchPoller, etLoc)
+		defer close(stop)
+
+		pollerCtx, cancelPoller := context.WithCancel(context.Background())
+		defer cancelPoller()
+		go matchPoller.Run(pollerCtx, 2*time.Minute)
 	}
 
 	log.Printf("listening on :%s", port)
 	if err := http.ListenAndServe(":"+port, mux); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func next4amET(now time.Time, loc *time.Location) time.Time {
+	t := now.In(loc)
+	candidate := time.Date(t.Year(), t.Month(), t.Day(), 4, 0, 0, 0, loc)
+	if !candidate.After(now) {
+		candidate = candidate.Add(24 * time.Hour)
+	}
+	return candidate
+}
+
+func startDailyRefresh(store repository.MatchStore, fetcher func() ([]models.Match, error), poller *poll.MatchPoller, etLoc *time.Location) chan struct{} {
+	stop := make(chan struct{})
+	go func() {
+		refresh := func() {
+			matches, err := fetcher()
+			if err != nil {
+				log.Printf("daily match refresh failed: %v", err)
+				return
+			}
+			if err := store.SaveAll(matches); err != nil {
+				log.Printf("daily match refresh save failed: %v", err)
+				return
+			}
+			log.Printf("daily match refresh: %d matches cached", len(matches))
+			poller.Reset(matches)
+		}
+		refresh()
+		for {
+			delay := time.Until(next4amET(time.Now(), etLoc))
+			timer := time.NewTimer(delay)
+			select {
+			case <-timer.C:
+				refresh()
+			case <-stop:
+				timer.Stop()
+				return
+			}
+		}
+	}()
+	return stop
 }
 
 func serveFirebaseConfig(w http.ResponseWriter, r *http.Request) {

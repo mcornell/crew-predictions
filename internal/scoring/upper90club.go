@@ -5,11 +5,16 @@ func Upper90Club(result Result, prediction Prediction, targetTeamIsHome bool) in
 	if outcome(result.Home, result.Away) == outcome(prediction.Home, prediction.Away) {
 		pts++
 	}
-	actualTargetGoals, predictedTargetGoals := result.Away, prediction.Away
+	actualTarget, predictedTarget := result.Away, prediction.Away
+	actualOpponent, predictedOpponent := result.Home, prediction.Home
 	if targetTeamIsHome {
-		actualTargetGoals, predictedTargetGoals = result.Home, prediction.Home
+		actualTarget, predictedTarget = result.Home, prediction.Home
+		actualOpponent, predictedOpponent = result.Away, prediction.Away
 	}
-	if predictedTargetGoals == actualTargetGoals {
+	if predictedTarget == actualTarget {
+		pts++
+	}
+	if predictedOpponent == actualOpponent {
 		pts++
 	}
 	return pts

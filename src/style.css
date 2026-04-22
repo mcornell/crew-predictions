@@ -305,6 +305,47 @@ body::after {
   color: var(--muted);
 }
 
+.live-indicator {
+  display: inline-block;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--danger);
+  text-transform: uppercase;
+  margin-bottom: 0.35rem;
+  animation: live-pulse 1.4s ease-in-out infinite;
+}
+
+.match-countdown {
+  display: inline-block;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 0.35rem;
+}
+
+.btn-unlock {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+}
+
+.btn-unlock:hover {
+  color: var(--text);
+  border-color: var(--muted);
+  opacity: 1;
+}
+
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
 /* ── Login ───────────────────────────────────────────────────────────────── */
 .login-page {
   display: flex;

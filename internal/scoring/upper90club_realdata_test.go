@@ -39,10 +39,10 @@ func TestUpper90Club_RealData_Mars(t *testing.T) {
 }
 
 func TestUpper90Club_RealData_Ben(t *testing.T) {
-	pts := scoring.Upper90Club(u90match1, scoring.Prediction{Home: 2, Away: 2}, false) // Portland 2-2 Columbus: wrong winner (draw), correct Columbus goals → +1
-	pts += scoring.Upper90Club(u90match2, scoring.Prediction{Home: 2, Away: 3}, false) // KC 2-3 Columbus: wrong winner, wrong Columbus goals → 0
-	if pts != 1 {
-		t.Errorf("Ben: expected 1 point, got %d", pts)
+	pts := scoring.Upper90Club(u90match1, scoring.Prediction{Home: 2, Away: 2}, false) // Portland 2-2 Columbus: wrong outcome (draw), correct Columbus goals → +1
+	pts += scoring.Upper90Club(u90match2, scoring.Prediction{Home: 2, Away: 3}, false) // KC 2-3 Columbus: wrong outcome, wrong Columbus goals, correct KC goals (2=2) → +1
+	if pts != 2 {
+		t.Errorf("Ben: expected 2 points, got %d", pts)
 	}
 }
 

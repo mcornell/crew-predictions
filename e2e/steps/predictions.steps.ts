@@ -5,10 +5,14 @@ const { Given, When, Then } = createBdd();
 
 let lastPredictionStatus = 0;
 
-function kickoffForStatus(status: string): string {
+function kickoffForStatus(status: string, state?: string): string {
   const d = new Date();
-  const isScheduled = status === 'STATUS_SCHEDULED' || status === 'STATUS_IN_PROGRESS';
-  d.setHours(d.getHours() + (isScheduled ? 24 : -24));
+  if (state === 'in') {
+    d.setHours(d.getHours() - 1);
+  } else {
+    const isScheduled = status === 'STATUS_SCHEDULED' || status === 'STATUS_IN_PROGRESS';
+    d.setHours(d.getHours() + (isScheduled ? 24 : -24));
+  }
   return d.toISOString();
 }
 
@@ -19,8 +23,11 @@ Given('the following matches are seeded:', async ({ request }, table: any) => {
         id: row.id,
         home_team: row.homeTeam,
         away_team: row.awayTeam,
-        kickoff: kickoffForStatus(row.status),
+        kickoff: kickoffForStatus(row.status, row.state),
         status: row.status,
+        state: row.state ?? '',
+        home_score: row.homeScore ?? '',
+        away_score: row.awayScore ?? '',
       },
     });
   }
@@ -72,4 +79,16 @@ When('I reload the page', async ({ page }) => {
 
 Then('I should see a sign-in nudge', async ({ page }) => {
   await expect(page.locator('[data-testid="guest-nudge"]')).toBeVisible();
+});
+
+Then('I should see an enabled {string} button', async ({ page }, label: string) => {
+  const btn = page.getByRole('button', { name: label, exact: true }).first();
+  await expect(btn).toBeVisible();
+  await expect(btn).toBeEnabled();
+});
+
+Then('the first match score inputs should show {int} and {int}', async ({ page }, home: number, away: number) => {
+  const card = page.locator('[data-testid="match-card"]').first();
+  await expect(card.locator('input[name="home_goals"]')).toHaveValue(String(home));
+  await expect(card.locator('input[name="away_goals"]')).toHaveValue(String(away));
 });

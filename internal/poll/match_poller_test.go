@@ -1,0 +1,248 @@
+package poll_test
+
+import (
+	"context"
+	"fmt"
+	"testing"
+	"time"
+
+	"github.com/mcornell/crew-predictions/internal/models"
+	"github.com/mcornell/crew-predictions/internal/poll"
+	"github.com/mcornell/crew-predictions/internal/repository"
+)
+
+// immediateTimer fires the callback synchronously, ignoring the delay.
+func immediateTimer(_ time.Duration, f func()) { f() }
+
+// capturingTimer records delays without firing callbacks.
+func capturingTimer(delays *[]time.Duration) func(time.Duration, func()) {
+	return func(d time.Duration, _ func()) {
+		*delays = append(*delays, d)
+	}
+}
+
+func newPoller(matchStore repository.MatchStore, resultStore repository.ResultStore, matches []models.Match, timer func(time.Duration, func())) *poll.MatchPoller {
+	fetcher := func() ([]models.Match, error) { return matches, nil }
+	return poll.NewMatchPoller(matchStore, resultStore, fetcher, timer)
+}
+
+func TestMatchPoller_ScheduleSetsPositiveDelayForFutureKickoff(t *testing.T) {
+	var delays []time.Duration
+	p := newPoller(repository.NewMemoryMatchStore(), repository.NewMemoryResultStore(), nil, capturingTimer(&delays))
+
+	future := time.Now().Add(2 * time.Hour)
+	p.Schedule([]models.Match{{ID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", Kickoff: future, Status: "STATUS_SCHEDULED"}})
+
+	if len(delays) != 1 {
+		t.Fatalf("expected 1 timer, got %d", len(delays))
+	}
+	if delays[0] <= 0 {
+		t.Errorf("expected positive delay for future kickoff, got %v", delays[0])
+	}
+}
+
+func TestMatchPoller_ScheduleUsesZeroDelayForPastKickoff(t *testing.T) {
+	var delays []time.Duration
+	p := newPoller(repository.NewMemoryMatchStore(), repository.NewMemoryResultStore(), nil, capturingTimer(&delays))
+
+	past := time.Now().Add(-1 * time.Hour)
+	p.Schedule([]models.Match{{ID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", Kickoff: past, Status: "STATUS_SCHEDULED", State: "in"}})
+
+	if len(delays) != 1 {
+		t.Fatalf("expected 1 timer, got %d", len(delays))
+	}
+	if delays[0] != 0 {
+		t.Errorf("expected zero delay for past kickoff, got %v", delays[0])
+	}
+}
+
+func TestMatchPoller_ScheduleSkipsTerminalMatch(t *testing.T) {
+	var delays []time.Duration
+	p := newPoller(repository.NewMemoryMatchStore(), repository.NewMemoryResultStore(), nil, capturingTimer(&delays))
+
+	p.Schedule([]models.Match{{ID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", Kickoff: time.Now().Add(-1 * time.Hour), Status: "STATUS_FULL_TIME", State: "post"}})
+
+	if len(delays) != 0 {
+		t.Errorf("expected no timer for terminal match, got %d", len(delays))
+	}
+}
+
+func TestMatchPoller_ScheduleSkipsAlreadyScheduled(t *testing.T) {
+	var delays []time.Duration
+	p := newPoller(repository.NewMemoryMatchStore(), repository.NewMemoryResultStore(), nil, capturingTimer(&delays))
+
+	m := models.Match{ID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", Kickoff: time.Now().Add(1 * time.Hour), Status: "STATUS_SCHEDULED"}
+	p.Schedule([]models.Match{m})
+	p.Schedule([]models.Match{m})
+
+	if len(delays) != 1 {
+		t.Errorf("expected 1 timer after two Schedule calls for same match, got %d", len(delays))
+	}
+}
+
+func TestMatchPoller_Tick_NoopWhenNoActiveMatches(t *testing.T) {
+	calls := 0
+	matchStore := repository.NewMemoryMatchStore()
+	resultStore := repository.NewMemoryResultStore()
+	fetcher := func() ([]models.Match, error) { calls++; return nil, nil }
+	p := poll.NewMatchPoller(matchStore, resultStore, fetcher, capturingTimer(new([]time.Duration)))
+
+	p.Tick(context.Background())
+
+	if calls != 0 {
+		t.Errorf("expected no fetcher calls with no active matches, got %d", calls)
+	}
+}
+
+func TestMatchPoller_Tick_SavesResultAndDeactivatesTerminalMatch(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	resultStore := repository.NewMemoryResultStore()
+
+	// Fetcher simulates ESPN returning a now-terminal match
+	terminalMatch := models.Match{
+		ID: "m-done", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",
+		Status: "STATUS_FULL_TIME", State: "post", HomeScore: "2", AwayScore: "1",
+		Kickoff: time.Now().Add(-2 * time.Hour),
+	}
+	p := newPoller(matchStore, resultStore, []models.Match{terminalMatch}, immediateTimer)
+
+	// Schedule with pre-match state (as it would have been at kickoff)
+	preMatch := models.Match{
+		ID: "m-done", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",
+		Status: "STATUS_SCHEDULED", State: "pre",
+		Kickoff: time.Now().Add(-2 * time.Hour),
+	}
+	p.Schedule([]models.Match{preMatch})
+
+	p.Tick(context.Background())
+
+	result, err := resultStore.GetResult(context.Background(), "m-done")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result == nil || result.HomeGoals != 2 || result.AwayGoals != 1 {
+		t.Errorf("expected result 2-1, got %+v", result)
+	}
+	if p.ActiveCount() != 0 {
+		t.Errorf("expected match removed from active after terminal, got %d active", p.ActiveCount())
+	}
+}
+
+func TestMatchPoller_Tick_KeepsActiveForLiveMatch(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	resultStore := repository.NewMemoryResultStore()
+
+	liveMatch := models.Match{
+		ID: "m-live", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",
+		Status: "STATUS_IN_PROGRESS", State: "in", HomeScore: "1", AwayScore: "0",
+		Kickoff: time.Now().Add(-1 * time.Hour),
+	}
+	p := newPoller(matchStore, resultStore, []models.Match{liveMatch}, immediateTimer)
+	p.Schedule([]models.Match{liveMatch})
+
+	p.Tick(context.Background())
+
+	if p.ActiveCount() != 1 {
+		t.Errorf("expected match to remain active for live match, got %d active", p.ActiveCount())
+	}
+}
+
+func TestMatchPoller_Tick_KeepsActiveForUnknownStatus(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	resultStore := repository.NewMemoryResultStore()
+
+	unknownMatch := models.Match{
+		ID: "m-weird", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",
+		Status: "STATUS_POSTPONED", State: "pre",
+		Kickoff: time.Now().Add(-1 * time.Hour),
+	}
+	p := newPoller(matchStore, resultStore, []models.Match{unknownMatch}, immediateTimer)
+	p.Schedule([]models.Match{unknownMatch})
+
+	p.Tick(context.Background())
+
+	if p.ActiveCount() != 1 {
+		t.Errorf("expected match to remain active for unknown status (4am reset will clean up), got %d active", p.ActiveCount())
+	}
+}
+
+func TestMatchPoller_Tick_NoopWhenFetcherFails(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	resultStore := repository.NewMemoryResultStore()
+
+	callCount := 0
+	fetcher := func() ([]models.Match, error) {
+		callCount++
+		return nil, fmt.Errorf("ESPN down")
+	}
+	p := poll.NewMatchPoller(matchStore, resultStore, fetcher, immediateTimer)
+
+	pastMatch := models.Match{
+		ID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",
+		Status: "STATUS_SCHEDULED", State: "in",
+		Kickoff: time.Now().Add(-1 * time.Hour),
+	}
+	p.Schedule([]models.Match{pastMatch})
+	p.Tick(context.Background())
+
+	result, _ := resultStore.GetResult(context.Background(), "m1")
+	if result != nil {
+		t.Errorf("expected no result saved when fetcher fails, got %+v", result)
+	}
+}
+
+func TestMatchPoller_Run_StopsOnContextCancel(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	resultStore := repository.NewMemoryResultStore()
+	fetcher := func() ([]models.Match, error) { return nil, nil }
+	p := poll.NewMatchPoller(matchStore, resultStore, fetcher, func(time.Duration, func()) {})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() {
+		p.Run(ctx, 10*time.Millisecond)
+		close(done)
+	}()
+
+	cancel()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Error("Run did not stop after context cancel within 1 second")
+	}
+}
+
+func TestMatchPoller_Reset_ClearsActiveAndReschedules(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	resultStore := repository.NewMemoryResultStore()
+
+	liveMatch := models.Match{
+		ID: "m-live", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",
+		Status: "STATUS_IN_PROGRESS", State: "in",
+		Kickoff: time.Now().Add(-1 * time.Hour),
+	}
+
+	var delays []time.Duration
+	p := newPoller(matchStore, resultStore, []models.Match{liveMatch}, immediateTimer)
+	p.Schedule([]models.Match{liveMatch})
+
+	if p.ActiveCount() != 1 {
+		t.Fatalf("expected 1 active match before reset, got %d", p.ActiveCount())
+	}
+
+	// After reset, old active cleared; new schedule applied with capturing timer
+	newMatch := models.Match{
+		ID: "m-new", HomeTeam: "Columbus Crew", AwayTeam: "Portland Timbers",
+		Status: "STATUS_SCHEDULED", State: "pre",
+		Kickoff: time.Now().Add(3 * time.Hour),
+	}
+	p.SetTimerFunc(capturingTimer(&delays))
+	p.Reset([]models.Match{newMatch})
+
+	if p.ActiveCount() != 0 {
+		t.Errorf("expected active cleared after reset, got %d", p.ActiveCount())
+	}
+	if len(delays) != 1 {
+		t.Errorf("expected 1 new timer after reset, got %d", len(delays))
+	}
+}

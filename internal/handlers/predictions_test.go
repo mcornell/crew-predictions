@@ -3,6 +3,7 @@ package handlers_test
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -28,6 +29,21 @@ func fetcherWithMatch(id string, kickoff time.Time) func() ([]models.Match, erro
 func newHandler() *handlers.PredictionsHandler {
 	future := time.Now().Add(24 * time.Hour)
 	return handlers.NewPredictionsHandler(repository.NewMemoryPredictionStore(), fetcherWithMatch("match1", future))
+}
+
+func errFetcher() ([]models.Match, error) { return nil, fmt.Errorf("store down") }
+
+func TestSubmitPrediction_Returns500WhenFetcherFails(t *testing.T) {
+	handler := handlers.NewPredictionsHandler(repository.NewMemoryPredictionStore(), errFetcher)
+	req := httptest.NewRequest(http.MethodPost, "/predictions",
+		strings.NewReader("match_id=m1&home_goals=2&away_goals=1"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(sessionCookie("google:abc123", "BlackAndGold@bsky.mock"))
+	w := httptest.NewRecorder()
+	handler.Submit(w, req)
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("expected 500, got %d", w.Code)
+	}
 }
 
 func TestSubmitPrediction_RejectsUnauthenticated(t *testing.T) {

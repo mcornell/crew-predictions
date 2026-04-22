@@ -1,4 +1,10 @@
+@reset
 Feature: Mobile layout
+
+  Background:
+    Given the following matches are seeded:
+      | id      | homeTeam      | awayTeam  | status           |
+      | m-mob-1 | Columbus Crew | FC Dallas | STATUS_SCHEDULED |
 
   Scenario: Matches page fits within a mobile viewport without horizontal overflow
     Given I am not logged in

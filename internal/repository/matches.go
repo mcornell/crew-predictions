@@ -6,6 +6,12 @@ import (
 	"github.com/mcornell/crew-predictions/internal/models"
 )
 
+type MatchStore interface {
+	GetAll() ([]models.Match, error)
+	SaveAll(matches []models.Match) error
+	Reset()
+}
+
 type MemoryMatchStore struct {
 	mu      sync.RWMutex
 	matches []models.Match
@@ -19,6 +25,13 @@ func (s *MemoryMatchStore) Seed(matches []models.Match) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.matches = append(s.matches, matches...)
+}
+
+func (s *MemoryMatchStore) SaveAll(matches []models.Match) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.matches = matches
+	return nil
 }
 
 func (s *MemoryMatchStore) GetAll() ([]models.Match, error) {

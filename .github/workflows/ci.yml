@@ -53,6 +53,9 @@ jobs:
       - name: Vue unit tests
         run: npm run test:unit
 
+      - name: TypeScript type check
+        run: npm run typecheck
+
       # Cache Playwright browsers (Chromium bundle is ~170MB)
       - name: Get Playwright version
         id: playwright-version

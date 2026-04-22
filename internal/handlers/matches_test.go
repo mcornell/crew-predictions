@@ -14,16 +14,34 @@ import (
 	"github.com/mcornell/crew-predictions/internal/repository"
 )
 
-func stubFetcher(matches []models.Match) func() ([]models.Match, error) {
-	return func() ([]models.Match, error) { return matches, nil }
-}
-
 func oneMatch() []models.Match {
 	return []models.Match{{ID: "match-99", HomeTeam: "Portland Timbers", AwayTeam: "Columbus Crew", Kickoff: time.Now()}}
 }
 
+func matchStoreWith(matches []models.Match) *repository.MemoryMatchStore {
+	ms := repository.NewMemoryMatchStore()
+	ms.SaveAll(matches) //nolint
+	return ms
+}
+
+func TestAPIMatchesHandler_ReadsFromMatchStore(t *testing.T) {
+	mh := handlers.NewMatchesHandler(repository.NewMemoryPredictionStore(), matchStoreWith(oneMatch()))
+	req := httptest.NewRequest(http.MethodGet, "/api/matches", nil)
+	w := httptest.NewRecorder()
+
+	mh.APIList(w, req)
+
+	var body struct {
+		Matches []struct{ ID string `json:"id"` } `json:"matches"`
+	}
+	json.NewDecoder(w.Body).Decode(&body)
+	if len(body.Matches) != 1 || body.Matches[0].ID != "match-99" {
+		t.Errorf("expected match-99, got %+v", body.Matches)
+	}
+}
+
 func TestAPIMatchesHandler_ReturnsJSON(t *testing.T) {
-	mh := handlers.NewMatchesHandler(repository.NewMemoryPredictionStore(), stubFetcher(oneMatch()))
+	mh := handlers.NewMatchesHandler(repository.NewMemoryPredictionStore(), matchStoreWith(oneMatch()))
 	req := httptest.NewRequest(http.MethodGet, "/api/matches", nil)
 	w := httptest.NewRecorder()
 
@@ -50,10 +68,14 @@ func TestAPIMatchesHandler_ReturnsJSON(t *testing.T) {
 	}
 }
 
+type errMatchStore struct{}
+
+func (e *errMatchStore) GetAll() ([]models.Match, error) { return nil, fmt.Errorf("store error") }
+func (e *errMatchStore) SaveAll(_ []models.Match) error  { return nil }
+func (e *errMatchStore) Reset()                          {}
+
 func TestAPIMatchesHandler_ReturnsErrorWhenFetchFails(t *testing.T) {
-	mh := handlers.NewMatchesHandler(repository.NewMemoryPredictionStore(), func() ([]models.Match, error) {
-		return nil, fmt.Errorf("espn is down")
-	})
+	mh := handlers.NewMatchesHandler(repository.NewMemoryPredictionStore(), &errMatchStore{})
 	req := httptest.NewRequest(http.MethodGet, "/api/matches", nil)
 	w := httptest.NewRecorder()
 
@@ -64,12 +86,35 @@ func TestAPIMatchesHandler_ReturnsErrorWhenFetchFails(t *testing.T) {
 	}
 }
 
+func TestAPIMatchesHandler_IncludesStateInResponse(t *testing.T) {
+	ms := repository.NewMemoryMatchStore()
+	ms.SaveAll([]models.Match{{ID: "m-live", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", Kickoff: time.Now(), State: "in"}})
+	mh := handlers.NewMatchesHandler(repository.NewMemoryPredictionStore(), ms)
+	req := httptest.NewRequest(http.MethodGet, "/api/matches", nil)
+	w := httptest.NewRecorder()
+
+	mh.APIList(w, req)
+
+	var body struct {
+		Matches []struct {
+			ID    string `json:"id"`
+			State string `json:"state"`
+		} `json:"matches"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+		t.Fatalf("invalid JSON: %v", err)
+	}
+	if len(body.Matches) != 1 || body.Matches[0].State != "in" {
+		t.Errorf("expected state=in, got %+v", body.Matches)
+	}
+}
+
 func TestAPIMatchesHandler_IncludesPredictionForLoggedInUser(t *testing.T) {
 	store := repository.NewMemoryPredictionStore()
 	store.Save(context.Background(), repository.Prediction{
 		MatchID: "match-99", UserID: "google:abc123", HomeGoals: 2, AwayGoals: 1,
 	})
-	mh := handlers.NewMatchesHandler(store, stubFetcher(oneMatch()))
+	mh := handlers.NewMatchesHandler(store, matchStoreWith(oneMatch()))
 	req := httptest.NewRequest(http.MethodGet, "/api/matches", nil)
 	req.AddCookie(sessionCookie("google:abc123", "BlackAndGold@bsky.mock"))
 	w := httptest.NewRecorder()

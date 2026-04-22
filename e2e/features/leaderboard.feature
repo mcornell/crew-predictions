@@ -1,3 +1,4 @@
+@reset
 Feature: Leaderboard
 
   Scenario: User sees Aces Radio points after an exact score prediction

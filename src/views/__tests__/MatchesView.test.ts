@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { ref, type Ref } from 'vue'
 import MatchesView from '../MatchesView.vue'
@@ -215,7 +215,25 @@ describe('MatchesView', () => {
     localStorage.removeItem('guestPredictions')
   })
 
-  it('match more than 7 days away is not shown in upcoming', async () => {
+  it('shows LIVE indicator on match card when state is "in"', async () => {
+    const now = new Date()
+    const liveMatch = { id: 'live-1', homeTeam: 'Columbus Crew', awayTeam: 'FC Dallas', kickoff: new Date(now.getTime() - 60 * 60 * 1000).toISOString(), status: 'STATUS_SCHEDULED', homeScore: '', awayScore: '', state: 'in' }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ matches: [liveMatch], predictions: {} }),
+    }))
+    const wrapper = mountMatches()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="live-indicator"]').exists()).toBe(true)
+  })
+
+  it('does not show LIVE indicator when state is not "in"', async () => {
+    const wrapper = mountMatches()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="live-indicator"]').exists()).toBe(false)
+  })
+
+  it('match more than 8 days away is not shown in upcoming', async () => {
     const farFuture = new Date()
     farFuture.setDate(farFuture.getDate() + 10)
     const farMatch = { id: 'far', homeTeam: 'Columbus Crew', awayTeam: 'Inter Miami', kickoff: farFuture.toISOString(), status: 'STATUS_SCHEDULED' }
@@ -226,5 +244,80 @@ describe('MatchesView', () => {
     const wrapper = mountMatches()
     await flushPromises()
     expect(wrapper.findAll('[data-testid="match-card"]')).toHaveLength(0)
+  })
+
+  it('match exactly 8 days away is shown in upcoming', async () => {
+    const eightDays = new Date()
+    eightDays.setDate(eightDays.getDate() + 8)
+    const match = { id: 'm8', homeTeam: 'Columbus Crew', awayTeam: 'Inter Miami', kickoff: eightDays.toISOString(), status: 'STATUS_SCHEDULED' }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ matches: [match], predictions: {} }),
+    }))
+    const wrapper = mountMatches()
+    await flushPromises()
+    expect(wrapper.findAll('[data-testid="match-card"]')).toHaveLength(1)
+  })
+
+  it('shows countdown on upcoming match card', async () => {
+    const wrapper = mountMatches()
+    await flushPromises()
+    const card = wrapper.findAll('[data-testid="match-card"]')[0]
+    expect(card.find('[data-testid="match-countdown"]').exists()).toBe(true)
+  })
+
+  it('shows Unlock button after submitting a prediction', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ matches: mockMatches, predictions: {} }) })
+      .mockResolvedValueOnce({ ok: true })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const wrapper = mountMatches(loggedInProvide)
+    await flushPromises()
+
+    const card = wrapper.findAll('[data-testid="match-card"]')[0]
+    await card.find('input[name="home_goals"]').setValue('2')
+    await card.find('input[name="away_goals"]').setValue('1')
+    await card.find('button').trigger('click')
+    await flushPromises()
+
+    expect(card.find('button').text()).toBe('Unlock')
+  })
+
+  it('clears the countdown interval on unmount', async () => {
+    vi.useFakeTimers()
+    const clearSpy = vi.spyOn(globalThis, 'clearInterval')
+
+    const wrapper = mountMatches()
+    await flushPromises()
+
+    wrapper.unmount()
+
+    expect(clearSpy).toHaveBeenCalled()
+    clearSpy.mockRestore()
+    vi.useRealTimers()
+  })
+
+  it('clicking Unlock restores score inputs pre-populated with previous pick', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ matches: mockMatches, predictions: {} }) })
+      .mockResolvedValueOnce({ ok: true })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const wrapper = mountMatches(loggedInProvide)
+    await flushPromises()
+
+    const card = wrapper.findAll('[data-testid="match-card"]')[0]
+    await card.find('input[name="home_goals"]').setValue('2')
+    await card.find('input[name="away_goals"]').setValue('1')
+    await card.find('button').trigger('click')
+    await flushPromises()
+
+    await card.find('button').trigger('click') // Unlock
+    await flushPromises()
+
+    expect((card.find('input[name="home_goals"]').element as HTMLInputElement).value).toBe('2')
+    expect((card.find('input[name="away_goals"]').element as HTMLInputElement).value).toBe('1')
+    expect(card.find('button').text()).toBe('Predict')
   })
 })

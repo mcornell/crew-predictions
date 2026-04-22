@@ -24,6 +24,20 @@ func TestMemoryMatchStore_ReturnsSeededMatches(t *testing.T) {
 	}
 }
 
+func TestMemoryMatchStore_SaveAll_ReplacesMatches(t *testing.T) {
+	store := repository.NewMemoryMatchStore()
+	store.Seed([]models.Match{{ID: "old", Kickoff: time.Now()}})
+
+	err := store.SaveAll([]models.Match{{ID: "new", Kickoff: time.Now()}})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	matches, _ := store.GetAll()
+	if len(matches) != 1 || matches[0].ID != "new" {
+		t.Errorf("expected only new match, got %+v", matches)
+	}
+}
+
 func TestMemoryMatchStore_Reset_ClearsMatches(t *testing.T) {
 	store := repository.NewMemoryMatchStore()
 	store.Seed([]models.Match{{ID: "m1", Kickoff: time.Now()}})

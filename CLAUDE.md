@@ -52,6 +52,7 @@ Every feature increment starts from a failing **Playwright** (browser) scenario 
 
 ```bash
 go test ./...          # Go unit tests — always run the full suite
+npm run typecheck      # TypeScript type check (vue-tsc --noEmit) — catches type errors missed by Vitest
 npm run test:unit      # Vitest unit tests for Vue components
 npm test               # e2e BDD outer loop (bddgen + playwright) — runs against local emulator
 npx bddgen             # regenerate specs from .feature files only
@@ -63,7 +64,7 @@ Feature files live in `e2e/features/`. Step definitions live in `e2e/steps/`.
 Smoke feature files live in `e2e/smoke/features/`. Smoke steps in `e2e/smoke/steps/`.
 Always run `bddgen` after editing a `.feature` file.
 
-**If asked to push, both `npm run test:unit` AND `npm test` must be green locally first.**
+**If asked to push, `npm run typecheck`, `npm run test:unit`, AND `npm test` must be green locally first.**
 The smoke suite (`npm run test:smoke`) runs in CI after `deploy-staging` — it is not a substitute for the local e2e suite.
 
 #### Vue test patterns
@@ -89,7 +90,7 @@ The smoke suite (`npm run test:smoke`) runs in CI after `deploy-staging` — it 
 - `FIREBASE_PROJECT_ID` — Firebase Admin SDK init only, does **not** trigger Firestore
 - `GOOGLE_CLOUD_PROJECT` — triggers Firestore; do **not** set in playwright `webServer` env
 
-**E2e test isolation:** `e2e/global-setup.ts` calls `DELETE /admin/reset` (TEST_MODE=1) and clears Firebase Auth emulator accounts between runs.
+**E2e test isolation:** `e2e/global-setup.ts` clears Firebase Auth emulator accounts once before the suite. A `Before` hook in `hooks.steps.ts` calls `DELETE /admin/reset` before each scenario tagged `@reset`. Features that mutate the match/prediction/result stores must carry `@reset`. Auth-only features omit it and run in parallel with the app group via two Playwright projects (`auth` + `app`).
 
 ---
 
