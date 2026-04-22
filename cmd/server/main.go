@@ -126,6 +126,8 @@ func main() {
 	mux.HandleFunc("POST /api/predictions", ph.Submit)
 	lh := handlers.NewLeaderboardHandler(predStore, resultStore, userStore, "Columbus Crew")
 	mux.HandleFunc("GET /api/leaderboard", lh.APIList)
+	prh := handlers.NewProfileHandler(predStore, resultStore, userStore, "Columbus Crew")
+	mux.HandleFunc("GET /api/profile/{userID}", prh.Get)
 	rh := handlers.NewResultsHandler(resultStore)
 	mux.HandleFunc("POST /admin/results", rh.Submit)
 	var matchPoller *poll.MatchPoller
