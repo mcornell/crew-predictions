@@ -54,6 +54,19 @@ func TestMemoryUserStore_GetAll(t *testing.T) {
 	}
 }
 
+func TestMemoryUserStore_UpsertPreservesLocationWhenEmpty(t *testing.T) {
+	s := repository.NewMemoryUserStore()
+	ctx := context.Background()
+
+	s.Upsert(ctx, repository.User{UserID: "u1", Handle: "fan", Location: "Columbus, OH"})
+	s.Upsert(ctx, repository.User{UserID: "u1", Handle: "fan"}) // no location
+
+	got, _ := s.GetByID(ctx, "u1")
+	if got == nil || got.Location != "Columbus, OH" {
+		t.Errorf("expected location Columbus, OH preserved, got %+v", got)
+	}
+}
+
 func TestMemoryUserStore_UpsertPreservesProviderWhenEmpty(t *testing.T) {
 	s := repository.NewMemoryUserStore()
 	ctx := context.Background()

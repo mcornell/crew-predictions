@@ -9,6 +9,7 @@ type User struct {
 	UserID        string
 	Handle        string
 	Provider      string
+	Location      string
 	EmailVerified bool
 }
 
@@ -33,6 +34,9 @@ func (s *MemoryUserStore) Upsert(_ context.Context, u User) error {
 	existing := s.data[u.UserID]
 	if u.Provider == "" {
 		u.Provider = existing.Provider
+	}
+	if u.Location == "" {
+		u.Location = existing.Location
 	}
 	s.data[u.UserID] = u
 	return nil
