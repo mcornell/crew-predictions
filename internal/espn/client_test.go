@@ -145,6 +145,60 @@ func TestIsCrewMatch_FalseWhenNeither(t *testing.T) {
 	}
 }
 
+func TestFetchAndParse_ReturnsErrorOnNetworkFailure(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv.Close()
+
+	_, err := fetchAndParse(srv.URL)
+	if err == nil {
+		t.Error("expected error on network failure, got nil")
+	}
+}
+
+func TestFetchAndParse_ReturnsErrorOnInvalidJSON(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("not json"))
+	}))
+	defer srv.Close()
+
+	_, err := fetchAndParse(srv.URL)
+	if err == nil {
+		t.Error("expected error on invalid JSON, got nil")
+	}
+}
+
+func TestFetchCrewMatchesFrom_ReturnsErrorWhenScheduleFetchFails(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "schedule") {
+			w.Write([]byte("not json"))
+		} else {
+			json.NewEncoder(w).Encode(espnResponse{})
+		}
+	}))
+	defer srv.Close()
+
+	_, err := fetchCrewMatchesFrom(srv.URL)
+	if err == nil {
+		t.Error("expected error when schedule fetch returns invalid JSON")
+	}
+}
+
+func TestFetchCrewMatchesFrom_ReturnsErrorWhenScoreboardFetchFails(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "scoreboard") {
+			w.Write([]byte("not json"))
+		} else {
+			json.NewEncoder(w).Encode(espnResponse{})
+		}
+	}))
+	defer srv.Close()
+
+	_, err := fetchCrewMatchesFrom(srv.URL)
+	if err == nil {
+		t.Error("expected error when scoreboard fetch returns invalid JSON")
+	}
+}
+
 func TestFetchCrewMatchesFrom_ReturnsCrewMatchesFromFixtures(t *testing.T) {
 	schedule, err := os.ReadFile("testdata/mls_schedule.json")
 	if err != nil {
