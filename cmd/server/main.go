@@ -108,7 +108,7 @@ func main() {
 	mux.HandleFunc("GET /api/me", handlers.Me)
 	ph := handlers.NewPredictionsHandler(predStore, matchFetcher)
 	mux.HandleFunc("POST /api/predictions", ph.Submit)
-	lh := handlers.NewLeaderboardHandler(predStore, resultStore, "Columbus Crew")
+	lh := handlers.NewLeaderboardHandler(predStore, resultStore, userStore, "Columbus Crew")
 	mux.HandleFunc("GET /api/leaderboard", lh.APIList)
 	rh := handlers.NewResultsHandler(resultStore)
 	mux.HandleFunc("POST /admin/results", rh.Submit)
