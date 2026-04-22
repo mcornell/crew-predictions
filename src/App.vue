@@ -11,7 +11,7 @@ import { getGoogleRedirectResult } from './firebase'
 
 const route = useRoute()
 const router = useRouter()
-const currentUser = ref<{ handle: string; emailVerified: boolean } | null>(null)
+const currentUser = ref<{ userID: string; handle: string; emailVerified: boolean } | null>(null)
 const authLoading = ref(true)
 
 provide('currentUser', currentUser)

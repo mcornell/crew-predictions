@@ -6,12 +6,12 @@
       <h2 class="section-title">Aces Radio</h2>
       <div
         v-for="(entry, i) in leaderboard.acesRadio"
-        :key="entry.handle"
+        :key="entry.userID"
         class="leaderboard-row"
         data-testid="leaderboard-row"
       >
         <span class="leaderboard-rank">{{ i + 1 }}</span>
-        <span class="leaderboard-handle">{{ entry.handle }}</span>
+        <RouterLink :to="`/profile/${entry.userID}`" class="leaderboard-handle">{{ entry.handle }}</RouterLink>
         <span class="leaderboard-points" data-testid="leaderboard-points">{{ entry.points }}</span>
       </div>
       <p v-if="leaderboard.acesRadio.length === 0" class="empty">No predictions scored yet.</p>
@@ -21,12 +21,12 @@
       <h2 class="section-title">Upper 90 Club</h2>
       <div
         v-for="(entry, i) in leaderboard.upper90Club"
-        :key="entry.handle"
+        :key="entry.userID"
         class="leaderboard-row"
         data-testid="leaderboard-row"
       >
         <span class="leaderboard-rank">{{ i + 1 }}</span>
-        <span class="leaderboard-handle">{{ entry.handle }}</span>
+        <RouterLink :to="`/profile/${entry.userID}`" class="leaderboard-handle">{{ entry.handle }}</RouterLink>
         <span class="leaderboard-points" data-testid="leaderboard-points">{{ entry.points }}</span>
       </div>
       <p v-if="leaderboard.upper90Club.length === 0" class="empty">No predictions scored yet.</p>
@@ -38,6 +38,7 @@
 import { reactive, onMounted } from 'vue'
 
 interface Entry {
+  userID: string
   handle: string
   points: number
 }

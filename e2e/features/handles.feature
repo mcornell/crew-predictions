@@ -13,7 +13,7 @@ Feature: User handles
     And I should be on the matches page
     And I have a seeded prediction of 2-0 for match "match-handle-1"
     And the final score for match "match-handle-1" was 2-0 with Columbus away
-    When I visit the profile page
+    When I visit my profile page
     And I set my display name to "CrewForever"
     And I save my profile
     And I visit the leaderboard

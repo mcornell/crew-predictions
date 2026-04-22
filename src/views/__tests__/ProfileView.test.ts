@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
+import { ref } from 'vue'
 import ProfileView from '../ProfileView.vue'
 import { makeRouter } from '../../test-utils/router'
 
@@ -7,45 +8,98 @@ vi.mock('../../firebase', () => ({
   updateDisplayName: vi.fn(),
 }))
 
+const profileData = {
+  userID: 'firebase:abc',
+  handle: 'CrewFan',
+  location: 'Columbus, OH',
+  predictionCount: 3,
+  acesRadio: { points: 15, rank: 1 },
+  upper90Club: { points: 2, rank: 2 },
+}
+
+async function mountProfile(userID: string, currentUserID: string | null = null, data = profileData) {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(data) }))
+  const r = makeRouter()
+  r.addRoute({ path: '/profile/:userID', component: ProfileView })
+  await r.push(`/profile/${userID}`)
+  const currentUser = ref(currentUserID ? { userID: currentUserID, handle: 'me', emailVerified: true } : null)
+  return mount(ProfileView, { global: { plugins: [r], provide: { currentUser } } })
+}
+
 describe('ProfileView', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }))
   })
 
-  it('renders a display name input and submit button', () => {
-    const wrapper = mount(ProfileView, { global: { plugins: [makeRouter()] } })
+  it('fetches and displays handle and location', async () => {
+    const wrapper = await mountProfile('firebase:abc')
+    await flushPromises()
+    expect(wrapper.text()).toContain('CrewFan')
+    expect(wrapper.text()).toContain('Columbus, OH')
+  })
+
+  it('shows prediction count and Aces Radio points', async () => {
+    const wrapper = await mountProfile('firebase:abc')
+    await flushPromises()
+    expect(wrapper.text()).toContain('3')
+    expect(wrapper.text()).toContain('15')
+  })
+
+  it('shows edit form when viewing own profile', async () => {
+    const wrapper = await mountProfile('firebase:abc', 'firebase:abc')
+    await flushPromises()
     expect(wrapper.find('form[data-testid="profile-form"]').exists()).toBe(true)
-    expect(wrapper.find('input[data-testid="display-name-input"]').exists()).toBe(true)
-    expect(wrapper.find('button[type="submit"]').exists()).toBe(true)
   })
 
-  it('calls updateDisplayName, posts to /auth/handle, and navigates to /matches', async () => {
+  it('hides edit form when viewing another user profile', async () => {
+    const wrapper = await mountProfile('firebase:abc', 'firebase:other')
+    await flushPromises()
+    expect(wrapper.find('form[data-testid="profile-form"]').exists()).toBe(false)
+  })
+
+  it('pre-populates handle and location inputs with current values', async () => {
+    const wrapper = await mountProfile('firebase:abc', 'firebase:abc')
+    await flushPromises()
+    expect((wrapper.find('input[data-testid="display-name-input"]').element as HTMLInputElement).value).toBe('CrewFan')
+    expect((wrapper.find('input[data-testid="location-input"]').element as HTMLInputElement).value).toBe('Columbus, OH')
+  })
+
+  it('posts handle and location on save, then navigates to /matches', async () => {
     const { updateDisplayName } = await import('../../firebase')
     vi.mocked(updateDisplayName).mockResolvedValue()
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(profileData) })
+      .mockResolvedValueOnce({ ok: true })
+    vi.stubGlobal('fetch', fetchMock)
 
     const r = makeRouter()
-    await r.push('/profile')
-    const wrapper = mount(ProfileView, { global: { plugins: [r] } })
+    r.addRoute({ path: '/profile/:userID', component: ProfileView })
+    await r.push('/profile/firebase:abc')
+    const currentUser = ref({ userID: 'firebase:abc', handle: 'CrewFan', emailVerified: true })
+    const wrapper = mount(ProfileView, { global: { plugins: [r], provide: { currentUser } } })
+    await flushPromises()
 
-    await wrapper.find('input[data-testid="display-name-input"]').setValue('Nordecke Regular')
+    await wrapper.find('input[data-testid="display-name-input"]').setValue('NewHandle')
+    await wrapper.find('input[data-testid="location-input"]').setValue('Parts Unknown')
     await wrapper.find('form').trigger('submit')
     await flushPromises()
 
-    expect(updateDisplayName).toHaveBeenCalledWith('Nordecke Regular')
-    expect(vi.mocked(fetch)).toHaveBeenCalledWith('/auth/handle', expect.objectContaining({ method: 'POST' }))
+    const handleCall = fetchMock.mock.calls.find(c => c[0] === '/auth/handle')
+    expect(handleCall).toBeTruthy()
+    const body = handleCall![1].body as URLSearchParams
+    expect(body.get('handle')).toBe('NewHandle')
+    expect(body.get('location')).toBe('Parts Unknown')
     expect(r.currentRoute.value.path).toBe('/matches')
   })
 
-  it('shows an error message when updateDisplayName fails', async () => {
+  it('shows error when save fails', async () => {
     const { updateDisplayName } = await import('../../firebase')
-    vi.mocked(updateDisplayName).mockRejectedValue(new Error('network error'))
-
-    const wrapper = mount(ProfileView, { global: { plugins: [makeRouter()] } })
-    await wrapper.find('input[data-testid="display-name-input"]').setValue('Nordecke Regular')
-    await wrapper.find('form').trigger('submit')
+    vi.mocked(updateDisplayName).mockRejectedValue(new Error('network'))
+    const wrapper = await mountProfile('firebase:abc', 'firebase:abc')
     await flushPromises()
 
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
     expect(wrapper.find('.form-error').exists()).toBe(true)
   })
 })

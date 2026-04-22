@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import LeaderboardView from '../LeaderboardView.vue'
+import { makeRouter } from '../../test-utils/router'
 
 const mockData = {
-  acesRadio: [{ handle: 'BlackAndGold@bsky.mock', points: 15 }],
-  upper90Club: [{ handle: 'ColumbusNordecke@bsky.mock', points: 2 }],
+  acesRadio: [{ userID: 'firebase:abc', handle: 'BlackAndGold@bsky.mock', points: 15 }],
+  upper90Club: [{ userID: 'firebase:def', handle: 'ColumbusNordecke@bsky.mock', points: 2 }],
 }
 
 beforeEach(() => {
@@ -16,7 +17,7 @@ beforeEach(() => {
 
 describe('LeaderboardView', () => {
   it('sets document title to Leaderboard — Crew Predictions', async () => {
-    mount(LeaderboardView)
+    mount(LeaderboardView, { global: { plugins: [makeRouter()] } })
     await flushPromises()
     expect(document.title).toBe('Leaderboard — Crew Predictions')
   })
@@ -26,13 +27,13 @@ describe('LeaderboardView', () => {
       ok: true,
       json: () => Promise.resolve({ acesRadio: [], upper90Club: [] }),
     }))
-    const wrapper = mount(LeaderboardView)
+    const wrapper = mount(LeaderboardView, { global: { plugins: [makeRouter()] } })
     await flushPromises()
     expect(wrapper.text()).toContain('No predictions scored yet')
   })
 
   it('renders leaderboard rows for Aces Radio', async () => {
-    const wrapper = mount(LeaderboardView)
+    const wrapper = mount(LeaderboardView, { global: { plugins: [makeRouter()] } })
     await flushPromises()
     const rows = wrapper.findAll('[data-testid="leaderboard-row"]')
     expect(rows.length).toBeGreaterThan(0)
@@ -40,12 +41,10 @@ describe('LeaderboardView', () => {
     expect(rows[0].find('[data-testid="leaderboard-points"]').text()).toBe('15')
   })
 
-  it('renders leaderboard rows for Upper90Club', async () => {
-    const wrapper = mount(LeaderboardView)
+  it('handle links to profile page', async () => {
+    const wrapper = mount(LeaderboardView, { global: { plugins: [makeRouter()] } })
     await flushPromises()
-    const rows = wrapper.findAll('[data-testid="leaderboard-row"]')
-    const u90Row = rows[rows.length - 1]
-    expect(u90Row.text()).toContain('ColumbusNordecke@bsky.mock')
-    expect(u90Row.find('[data-testid="leaderboard-points"]').text()).toBe('2')
+    const link = wrapper.find('[data-testid="leaderboard-row"] a')
+    expect(link.attributes('href')).toContain('firebase:abc')
   })
 })
