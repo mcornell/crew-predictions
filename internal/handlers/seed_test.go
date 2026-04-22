@@ -37,6 +37,21 @@ func TestSeedPredictionHandler_SavesPrediction(t *testing.T) {
 	}
 }
 
+func TestSeedPredictionHandler_RejectsBadAwayGoals(t *testing.T) {
+	sh := handlers.NewSeedPredictionHandler(repository.NewMemoryPredictionStore())
+
+	req := httptest.NewRequest(http.MethodPost, "/admin/seed-prediction",
+		strings.NewReader("match_id=m1&user_id=u1&handle=h&home_goals=2&away_goals=bad"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+
+	sh.Submit(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", w.Code)
+	}
+}
+
 func TestSeedPredictionHandler_RejectsBadGoals(t *testing.T) {
 	sh := handlers.NewSeedPredictionHandler(repository.NewMemoryPredictionStore())
 

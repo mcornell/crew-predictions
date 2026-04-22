@@ -3,6 +3,7 @@ package handlers_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -10,6 +11,12 @@ import (
 	"github.com/mcornell/crew-predictions/internal/handlers"
 	"github.com/mcornell/crew-predictions/internal/repository"
 )
+
+type errGetAllPredictionStore struct{ repository.PredictionStore }
+
+func (e *errGetAllPredictionStore) GetAll(_ context.Context) ([]repository.Prediction, error) {
+	return nil, fmt.Errorf("store down")
+}
 
 func TestLeaderboardAPIHandler_ReturnsJSON(t *testing.T) {
 	predictions := repository.NewMemoryPredictionStore()
@@ -39,6 +46,19 @@ func TestLeaderboardAPIHandler_ReturnsJSON(t *testing.T) {
 	}
 	if len(body.AcesRadio) == 0 || body.AcesRadio[0].Handle != "BlackAndGold@bsky.mock" || body.AcesRadio[0].Points != 15 {
 		t.Errorf("unexpected acesRadio: %+v", body.AcesRadio)
+	}
+}
+
+func TestLeaderboardAPIHandler_Returns500WhenGetAllFails(t *testing.T) {
+	store := &errGetAllPredictionStore{PredictionStore: repository.NewMemoryPredictionStore()}
+	lh := handlers.NewLeaderboardHandler(store, repository.NewMemoryResultStore(), "Columbus Crew")
+	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
+	w := httptest.NewRecorder()
+
+	lh.APIList(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("expected 500, got %d", w.Code)
 	}
 }
 
