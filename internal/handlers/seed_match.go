@@ -29,6 +29,7 @@ func (h *SeedMatchHandler) Submit(w http.ResponseWriter, r *http.Request) {
 		AwayTeam: r.FormValue("away_team"),
 		Kickoff:  kickoff,
 		Status:   r.FormValue("status"),
+		State:    r.FormValue("state"),
 	}})
 	w.WriteHeader(http.StatusNoContent)
 }

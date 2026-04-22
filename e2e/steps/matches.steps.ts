@@ -35,3 +35,7 @@ Then('the matches API includes match {string}', async ({ request }, matchId: str
   const ids = (body.matches ?? []).map((m: any) => m.id);
   expect(ids).toContain(matchId);
 });
+
+Then('I should see a LIVE indicator on the match card', async ({ page }) => {
+  await expect(page.locator('[data-testid="live-indicator"]').first()).toBeVisible();
+});

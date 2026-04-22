@@ -10,4 +10,5 @@ type Match struct {
 	Status    string
 	HomeScore string
 	AwayScore string
+	State     string
 }

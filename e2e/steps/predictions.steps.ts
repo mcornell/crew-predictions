@@ -5,10 +5,14 @@ const { Given, When, Then } = createBdd();
 
 let lastPredictionStatus = 0;
 
-function kickoffForStatus(status: string): string {
+function kickoffForStatus(status: string, state?: string): string {
   const d = new Date();
-  const isScheduled = status === 'STATUS_SCHEDULED' || status === 'STATUS_IN_PROGRESS';
-  d.setHours(d.getHours() + (isScheduled ? 24 : -24));
+  if (state === 'in') {
+    d.setHours(d.getHours() - 1);
+  } else {
+    const isScheduled = status === 'STATUS_SCHEDULED' || status === 'STATUS_IN_PROGRESS';
+    d.setHours(d.getHours() + (isScheduled ? 24 : -24));
+  }
   return d.toISOString();
 }
 
@@ -19,8 +23,9 @@ Given('the following matches are seeded:', async ({ request }, table: any) => {
         id: row.id,
         home_team: row.homeTeam,
         away_team: row.awayTeam,
-        kickoff: kickoffForStatus(row.status),
+        kickoff: kickoffForStatus(row.status, row.state),
         status: row.status,
+        state: row.state ?? '',
       },
     });
   }
