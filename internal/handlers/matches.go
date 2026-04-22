@@ -24,6 +24,7 @@ type apiMatch struct {
 	Status    string `json:"status"`
 	HomeScore string `json:"homeScore"`
 	AwayScore string `json:"awayScore"`
+	State     string `json:"state"`
 }
 
 type apiPrediction struct {
@@ -48,6 +49,7 @@ func (h *MatchesHandler) APIList(w http.ResponseWriter, r *http.Request) {
 			Status:    m.Status,
 			HomeScore: m.HomeScore,
 			AwayScore: m.AwayScore,
+			State:     m.State,
 		}
 	}
 

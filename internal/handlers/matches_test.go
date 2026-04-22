@@ -86,6 +86,29 @@ func TestAPIMatchesHandler_ReturnsErrorWhenFetchFails(t *testing.T) {
 	}
 }
 
+func TestAPIMatchesHandler_IncludesStateInResponse(t *testing.T) {
+	ms := repository.NewMemoryMatchStore()
+	ms.SaveAll([]models.Match{{ID: "m-live", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", Kickoff: time.Now(), State: "in"}})
+	mh := handlers.NewMatchesHandler(repository.NewMemoryPredictionStore(), ms)
+	req := httptest.NewRequest(http.MethodGet, "/api/matches", nil)
+	w := httptest.NewRecorder()
+
+	mh.APIList(w, req)
+
+	var body struct {
+		Matches []struct {
+			ID    string `json:"id"`
+			State string `json:"state"`
+		} `json:"matches"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+		t.Fatalf("invalid JSON: %v", err)
+	}
+	if len(body.Matches) != 1 || body.Matches[0].State != "in" {
+		t.Errorf("expected state=in, got %+v", body.Matches)
+	}
+}
+
 func TestAPIMatchesHandler_IncludesPredictionForLoggedInUser(t *testing.T) {
 	store := repository.NewMemoryPredictionStore()
 	store.Save(context.Background(), repository.Prediction{
