@@ -6,7 +6,11 @@
 
 2. [ ] **Custom domain migration** — Firebase Hosting custom domain + Cloud Run domain mapping. Update `authDomain` and OAuth redirect URIs.
 
-3. [ ] **Remove stale `handle` from predictions** — `handle` on prediction documents is legacy; leaderboard now sources display names from `UserStore` by `userID`. Stop writing it on new predictions and remove the `p.Handle` fallback in the leaderboard once confirmed no UID-less predictions exist in prod.
+3. [ ] **Leaderboard: show users with ≥1 prediction at 0 pts before results land** — seed leaderboard from unique userIDs in predictions rather than only from scored pairs; smoke test accounts won't appear since they never predict.
+
+4. [ ] **Cache leaderboard scoring** — currently recalculated on every request; fine now but will need in-memory caching or pre-computation at scale.
+
+5. [ ] **Remove stale `handle` from predictions** — `handle` on prediction documents is legacy; leaderboard now sources display names from `UserStore` by `userID`. Stop writing it on new predictions and remove the `p.Handle` fallback in the leaderboard once confirmed no UID-less predictions exist in prod.
 
 ---
 
