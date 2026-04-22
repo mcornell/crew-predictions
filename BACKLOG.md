@@ -7,6 +7,7 @@
 2. [ ] **Custom domain migration** — Firebase Hosting custom domain + Cloud Run domain mapping. Update `authDomain` and OAuth redirect URIs.
 
 3. [ ] **Allow unlocking a pick up to kickoff** — after a user locks in a prediction, let them edit and re-submit it any time before kickoff. Server already enforces the 403 after kickoff; this is purely a UI unlock flow.
+   - **Countdown to lock** — show a live countdown on each match card so users know how long they have. The tricky part: browser clocks drift and can be manipulated, so the countdown is cosmetic only. Cheat-proofing options: (a) fetch server time once on page load and compute an offset (`serverTime - clientTime`), then apply that offset to all countdowns — cheap and good enough for casual play; (b) re-validate the kickoff time on submit via the server's 403 (already in place) so even a manipulated countdown can't actually lock in a late pick.
 
 ---
 
