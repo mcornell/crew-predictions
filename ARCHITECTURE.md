@@ -43,6 +43,7 @@ Entry point: `cmd/server/main.go`
 | `internal/repository` | Data access — Firestore and in-memory stores |
 | `internal/scoring` | Scoring engines — AcesRadio and Upper90Club |
 | `internal/espn` | ESPN API client — fetches upcoming Crew matches |
+| `internal/poll` | Score polling — `MatchPoller` schedules per-match kickoff timers; `PollOnce` for manual/test triggers |
 | `internal/models` | Domain types |
 
 ---
@@ -58,7 +59,8 @@ Entry point: `cmd/server/main.go`
 | `POST` | `/auth/session` | — | Exchange Firebase ID token for session cookie (form data) |
 | `GET` | `/auth/logout` | — | Clear session cookie, redirect to /matches |
 | `GET` | `/auth/config.js` | — | Firebase client config as JS (`window.__firebaseConfig`) |
-| `POST` | `/admin/refresh-matches` | — | Fetch matches from ESPN and populate the in-memory match cache |
+| `POST` | `/admin/refresh-matches` | — | Fetch matches from ESPN, populate match cache, reschedule pollers |
+| `POST` | `/admin/poll-scores` | — | Trigger a score poll immediately (fetch ESPN, update store, write terminal results) |
 | `DELETE` | `/admin/reset` | — | Reset in-memory stores (TEST_MODE=1 only) |
 | `POST` | `/admin/results` | — | Record a final match result for scoring |
 | `POST` | `/admin/seed-match` | — | Inject a fixture match (TEST_MODE=1 only) |
@@ -70,9 +72,13 @@ Entry point: `cmd/server/main.go`
 
 ## Match Cache
 
-The server holds an in-memory `MatchStore` (populated via `POST /admin/refresh-matches`). In production, call this endpoint after deploy and schedule it weekly via Cloud Scheduler. In `TEST_MODE=1`, the refresh fetcher reads from the seeded store rather than calling ESPN — so e2e tests inject fixtures via `POST /admin/seed-match` and trigger a refresh to populate the cache.
+The server holds an in-memory `MatchStore` (populated via `POST /admin/refresh-matches` or the daily background refresh). In `TEST_MODE=1`, the refresh fetcher reads from the seeded store rather than calling ESPN — so e2e tests inject fixtures via `POST /admin/seed-match` and trigger a refresh to populate the cache.
 
 ESPN data is fetched via `internal/espn.FetchCrewMatches`, which hits four league endpoints (MLS, US Open Cup, Leagues Cup, CONCACAF Champions). The HTTP base URL is injectable for testing — `fetchCrewMatchesFrom(base)` is covered by `httptest.Server` + captured fixture JSON.
+
+**Daily refresh:** `startDailyRefresh` fires at 4am ET on startup and every subsequent 24h. It fetches ESPN, updates `MatchStore`, and calls `poller.Reset(matches)` to reschedule all match pollers from fresh data.
+
+**Score polling:** `internal/poll.MatchPoller` schedules a `time.AfterFunc` at each match's kickoff time. When the timer fires, the match enters the active set and `Tick()` polls ESPN every 2 minutes. On a terminal status (`STATUS_FULL_TIME` / `STATUS_FINAL_AET` / `STATUS_FINAL_PEN`), the result is written to `ResultStore` and the match is deactivated. Matches with unknown/postponed status stay active until the next 4am reset clears them.
 
 ---
 
