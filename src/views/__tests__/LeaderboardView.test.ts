@@ -4,8 +4,8 @@ import LeaderboardView from '../LeaderboardView.vue'
 import { makeRouter } from '../../test-utils/router'
 
 const mockData = {
-  acesRadio: [{ userID: 'firebase:abc', handle: 'BlackAndGold@bsky.mock', points: 15 }],
-  upper90Club: [{ userID: 'firebase:def', handle: 'ColumbusNordecke@bsky.mock', points: 2 }],
+  acesRadio: [{ userID: 'firebase:abc', handle: 'BlackAndGold@bsky.mock', points: 15, hasProfile: true }],
+  upper90Club: [{ userID: 'firebase:def', handle: 'ColumbusNordecke@bsky.mock', points: 2, hasProfile: true }],
 }
 
 beforeEach(() => {
@@ -46,5 +46,20 @@ describe('LeaderboardView', () => {
     await flushPromises()
     const link = wrapper.find('[data-testid="leaderboard-row"] a')
     expect(link.attributes('href')).toContain('firebase:abc')
+  })
+
+  it('renders plain span instead of link when hasProfile is false', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        acesRadio: [{ userID: 'legacyfan', handle: 'legacyfan', points: 5, hasProfile: false }],
+        upper90Club: [],
+      }),
+    }))
+    const wrapper = mount(LeaderboardView, { global: { plugins: [makeRouter()] } })
+    await flushPromises()
+    const row = wrapper.find('[data-testid="leaderboard-row"]')
+    expect(row.find('a').exists()).toBe(false)
+    expect(row.find('[data-testid="leaderboard-handle"]').text()).toBe('legacyfan')
   })
 })
