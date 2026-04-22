@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	firebase "firebase.google.com/go/v4"
 	"github.com/joho/godotenv"
@@ -132,10 +133,45 @@ func main() {
 		log.Printf("test seed endpoint registered at POST /admin/seed-match")
 	}
 
+	if os.Getenv("TEST_MODE") != "1" {
+		stop := startBackgroundRefresh(matchStore, refreshFetcher, 24*time.Hour)
+		defer close(stop)
+	}
+
 	log.Printf("listening on :%s", port)
 	if err := http.ListenAndServe(":"+port, mux); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func startBackgroundRefresh(store repository.MatchStore, fetcher func() ([]models.Match, error), interval time.Duration) chan struct{} {
+	stop := make(chan struct{})
+	go func() {
+		refresh := func() {
+			matches, err := fetcher()
+			if err != nil {
+				log.Printf("background match refresh failed: %v", err)
+				return
+			}
+			if err := store.SaveAll(matches); err != nil {
+				log.Printf("background match refresh save failed: %v", err)
+				return
+			}
+			log.Printf("background match refresh: %d matches cached", len(matches))
+		}
+		refresh()
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				refresh()
+			case <-stop:
+				return
+			}
+		}
+	}()
+	return stop
 }
 
 func serveFirebaseConfig(w http.ResponseWriter, r *http.Request) {

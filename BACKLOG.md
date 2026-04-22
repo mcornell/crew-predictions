@@ -14,7 +14,8 @@
 ## Data & Polling
 
 - [ ] **Real-data scoring accuracy test** — e2e scenario using actual 2025 Columbus Crew match results to validate the scoring engine against real outcomes. Get match data from user before writing.
-- [ ] **Score polling** — when `kickoff + 2h <= now` and match not yet `STATUS_FINAL`, poll ESPN every 2 minutes and write to ResultStore when final, then stop polling. ESPN already returns `status.type.name`. Also run a background refresh of the match cache every 24 hours (background goroutine in the server) as a catch-all to keep upcoming fixtures current without requiring a manual post-deploy call.
+- [ ] **Score polling** — when `kickoff + 2h <= now` and match not yet `STATUS_FINAL`, poll ESPN every 2 minutes and write to ResultStore when final, then stop polling. ESPN already returns `status.type.name`.
+- [x] **24h background match refresh** — `startBackgroundRefresh` goroutine fetches on startup then every 24h; skipped in TEST_MODE. Tested with injectable interval.
 
 ---
 

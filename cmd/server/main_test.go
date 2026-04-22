@@ -7,7 +7,51 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/mcornell/crew-predictions/internal/models"
+	"github.com/mcornell/crew-predictions/internal/repository"
 )
+
+func TestStartBackgroundRefresh_PopulatesStoreImmediately(t *testing.T) {
+	store := repository.NewMemoryMatchStore()
+	called := make(chan struct{}, 1)
+	fetcher := func() ([]models.Match, error) {
+		called <- struct{}{}
+		return []models.Match{{ID: "bg-match", Kickoff: time.Now().Add(24 * time.Hour)}}, nil
+	}
+
+	stop := startBackgroundRefresh(store, fetcher, time.Hour)
+	defer close(stop)
+
+	select {
+	case <-called:
+	case <-time.After(time.Second):
+		t.Fatal("fetcher was not called within 1 second of startup")
+	}
+
+	matches, _ := store.GetAll()
+	if len(matches) != 1 || matches[0].ID != "bg-match" {
+		t.Errorf("expected bg-match in store, got %+v", matches)
+	}
+}
+
+func TestStartBackgroundRefresh_RefetchesOnTick(t *testing.T) {
+	store := repository.NewMemoryMatchStore()
+	callCount := 0
+	fetcher := func() ([]models.Match, error) {
+		callCount++
+		return []models.Match{{ID: "tick-match"}}, nil
+	}
+
+	stop := startBackgroundRefresh(store, fetcher, 50*time.Millisecond)
+	defer close(stop)
+
+	time.Sleep(180 * time.Millisecond)
+	if callCount < 2 {
+		t.Errorf("expected at least 2 fetcher calls (initial + tick), got %d", callCount)
+	}
+}
 
 func TestServeFirebaseConfig_ReturnsJavaScriptWithEnvVars(t *testing.T) {
 	t.Setenv("FIREBASE_API_KEY", "test-api-key")
