@@ -41,7 +41,7 @@ func TestMatchDetailHandler_ReturnsPredictionsWithScores(t *testing.T) {
 		AwayGoals: 1,
 	})
 
-	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, "Columbus Crew")
+	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, repository.NewMemoryUserStore(), "Columbus Crew")
 
 	req := httptest.NewRequest("GET", "/api/matches/m-test", nil)
 	req.SetPathValue("matchId", "m-test")
@@ -81,12 +81,74 @@ func TestMatchDetailHandler_ReturnsPredictionsWithScores(t *testing.T) {
 	}
 }
 
+func TestMatchDetailHandler_UsesCurrentHandleFromUserStore(t *testing.T) {
+	predStore := repository.NewMemoryPredictionStore()
+	resultStore := repository.NewMemoryResultStore()
+	matchStore := repository.NewMemoryMatchStore()
+	userStore := repository.NewMemoryUserStore()
+	ctx := context.Background()
+
+	matchStore.Seed([]models.Match{{
+		ID: "m-handle", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",
+		Kickoff: time.Now().Add(-24 * time.Hour), Status: "STATUS_FULL_TIME",
+		HomeScore: "1", AwayScore: "0",
+	}})
+	predStore.Save(ctx, repository.Prediction{MatchID: "m-handle", UserID: "google:u1", Handle: "My Full Name", HomeGoals: 1, AwayGoals: 0})
+	userStore.Upsert(ctx, repository.User{UserID: "google:u1", Handle: "BlackAndGold"})
+
+	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew")
+
+	req := httptest.NewRequest("GET", "/api/matches/m-handle", nil)
+	req.SetPathValue("matchId", "m-handle")
+	w := httptest.NewRecorder()
+	h.Get(w, req)
+
+	var resp map[string]any
+	json.NewDecoder(w.Body).Decode(&resp)
+	predictions := resp["predictions"].([]any)
+	handle := predictions[0].(map[string]any)["handle"].(string)
+	if handle != "BlackAndGold" {
+		t.Errorf("expected handle from UserStore %q, got %q", "BlackAndGold", handle)
+	}
+}
+
+func TestMatchDetailHandler_FallsBackToStoredHandleWhenNoUserStoreEntry(t *testing.T) {
+	predStore := repository.NewMemoryPredictionStore()
+	resultStore := repository.NewMemoryResultStore()
+	matchStore := repository.NewMemoryMatchStore()
+	userStore := repository.NewMemoryUserStore()
+	ctx := context.Background()
+
+	matchStore.Seed([]models.Match{{
+		ID: "m-legacy", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",
+		Kickoff: time.Now().Add(-24 * time.Hour), Status: "STATUS_FULL_TIME",
+		HomeScore: "1", AwayScore: "0",
+	}})
+	predStore.Save(ctx, repository.Prediction{MatchID: "m-legacy", UserID: "google:legacy", Handle: "OldHandle", HomeGoals: 1, AwayGoals: 0})
+
+	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew")
+
+	req := httptest.NewRequest("GET", "/api/matches/m-legacy", nil)
+	req.SetPathValue("matchId", "m-legacy")
+	w := httptest.NewRecorder()
+	h.Get(w, req)
+
+	var resp map[string]any
+	json.NewDecoder(w.Body).Decode(&resp)
+	predictions := resp["predictions"].([]any)
+	handle := predictions[0].(map[string]any)["handle"].(string)
+	if handle != "OldHandle" {
+		t.Errorf("expected fallback handle %q, got %q", "OldHandle", handle)
+	}
+}
+
 func TestMatchDetailHandler_Returns404ForUnknownMatch(t *testing.T) {
 	predStore := repository.NewMemoryPredictionStore()
 	resultStore := repository.NewMemoryResultStore()
 	matchStore := repository.NewMemoryMatchStore()
+	userStore := repository.NewMemoryUserStore()
 
-	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, "Columbus Crew")
+	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew")
 
 	req := httptest.NewRequest("GET", "/api/matches/no-such-match", nil)
 	req.SetPathValue("matchId", "no-such-match")
@@ -113,7 +175,7 @@ func TestMatchDetailHandler_ReturnsEmptyPredictionsWhenNone(t *testing.T) {
 		AwayScore: "0",
 	}})
 
-	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, "Columbus Crew")
+	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, repository.NewMemoryUserStore(), "Columbus Crew")
 
 	req := httptest.NewRequest("GET", "/api/matches/m-empty", nil)
 	req.SetPathValue("matchId", "m-empty")
