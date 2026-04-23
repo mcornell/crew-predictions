@@ -37,8 +37,9 @@ func TestParseKickoff_InvalidReturnsError(t *testing.T) {
 func TestUpcomingURL_ContainsStartDate(t *testing.T) {
 	from := time.Date(2026, 4, 19, 0, 0, 0, 0, time.UTC)
 	url := upcomingURL(espnBase, "usa.1", from)
-	if !strings.Contains(url, "20260419") {
-		t.Errorf("upcomingURL %q missing start date 20260419", url)
+	// Start date is 2 days before `from` to catch delayed matches still indexed under original kickoff date.
+	if !strings.Contains(url, "20260417") {
+		t.Errorf("upcomingURL %q missing start date 20260417 (2 days before from)", url)
 	}
 }
 

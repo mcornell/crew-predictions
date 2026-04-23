@@ -2,7 +2,7 @@ package poll
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -68,10 +68,13 @@ func (p *MatchPoller) Schedule(matches []models.Match) {
 
 	for _, s := range toSchedule {
 		matchID := s.matchID
-		p.timerFunc(s.delay, func() {
+		delay := s.delay
+		slog.Info("poller: match scheduled", "matchID", matchID, "delaySeconds", int(delay.Seconds()))
+		p.timerFunc(delay, func() {
 			p.mu.Lock()
 			p.active[matchID] = true
 			p.mu.Unlock()
+			slog.Info("poller: kickoff reached, entering active polling", "matchID", matchID)
 		})
 	}
 }
@@ -96,13 +99,18 @@ func (p *MatchPoller) Tick(ctx context.Context) {
 	}
 	p.mu.Unlock()
 
+	p.mu.Lock()
+	activeCount := len(p.active)
+	p.mu.Unlock()
+	slog.Info("poller: tick", "activeMatches", activeCount)
+
 	matches, err := p.fetcher()
 	if err != nil {
-		log.Printf("score poll fetch failed: %v", err)
+		slog.Error("poller: ESPN fetch failed", "error", err)
 		return
 	}
 	if err := p.matchStore.SaveAll(matches); err != nil {
-		log.Printf("score poll store update failed: %v", err)
+		slog.Error("poller: store update failed", "error", err)
 		return
 	}
 
@@ -115,17 +123,23 @@ func (p *MatchPoller) Tick(ctx context.Context) {
 	var toSave []models.Match
 	for matchID := range p.active {
 		m, ok := byID[matchID]
-		if ok && terminalStatuses[m.Status] {
+		if !ok {
+			continue
+		}
+		if terminalStatuses[m.Status] {
 			toSave = append(toSave, m)
 			delete(p.active, matchID)
 			delete(p.scheduled, matchID)
+		} else {
+			slog.Info("poller: match still in progress", "matchID", matchID, "status", m.Status, "homeScore", m.HomeScore, "awayScore", m.AwayScore)
 		}
 	}
 	p.mu.Unlock()
 
 	for _, m := range toSave {
+		slog.Info("poller: match finished, saving result", "matchID", m.ID, "status", m.Status, "homeScore", m.HomeScore, "awayScore", m.AwayScore)
 		if err := saveResult(ctx, p.resultStore, m); err != nil {
-			log.Printf("score poll save result failed for %s: %v", m.ID, err)
+			slog.Error("poller: save result failed", "matchID", m.ID, "error", err)
 		}
 	}
 }

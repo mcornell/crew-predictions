@@ -1,18 +1,45 @@
 <template>
   <div class="page">
+    <section v-if="nowPlayingMatches.length > 0" data-testid="now-playing-section" class="now-playing-section">
+      <h1 class="page-title">Now Playing</h1>
+      <div class="match-list">
+        <div
+          v-for="match in nowPlayingMatches"
+          :key="match.id"
+          class="match-card match-card--live"
+          :data-match-id="match.id"
+          data-testid="now-playing-card"
+        >
+          <div class="match-info">
+            <span v-if="match.status === 'STATUS_DELAYED'" class="delayed-indicator" data-testid="delayed-indicator">▊ DELAYED</span>
+            <span v-else class="live-indicator" data-testid="live-indicator">● LIVE</span>
+            <div class="matchup matchup--input" data-testid="matchup">
+              <span class="team-name team-home">{{ match.homeTeam }}</span>
+              <span class="inline-score">{{ match.homeScore || '–' }}</span>
+              <span class="vs">vs</span>
+              <span class="inline-score">{{ match.awayScore || '–' }}</span>
+              <span class="team-name team-away">{{ match.awayTeam }}</span>
+            </div>
+            <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
+          </div>
+          <div class="btn-spacer"></div>
+        </div>
+      </div>
+    </section>
+
     <section v-if="upcomingMatches.length > 0">
-      <h1 class="page-title">Upcoming</h1>
+      <h1 class="page-title" :style="nowPlayingMatches.length > 0 ? 'margin-top:2.5rem' : ''">Upcoming</h1>
       <div class="match-list">
         <div
           v-for="match in upcomingMatches"
           :key="match.id"
           class="match-card"
           :class="{ 'has-prediction': savedPredictions[match.id] }"
+          :data-match-id="match.id"
           data-testid="match-card"
         >
           <div class="match-info">
-            <span v-if="match.state === 'in'" class="live-indicator" data-testid="live-indicator">● LIVE</span>
-            <span v-else class="match-countdown" data-testid="match-countdown">{{ countdowns[match.id] }}</span>
+            <span class="match-countdown" data-testid="match-countdown">{{ countdowns[match.id] }}</span>
             <template v-if="savedPredictions[match.id]">
               <div class="matchup matchup--input" data-testid="matchup">
                 <span class="team-name team-home">{{ match.homeTeam }}</span>
@@ -34,8 +61,11 @@
               <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
             </template>
           </div>
-          <button v-if="savedPredictions[match.id]" class="btn-lock btn-unlock" @click="unlock(match.id)">Unlock</button>
-          <button v-else class="btn-lock" @click="submit(match.id)">Predict</button>
+          <template v-if="!isLocked(match)">
+            <button v-if="savedPredictions[match.id]" class="btn-lock btn-unlock" @click="unlock(match.id)">Unlock</button>
+            <button v-else class="btn-lock" @click="submit(match.id)">Predict</button>
+          </template>
+          <div v-else class="btn-spacer"></div>
         </div>
       </div>
     </section>
@@ -47,6 +77,7 @@
           v-for="match in completedMatches"
           :key="match.id"
           class="match-card match-card--result"
+          :data-match-id="match.id"
           data-testid="result-card"
         >
           <div class="match-info">
@@ -67,7 +98,7 @@
       </div>
     </section>
 
-    <p v-if="upcomingMatches.length === 0 && completedMatches.length === 0" class="empty">No matches found. Check back later.</p>
+    <p v-if="nowPlayingMatches.length === 0 && upcomingMatches.length === 0 && completedMatches.length === 0" class="empty">No matches found. Check back later.</p>
 
     <div v-if="showNudge && !currentUser" class="guest-nudge" data-testid="guest-nudge">
       <a href="/signup">Create an account</a> to get on the leaderboard.
@@ -107,30 +138,39 @@ const savedPredictions = reactive<Record<string, Prediction | null>>({})
 const inputs = reactive<Record<string, { home: string; away: string }>>({})
 const countdowns = reactive<Record<string, string>>({})
 const showNudge = ref(false)
+const nowMs = ref(Date.now())
+
+const nowPlayingMatches = computed(() =>
+  matches.value.filter(m => m.state === 'in' || m.status === 'STATUS_DELAYED')
+)
 
 const upcomingMatches = computed(() => {
   const cutoff = new Date()
   cutoff.setDate(cutoff.getDate() + 8)
   return matches.value.filter(m => {
-    if (m.status !== 'STATUS_SCHEDULED' && m.status !== 'STATUS_IN_PROGRESS') return false
+    if (m.status !== 'STATUS_SCHEDULED' || m.state === 'in') return false
     return new Date(m.kickoff) <= cutoff
   })
 })
 
+const completedMatches = computed(() =>
+  matches.value
+    .filter(m => m.status !== 'STATUS_SCHEDULED' && m.status !== 'STATUS_IN_PROGRESS' && m.status !== 'STATUS_DELAYED')
+    .sort((a, b) => new Date(b.kickoff).getTime() - new Date(a.kickoff).getTime())
+)
+
+function isLocked(match: Match): boolean {
+  return nowMs.value >= new Date(match.kickoff).getTime() || match.state === 'in' || match.status === 'STATUS_DELAYED'
+}
+
 function updateCountdowns() {
-  const now = Date.now()
+  nowMs.value = Date.now()
   for (const m of upcomingMatches.value) {
-    countdowns[m.id] = formatCountdown(new Date(m.kickoff).getTime() - now)
+    countdowns[m.id] = formatCountdown(new Date(m.kickoff).getTime() - nowMs.value)
   }
 }
 
 let countdownTimer: ReturnType<typeof setInterval> | null = null
-
-const completedMatches = computed(() =>
-  matches.value
-    .filter(m => m.status !== 'STATUS_SCHEDULED' && m.status !== 'STATUS_IN_PROGRESS')
-    .reverse()
-)
 
 function formatKickoff(iso: string): string {
   const d = new Date(iso)

@@ -109,6 +109,34 @@ func TestAPIMatchesHandler_IncludesStateInResponse(t *testing.T) {
 	}
 }
 
+func TestAPIMatchesHandler_ReturnsSortedByKickoffAscending(t *testing.T) {
+	later := time.Now().Add(48 * time.Hour)
+	earlier := time.Now().Add(24 * time.Hour)
+	ms := repository.NewMemoryMatchStore()
+	ms.SaveAll([]models.Match{
+		{ID: "m-late", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", Kickoff: later},
+		{ID: "m-early", HomeTeam: "Columbus Crew", AwayTeam: "LA Galaxy", Kickoff: earlier},
+	})
+	mh := handlers.NewMatchesHandler(repository.NewMemoryPredictionStore(), ms)
+	req := httptest.NewRequest(http.MethodGet, "/api/matches", nil)
+	w := httptest.NewRecorder()
+
+	mh.APIList(w, req)
+
+	var body struct {
+		Matches []struct{ ID string `json:"id"` } `json:"matches"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+		t.Fatalf("invalid JSON: %v", err)
+	}
+	if len(body.Matches) != 2 {
+		t.Fatalf("expected 2 matches, got %d", len(body.Matches))
+	}
+	if body.Matches[0].ID != "m-early" || body.Matches[1].ID != "m-late" {
+		t.Errorf("expected m-early before m-late, got %v then %v", body.Matches[0].ID, body.Matches[1].ID)
+	}
+}
+
 func TestAPIMatchesHandler_IncludesPredictionForLoggedInUser(t *testing.T) {
 	store := repository.NewMemoryPredictionStore()
 	store.Save(context.Background(), repository.Prediction{

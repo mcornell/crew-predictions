@@ -138,6 +138,23 @@ func TestSubmitPrediction_RejectsAfterKickoff(t *testing.T) {
 	}
 }
 
+func TestSubmitPrediction_RejectsDelayedMatch(t *testing.T) {
+	future := time.Now().Add(24 * time.Hour) // future kickoff — only STATUS_DELAYED causes rejection
+	fetcher := func() ([]models.Match, error) {
+		return []models.Match{{ID: "match1", Kickoff: future, Status: "STATUS_DELAYED"}}, nil
+	}
+	handler := handlers.NewPredictionsHandler(repository.NewMemoryPredictionStore(), fetcher)
+	req := httptest.NewRequest(http.MethodPost, "/predictions",
+		strings.NewReader("match_id=match1&home_goals=2&away_goals=1"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(sessionCookie("google:abc123", "BlackAndGold@bsky.mock"))
+	w := httptest.NewRecorder()
+	handler.Submit(w, req)
+	if w.Code != http.StatusForbidden {
+		t.Errorf("expected 403 for delayed match, got %d", w.Code)
+	}
+}
+
 func TestSubmitPrediction_RejectsUnknownMatch(t *testing.T) {
 	future := time.Now().Add(24 * time.Hour)
 	handler := handlers.NewPredictionsHandler(

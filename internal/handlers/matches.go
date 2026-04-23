@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"sort"
 
 	"github.com/mcornell/crew-predictions/internal/repository"
 )
@@ -38,6 +39,8 @@ func (h *MatchesHandler) APIList(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "couldn't fetch matches", http.StatusInternalServerError)
 		return
 	}
+
+	sort.Slice(matches, func(i, j int) bool { return matches[i].Kickoff.Before(matches[j].Kickoff) })
 
 	out := make([]apiMatch, len(matches))
 	for i, m := range matches {

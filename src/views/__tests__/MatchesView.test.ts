@@ -16,10 +16,17 @@ function mountMatches(provide: Provide = loggedOutProvide) {
   return mount(MatchesView, { global: { plugins: [makeRouter()], provide } })
 }
 
+function futureKickoff(hoursFromNow: number): string {
+  return new Date(Date.now() + hoursFromNow * 60 * 60 * 1000).toISOString()
+}
+function pastKickoff(hoursAgo: number): string {
+  return new Date(Date.now() - hoursAgo * 60 * 60 * 1000).toISOString()
+}
+
 const mockMatches = [
-  { id: 'match-past', homeTeam: 'New England Revolution', awayTeam: 'Columbus Crew', kickoff: '2026-04-18T23:30:00Z', status: 'STATUS_FULL_TIME', homeScore: '2', awayScore: '1' },
-  { id: 'match-1', homeTeam: 'Columbus Crew', awayTeam: 'LA Galaxy', kickoff: '2026-04-22T23:30:00Z', status: 'STATUS_SCHEDULED', homeScore: '', awayScore: '' },
-  { id: 'match-2', homeTeam: 'Columbus Crew', awayTeam: 'Philadelphia Union', kickoff: '2026-04-25T23:30:00Z', status: 'STATUS_SCHEDULED', homeScore: '', awayScore: '' },
+  { id: 'match-past', homeTeam: 'New England Revolution', awayTeam: 'Columbus Crew', kickoff: pastKickoff(96), status: 'STATUS_FULL_TIME', homeScore: '2', awayScore: '1' },
+  { id: 'match-1', homeTeam: 'Columbus Crew', awayTeam: 'LA Galaxy', kickoff: futureKickoff(24), status: 'STATUS_SCHEDULED', homeScore: '', awayScore: '' },
+  { id: 'match-2', homeTeam: 'Columbus Crew', awayTeam: 'Philadelphia Union', kickoff: futureKickoff(72), status: 'STATUS_SCHEDULED', homeScore: '', awayScore: '' },
 ]
 
 beforeEach(() => {
@@ -319,5 +326,48 @@ describe('MatchesView', () => {
     expect((card.find('input[name="home_goals"]').element as HTMLInputElement).value).toBe('2')
     expect((card.find('input[name="away_goals"]').element as HTMLInputElement).value).toBe('1')
     expect(card.find('button').text()).toBe('Predict')
+  })
+
+  it('delayed match appears in now-playing section, not upcoming or results', async () => {
+    const now = new Date()
+    const delayedMatch = { id: 'del-1', homeTeam: 'Columbus Crew', awayTeam: 'LA Galaxy', kickoff: new Date(now.getTime() - 60 * 60 * 1000).toISOString(), status: 'STATUS_DELAYED', homeScore: '0', awayScore: '0', state: '' }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ matches: [delayedMatch], predictions: {} }) }))
+    const wrapper = mountMatches()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="now-playing-section"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="delayed-indicator"]').exists()).toBe(true)
+    expect(wrapper.findAll('[data-testid="match-card"]')).toHaveLength(0)
+    expect(wrapper.findAll('[data-testid="result-card"]')).toHaveLength(0)
+  })
+
+  it('delayed match card has no Predict or Unlock button', async () => {
+    const now = new Date()
+    const delayedMatch = { id: 'del-2', homeTeam: 'Columbus Crew', awayTeam: 'LA Galaxy', kickoff: new Date(now.getTime() - 60 * 60 * 1000).toISOString(), status: 'STATUS_DELAYED', homeScore: '0', awayScore: '0', state: '' }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ matches: [delayedMatch], predictions: {} }) }))
+    const wrapper = mountMatches(loggedInProvide)
+    await flushPromises()
+    const section = wrapper.find('[data-testid="now-playing-section"]')
+    expect(section.find('button').exists()).toBe(false)
+  })
+
+  it('in-progress match appears in now-playing section, not upcoming', async () => {
+    const now = new Date()
+    const liveMatch = { id: 'live-2', homeTeam: 'Columbus Crew', awayTeam: 'FC Dallas', kickoff: new Date(now.getTime() - 60 * 60 * 1000).toISOString(), status: 'STATUS_SCHEDULED', homeScore: '', awayScore: '', state: 'in' }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ matches: [liveMatch], predictions: {} }) }))
+    const wrapper = mountMatches()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="now-playing-section"]').exists()).toBe(true)
+    expect(wrapper.findAll('[data-testid="match-card"]')).toHaveLength(0)
+  })
+
+  it('past-kickoff scheduled match has no Predict button', async () => {
+    vi.useFakeTimers()
+    const pastKickoff = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+    const pastMatch = { id: 'past-scheduled', homeTeam: 'Columbus Crew', awayTeam: 'FC Dallas', kickoff: pastKickoff, status: 'STATUS_SCHEDULED', homeScore: '', awayScore: '', state: 'pre' }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ matches: [pastMatch], predictions: {} }) }))
+    const wrapper = mountMatches()
+    await flushPromises()
+    expect(wrapper.find('button[class*="btn-lock"]').exists()).toBe(false)
+    vi.useRealTimers()
   })
 })

@@ -346,6 +346,31 @@ body::after {
   50% { opacity: 0.45; }
 }
 
+.delayed-indicator {
+  display: inline-block;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--danger);
+  text-transform: uppercase;
+  margin-bottom: 0.35rem;
+  animation: delayed-blink 1s step-start infinite;
+}
+
+@keyframes delayed-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.match-card--live {
+  border-left: 3px solid var(--danger);
+}
+
+.now-playing-section {
+  margin-bottom: 0.5rem;
+}
+
 /* ── Login ───────────────────────────────────────────────────────────────── */
 .login-page {
   display: flex;
