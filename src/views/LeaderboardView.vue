@@ -8,7 +8,7 @@
     <template v-else>
       <p v-if="sortedEntries.length === 0" class="empty">No predictions scored yet.</p>
 
-      <div v-else class="lb-table">
+      <div v-else class="lb-table lb-4col">
         <div class="lb-header">
           <span class="lb-cell lb-rank">#</span>
           <span class="lb-cell lb-handle">PREDICTOR</span>
