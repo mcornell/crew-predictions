@@ -146,7 +146,7 @@ func main() {
 	mux.HandleFunc("GET /api/leaderboard", lh.APIList)
 	prh := handlers.NewProfileHandler(predStore, resultStore, userStore, "Columbus Crew")
 	mux.HandleFunc("GET /api/profile/{userID}", prh.Get)
-	mdh := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, "Columbus Crew")
+	mdh := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew")
 	mux.HandleFunc("GET /api/matches/{matchId}", mdh.Get)
 	if os.Getenv("TEST_MODE") != "1" && os.Getenv("ADMIN_KEY") == "" {
 		log.Fatal("ADMIN_KEY env var must be set in production")

@@ -111,6 +111,7 @@ func TestMatchDetailHandler_LogsEncodeError(t *testing.T) {
 		repository.NewMemoryPredictionStore(),
 		repository.NewMemoryResultStore(),
 		matchStore,
+		repository.NewMemoryUserStore(),
 		"Columbus Crew",
 	)
 	req := httptest.NewRequest(http.MethodGet, "/api/matches/m1", nil)

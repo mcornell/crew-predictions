@@ -13,11 +13,12 @@ type MatchDetailHandler struct {
 	predictions repository.PredictionStore
 	results     repository.ResultStore
 	matches     repository.MatchStore
+	users       repository.UserStore
 	targetTeam  string
 }
 
-func NewMatchDetailHandler(predictions repository.PredictionStore, results repository.ResultStore, matches repository.MatchStore, targetTeam string) *MatchDetailHandler {
-	return &MatchDetailHandler{predictions: predictions, results: results, matches: matches, targetTeam: targetTeam}
+func NewMatchDetailHandler(predictions repository.PredictionStore, results repository.ResultStore, matches repository.MatchStore, users repository.UserStore, targetTeam string) *MatchDetailHandler {
+	return &MatchDetailHandler{predictions: predictions, results: results, matches: matches, users: users, targetTeam: targetTeam}
 }
 
 type matchDetailPrediction struct {
@@ -72,13 +73,23 @@ func (h *MatchDetailHandler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	allUsers, _ := h.users.GetAll(ctx)
+	handleByUserID := make(map[string]string, len(allUsers))
+	for _, u := range allUsers {
+		handleByUserID[u.UserID] = u.Handle
+	}
+
 	result, _ := h.results.GetResult(ctx, matchID)
 
 	entries := make([]matchDetailPrediction, 0, len(preds))
 	for _, p := range preds {
+		handle := p.Handle
+		if h, ok := handleByUserID[p.UserID]; ok {
+			handle = h
+		}
 		entry := matchDetailPrediction{
 			UserID:    p.UserID,
-			Handle:    p.Handle,
+			Handle:    handle,
 			HomeGoals: p.HomeGoals,
 			AwayGoals: p.AwayGoals,
 		}
