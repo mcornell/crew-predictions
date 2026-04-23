@@ -2,13 +2,7 @@
 
 ## Up Next
 
-1. [ ] **STATUS_DELAYED support** — ESPN returns `STATUS_DELAYED` (type.id=7) for weather/other delays mid-match. Show a red "DELAYED" badge on the match card (same position as the LIVE badge). Treat as locked: no predictions allowed, same as in-progress. Confirmed live against Columbus Crew vs LA Galaxy on 2026-04-22.
-
-2. [ ] **Match ordering stability** — after kickoff, upcoming/results sort order can shift (Open Cup appeared above a later match on mobile). Sort server-side by kickoff time ascending for upcoming, descending for results — do not rely on ESPN's return order.
-
-3. [ ] **Client-side kickoff lock** — the unlock button stays clickable past kickoff until the page is refreshed (server 403s but UI doesn't update). Add a Vue-side timer that watches `match.kickoff` and reactively sets the card to locked state at kickoff time without requiring a reload. Affects unlock button and score inputs.
-
-4. [ ] **Prod smoke suite** — unauthenticated-only scenarios (app loads, leaderboard/matches API responds, Vue hydrates); replaces current `curl` liveness check in `deploy-prod`.
+1. [ ] **Prod smoke suite** — unauthenticated-only scenarios (app loads, leaderboard/matches API responds, Vue hydrates); replaces current `curl` liveness check in `deploy-prod`.
 
 5. [ ] **Cache leaderboard scoring** — currently recalculated on every request; fine now but will need in-memory caching or pre-computation at scale.
 
@@ -48,6 +42,10 @@
 
 ## Done
 
+- [x] **STATUS_DELAYED support** — blinking red DELAYED badge; match moves to new "Now Playing" section above Upcoming; server rejects predictions with 403; no Predict/Unlock buttons. Confirmed live vs LA Galaxy 2026-04-22.
+- [x] **Match ordering stability** — `sort.Slice` by `Kickoff` ascending in `APIList`; `completedMatches` Vue computed sorts descending explicitly; no longer relies on ESPN return order.
+- [x] **Client-side kickoff lock** — reactive `nowMs` ref updated each countdown tick; `isLocked()` gates Predict/Unlock at kickoff time without reload; covers STATUS_DELAYED and state='in' too.
+- [x] **Now Playing section** — in-progress (state='in') and delayed matches shown above Upcoming in dedicated section; LIVE badge pulses gold, DELAYED badge blinks red; no prediction inputs on these cards.
 - [x] **Leaderboard: show users with ≥1 prediction at 0 pts before results land** — seeded from all predictions on every request; smoke/admin accounts never appear since they don't predict.
 - [x] **Leaderboard: disable profile link for legacy handle-only users** — `hasProfile` field added to leaderboard API response; false when user has no `UserStore` entry (predates UserStore). Frontend renders plain `<span>` instead of `<RouterLink>` to avoid a 404 profile page.
 - [x] **Profile page** — `/profile/:userID` shows handle, location, prediction count, and leaderboard standing (points + rank for both formats); edit form on own profile only; leaderboard handles link to profiles; location field added to `POST /auth/handle`. Full Industrial Black & Gold Brutalism styling: stats grid with gold top borders, DM Mono values, Barlow Condensed handle.
