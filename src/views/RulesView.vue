@@ -44,7 +44,7 @@
 
     <section class="rules-section">
       <h2 class="section-title">Grouchy™</h2>
-      <p class="rules-desc">Named after the Nordecke's most lovable curmudgeon. Simpler scoring — did you predict the right margin of victory? That's it. That's the whole deal.</p>
+      <p class="rules-desc">The prediction game from the most awful forum in the most awful place to talk soccer since 2000.</p>
       <div class="rules-table">
         <div class="rules-row rules-row--positive">
           <span class="rules-points">+1</span>
