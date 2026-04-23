@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
@@ -59,10 +60,12 @@ func (h *PredictionsHandler) Submit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if match.Kickoff.Before(time.Now()) || match.Status == "STATUS_DELAYED" {
+		slog.Info("prediction rejected: match locked", "matchID", matchID, "status", match.Status, "userID", user.UserID)
 		http.Error(w, "predictions are locked for this match", http.StatusForbidden)
 		return
 	}
 
+	slog.Info("prediction submitted", "matchID", matchID, "userID", user.UserID, "homeGoals", home, "awayGoals", away)
 	h.store.Save(r.Context(), repository.Prediction{
 		MatchID:   matchID,
 		Handle:    user.Handle,

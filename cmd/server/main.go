@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"time"
@@ -21,6 +22,22 @@ import (
 
 func main() {
 	godotenv.Load()
+
+	// Cloud Logging parses JSON from stdout and maps "severity"/"message" fields.
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.LevelKey {
+				a.Key = "severity"
+				if a.Value.String() == "WARN" {
+					a.Value = slog.StringValue("WARNING")
+				}
+			}
+			if a.Key == slog.MessageKey {
+				a.Key = "message"
+			}
+			return a
+		},
+	})))
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -47,10 +64,10 @@ func main() {
 			log.Fatalf("failed to connect to Firestore: %v", err)
 		}
 		predStore = fs
-		log.Printf("using Firestore (project: %s)", project)
+		slog.Info("store: Firestore", "project", project)
 	} else {
 		predStore = repository.NewMemoryPredictionStore()
-		log.Printf("using in-memory store (set GOOGLE_CLOUD_PROJECT to use Firestore)")
+		slog.Info("store: in-memory (set GOOGLE_CLOUD_PROJECT to use Firestore)")
 	}
 
 	var resultStore repository.ResultStore
@@ -76,12 +93,12 @@ func main() {
 	fbConfig := &firebase.Config{ProjectID: projectID}
 	app, err := firebase.NewApp(ctx, fbConfig, appOpts...)
 	if err != nil {
-		log.Printf("Firebase unavailable: %v", err)
+		slog.Error("Firebase unavailable", "error", err)
 	} else if authClient, err := app.Auth(ctx); err != nil {
-		log.Printf("Firebase Auth unavailable: %v", err)
+		slog.Error("Firebase Auth unavailable", "error", err)
 	} else {
 		verifier = handlers.NewFirebaseTokenVerifier(authClient)
-		log.Printf("Firebase Auth initialized (project: %s)", projectID)
+		slog.Info("Firebase Auth initialized", "project", projectID)
 	}
 	sh := handlers.NewSessionHandler(verifier, userStore)
 	hh := handlers.NewHandleHandler(userStore)
@@ -99,10 +116,10 @@ func main() {
 		matchStore = repository.NewWriteThroughMatchStore(memMatchStore, fsMatches)
 		// Pre-populate memory from Firestore so match data survives restarts
 		if stored, err := fsMatches.GetAll(); err != nil {
-			log.Printf("warning: could not load matches from Firestore: %v", err)
+			slog.Warn("could not load matches from Firestore", "error", err)
 		} else if len(stored) > 0 {
 			memMatchStore.SaveAll(stored)
-			log.Printf("loaded %d matches from Firestore", len(stored))
+			slog.Info("startup: matches loaded from Firestore", "count", len(stored))
 		}
 	}
 
@@ -195,7 +212,7 @@ func main() {
 		go matchPoller.Run(pollerCtx, 2*time.Minute)
 	}
 
-	log.Printf("listening on :%s", port)
+	slog.Info("server listening", "port", port)
 	if err := http.ListenAndServe(":"+port, mux); err != nil {
 		log.Fatal(err)
 	}
@@ -216,14 +233,14 @@ func startDailyRefresh(store repository.MatchStore, fetcher func() ([]models.Mat
 		refresh := func() {
 			matches, err := fetcher()
 			if err != nil {
-				log.Printf("daily match refresh failed: %v", err)
+				slog.Error("daily match refresh: ESPN fetch failed", "error", err)
 				return
 			}
 			if err := store.SaveAll(matches); err != nil {
-				log.Printf("daily match refresh save failed: %v", err)
+				slog.Error("daily match refresh: store save failed", "error", err)
 				return
 			}
-			log.Printf("daily match refresh: %d matches cached", len(matches))
+			slog.Info("daily match refresh complete", "matchCount", len(matches))
 			poller.Reset(matches)
 		}
 		refresh()
