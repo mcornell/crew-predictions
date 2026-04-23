@@ -44,6 +44,7 @@
 
 ## Done
 
+- [x] **Leaderboard + match detail table redesign** — unified sortable grid table (RANK · PREDICTOR · [PICK] · ACES RADIO · UPPER 90 CLUB) replaces separate sections; click column headers to sort; dynamic tied ranks; mobile stacked cards with sort buttons above and only the active format's score shown in gold. `GET /api/leaderboard` response unified to `{entries: [{acesRadioPoints, upper90ClubPoints, ...}]}`.
 - [x] **TwoOneBot** — `internal/bot` package; `bot:twooonebot` user that predicts Columbus 2-1 (home) or 1-2 (away) on every upcoming match at every refresh and daily tick. Shown on leaderboard and match detail pages as any other user.
 - [x] **Match detail page** — `/matches/:matchId` route; per-match predictions leaderboard with sort buttons for Aces Radio and Upper 90 Club; result cards link to detail; upcoming cards do not. `GET /api/matches/:matchId` handler.
 - [x] **`localStorage` without try/catch** — `readGuestPredictions`/`writeGuestPredictions` helpers wrap all localStorage access; Safari Private Browsing degrades gracefully.

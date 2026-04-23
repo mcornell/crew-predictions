@@ -83,8 +83,7 @@ The smoke suite (`npm run test:smoke`) runs in CI after `deploy-staging` — it 
 - Terminal 2: `npm run dev` — Vite dev server (:5173) with hot reload; proxies `/api`, `/auth`, `/admin` to :8080
 - Open `http://localhost:5173`
 
-**E2e tests:** `npm test` builds Vue then starts Go server. Emulators must already be running.
-- Kill a stale server: `kill $(lsof -ti :8080) 2>/dev/null`
+**E2e tests:** `npm test` builds Vue then starts its own Go server on :8082 (TEST_MODE). Emulators must already be running (`./dev.sh` handles that). `dev.sh` and `npm test` can run simultaneously — no port conflict.
 
 **Firebase Admin SDK:** Pass `option.WithoutAuthentication()` when `FIREBASE_AUTH_EMULATOR_HOST` is set — otherwise `firebase.NewApp` fails silently in subprocess (no ADC credentials) and falls back to `NoopTokenVerifier`.
 - `FIREBASE_PROJECT_ID` — Firebase Admin SDK init only, does **not** trigger Firestore

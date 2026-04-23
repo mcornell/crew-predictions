@@ -31,6 +31,8 @@ Browser (Vue SPA)
 
 **Local dev:** Vite dev server (:5173) proxies `/api`, `/auth`, `/admin` to Go server (:8080). Firebase Auth + Firestore emulators run on :9099 and :8081.
 
+**E2e test server** runs on :8082 (`PORT=8082` in Playwright's `webServer` env) so `npm test` can run alongside `dev.sh` without port conflicts.
+
 ---
 
 ## Go Server
@@ -56,7 +58,7 @@ Entry point: `cmd/server/main.go`
 | `GET` | `/api/matches` | optional | Upcoming matches + caller's predictions |
 | `GET` | `/api/matches/:matchId` | none | Match detail: match info + all predictions with per-format scores + `scoringFormats` array |
 | `POST` | `/api/predictions` | required | Submit a score prediction (form data) |
-| `GET` | `/api/leaderboard` | none | Ranked scores for both formats; all users with ≥1 prediction appear (0 pts until results land); `hasProfile: bool` per entry — false for legacy handle-only users with no `UserStore` entry |
+| `GET` | `/api/leaderboard` | none | `{entries: [{userID, handle, acesRadioPoints, upper90ClubPoints, hasProfile}]}` sorted by Aces Radio desc; all users with ≥1 prediction appear (0 pts until results land); `hasProfile: bool` false for legacy handle-only users |
 | `GET` | `/api/me` | optional | Current session user `{userID, handle}` or 401; lazily upserts user to `UserStore` |
 | `GET` | `/api/profile/:userID` | required | Public profile: handle, location, predictionCount, Aces Radio + Upper 90 Club standing |
 | `POST` | `/auth/handle` | required | Update display name + location; upserts to `UserStore`, rewrites session cookie |
@@ -115,9 +117,9 @@ Entry: `src/main.ts` → loads `/auth/config.js` → mounts Vue app
 | `src/views/LoginView.vue` | `/login` | Email/password sign-in + Google SSO |
 | `src/views/SignupView.vue` | `/signup` | New account creation (email/password + Google SSO) |
 | `src/views/ResetView.vue` | `/reset` | Password reset request |
-| `src/views/LeaderboardView.vue` | `/leaderboard` | Aces Radio + Upper 90 Club rankings; handles link to `/profile/:userID` |
+| `src/views/LeaderboardView.vue` | `/leaderboard` | Unified sortable table (RANK · PREDICTOR · ACES RADIO · UPPER 90 CLUB); click column headers to sort; handles link to `/profile/:userID`; mobile: stacked cards, sort buttons above, active format score shown only |
 | `src/views/ProfileView.vue` | `/profile/:userID` | Public profile (stats + location); edit form shown only on own profile |
-| `src/views/MatchDetailView.vue` | `/matches/:matchId` | Per-match predictions leaderboard; sort by scoring format; result cards link here |
+| `src/views/MatchDetailView.vue` | `/matches/:matchId` | Unified sortable table (RANK · PREDICTOR · PICK · Aces Radio · Upper 90 Club); click column headers to sort; result cards link here, upcoming cards do not; mobile: stacked cards with active format score |
 | `src/views/RulesView.vue` | `/rules` | Scoring format explainer |
 | `src/views/NotFoundView.vue` | `*` | 404 catch-all |
 | `src/components/AppHeader.vue` | (all) | Nav header; desktop nav + hamburger drawer at ≤480px |
@@ -132,11 +134,11 @@ Entry: `src/main.ts` → loads `/auth/config.js` → mounts Vue app
 
 ```
 predictions/{predictionId}
-  matchID:    string
-  userID:     string   // "firebase:{uid}"
-  handle:     string   // display name at time of prediction
-  homeGoals:  int
-  awayGoals:  int
+  MatchID:    string   // PascalCase — matches Go struct field names (no firestore: tags)
+  UserID:     string   // "firebase:{uid}" or "bot:twooonebot"
+  Handle:     string   // display name at time of prediction
+  HomeGoals:  int
+  AwayGoals:  int
 
 results/{matchID}
   homeScore:  int
@@ -220,7 +222,7 @@ Set via `gcloud run services update <service> --region us-east5 --update-env-var
 npm run dev            # Vite dev server (:5173) with hot reload + API proxy
 go test ./...          # Go unit tests
 npm run test:unit      # Vitest unit tests
-npm test               # e2e BDD suite (emulators must be running)
+npm test               # e2e BDD suite — starts own server on :8082; dev.sh can stay running
 npm run test:smoke     # smoke suite against staging (STAGING_URL env var)
 SMOKE_DEBUG=1 npm run test:smoke  # headed browser + video locally
 ```
