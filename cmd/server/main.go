@@ -162,10 +162,12 @@ func main() {
 		)
 	}
 
+	twoOneBot := bot.New(predStore, userStore, "Columbus Crew")
 	onRefresh := func(matches []models.Match) {
 		if matchPoller != nil {
 			matchPoller.Reset(matches)
 		}
+		twoOneBot.Predict(context.Background(), matches)
 	}
 	rmh := handlers.NewRefreshMatchesHandler(matchStore, refreshFetcher, onRefresh)
 	mux.HandleFunc("POST /admin/refresh-matches", handlers.AdminAuth(rmh.Refresh))
@@ -211,7 +213,6 @@ func main() {
 		if err != nil {
 			log.Fatalf("failed to load ET timezone: %v", err)
 		}
-		twoOneBot := bot.New(predStore, userStore, "Columbus Crew")
 		stop := startDailyRefresh(matchStore, refreshFetcher, matchPoller, twoOneBot, etLoc)
 		defer close(stop)
 
