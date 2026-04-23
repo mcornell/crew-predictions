@@ -15,6 +15,12 @@ Given('the final score for match {string} was {int}-{int} with Columbus away', a
   });
 });
 
+Given('the final score for match {string} was {int}-{int} with Columbus home', async ({ request }, matchID: string, home: number, away: number) => {
+  await request.post('/admin/results', {
+    form: { match_id: matchID, home_team: 'Columbus Crew', away_team: 'FC Dallas', home_goals: String(home), away_goals: String(away) },
+  });
+});
+
 When('I visit the leaderboard', async ({ page }) => {
   await page.goto('/leaderboard');
 });
