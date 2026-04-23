@@ -145,8 +145,12 @@ func main() {
 	mux.HandleFunc("GET /api/leaderboard", lh.APIList)
 	prh := handlers.NewProfileHandler(predStore, resultStore, userStore, "Columbus Crew")
 	mux.HandleFunc("GET /api/profile/{userID}", prh.Get)
+	if os.Getenv("TEST_MODE") != "1" && os.Getenv("ADMIN_KEY") == "" {
+		log.Fatal("ADMIN_KEY env var must be set in production")
+	}
+
 	rh := handlers.NewResultsHandler(resultStore)
-	mux.HandleFunc("POST /admin/results", rh.Submit)
+	mux.HandleFunc("POST /admin/results", handlers.AdminAuth(rh.Submit))
 	var matchPoller *poll.MatchPoller
 	if os.Getenv("TEST_MODE") != "1" {
 		matchPoller = poll.NewMatchPoller(
@@ -161,11 +165,11 @@ func main() {
 		}
 	}
 	rmh := handlers.NewRefreshMatchesHandler(matchStore, refreshFetcher, onRefresh)
-	mux.HandleFunc("POST /admin/refresh-matches", rmh.Refresh)
+	mux.HandleFunc("POST /admin/refresh-matches", handlers.AdminAuth(rmh.Refresh))
 	bfh := handlers.NewBackfillUsersHandler(predStore, userStore)
-	mux.HandleFunc("POST /admin/backfill-users", bfh.Backfill)
+	mux.HandleFunc("POST /admin/backfill-users", handlers.AdminAuth(bfh.Backfill))
 	psh := handlers.NewPollScoresHandler(matchStore, resultStore, refreshFetcher)
-	mux.HandleFunc("POST /admin/poll-scores", psh.Poll)
+	mux.HandleFunc("POST /admin/poll-scores", handlers.AdminAuth(psh.Poll))
 
 	// Auth endpoints
 	mux.HandleFunc("POST /auth/session", sh.Create)
@@ -240,6 +244,9 @@ func startDailyRefresh(store repository.MatchStore, fetcher func() ([]models.Mat
 				slog.Error("daily match refresh: store save failed", "error", err)
 				return
 			}
+			// Backfill results for matches that finished while no poller was active
+			// (e.g., after a Cloud Run recycle, or matches completed before this deploy).
+			poller.Backfill(context.Background(), matches)
 			slog.Info("daily match refresh complete", "matchCount", len(matches))
 			poller.Reset(matches)
 		}

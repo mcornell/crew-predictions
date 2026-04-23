@@ -141,6 +141,7 @@ jobs:
             --region=us-east5 \
             --allow-unauthenticated \
             --set-env-vars=FIREBASE_PROJECT_ID=crew-predictions-staging,FIREBASE_API_KEY=$STAGING_API_KEY,FIREBASE_AUTH_DOMAIN=crew-predictions-staging.web.app,GOOGLE_CLOUD_PROJECT=crew-predictions-staging \
+            --update-secrets=ADMIN_KEY=admin-key:latest \
             --quiet
         env:
           STAGING_API_KEY: ${{ secrets.STAGING_FIREBASE_API_KEY }}
@@ -243,6 +244,7 @@ jobs:
           gcloud run deploy crew-predictions \
             --image=us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions:sha-${{ env.DEVELOP_SHA }} \
             --region=us-east5 \
+            --update-secrets=ADMIN_KEY=admin-key:latest \
             --quiet
 
       - name: Find staging run ID

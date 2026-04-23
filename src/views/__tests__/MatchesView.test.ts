@@ -360,6 +360,40 @@ describe('MatchesView', () => {
     expect(wrapper.findAll('[data-testid="match-card"]')).toHaveLength(0)
   })
 
+  it('re-fetches match data every 30 seconds', async () => {
+    vi.useFakeTimers()
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ matches: mockMatches, predictions: {} }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    mountMatches()
+    await flushPromises()
+    const callsAfterMount = fetchMock.mock.calls.length
+
+    vi.advanceTimersByTime(30_000)
+    await flushPromises()
+
+    expect(fetchMock.mock.calls.length).toBeGreaterThan(callsAfterMount)
+    vi.useRealTimers()
+  })
+
+  it('clears the poll interval on unmount', async () => {
+    vi.useFakeTimers()
+    const clearSpy = vi.spyOn(globalThis, 'clearInterval')
+
+    const wrapper = mountMatches()
+    await flushPromises()
+    const callsBefore = clearSpy.mock.calls.length
+
+    wrapper.unmount()
+
+    expect(clearSpy.mock.calls.length).toBeGreaterThan(callsBefore)
+    clearSpy.mockRestore()
+    vi.useRealTimers()
+  })
+
   it('past-kickoff scheduled match has no Predict button', async () => {
     vi.useFakeTimers()
     const pastKickoff = new Date(Date.now() - 5 * 60 * 1000).toISOString()

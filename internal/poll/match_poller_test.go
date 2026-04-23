@@ -212,6 +212,39 @@ func TestMatchPoller_Run_StopsOnContextCancel(t *testing.T) {
 	}
 }
 
+func TestMatchPoller_Backfill_SavesResultForTerminalMatch(t *testing.T) {
+	resultStore := repository.NewMemoryResultStore()
+	p := newPoller(repository.NewMemoryMatchStore(), resultStore, nil, capturingTimer(new([]time.Duration)))
+
+	p.Backfill(context.Background(), []models.Match{
+		{ID: "m-done", HomeTeam: "Columbus Crew", AwayTeam: "LA Galaxy",
+			Status: "STATUS_FULL_TIME", HomeScore: "2", AwayScore: "1"},
+	})
+
+	result, err := resultStore.GetResult(context.Background(), "m-done")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result == nil || result.HomeGoals != 2 || result.AwayGoals != 1 {
+		t.Errorf("expected result 2-1, got %+v", result)
+	}
+}
+
+func TestMatchPoller_Backfill_SkipsNonTerminalMatch(t *testing.T) {
+	resultStore := repository.NewMemoryResultStore()
+	p := newPoller(repository.NewMemoryMatchStore(), resultStore, nil, capturingTimer(new([]time.Duration)))
+
+	p.Backfill(context.Background(), []models.Match{
+		{ID: "m-live", HomeTeam: "Columbus Crew", AwayTeam: "LA Galaxy",
+			Status: "STATUS_IN_PROGRESS", State: "in", HomeScore: "1", AwayScore: "0"},
+	})
+
+	result, _ := resultStore.GetResult(context.Background(), "m-live")
+	if result != nil {
+		t.Errorf("expected no result for non-terminal match, got %+v", result)
+	}
+}
+
 func TestMatchPoller_Reset_ClearsActiveAndReschedules(t *testing.T) {
 	matchStore := repository.NewMemoryMatchStore()
 	resultStore := repository.NewMemoryResultStore()

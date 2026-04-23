@@ -42,6 +42,10 @@ func (h *PredictionsHandler) Submit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "goals must be integers", http.StatusBadRequest)
 		return
 	}
+	if home < 0 || home > 99 || away < 0 || away > 99 {
+		http.Error(w, "goals must be between 0 and 99", http.StatusBadRequest)
+		return
+	}
 
 	matches, err := h.fetcher()
 	if err != nil {
@@ -65,14 +69,18 @@ func (h *PredictionsHandler) Submit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Info("prediction submitted", "matchID", matchID, "userID", user.UserID, "homeGoals", home, "awayGoals", away)
-	h.store.Save(r.Context(), repository.Prediction{
+	if err := h.store.Save(r.Context(), repository.Prediction{
 		MatchID:   matchID,
 		Handle:    user.Handle,
 		UserID:    user.UserID,
 		HomeGoals: home,
 		AwayGoals: away,
-	})
+	}); err != nil {
+		slog.Error("prediction save failed", "matchID", matchID, "userID", user.UserID, "error", err)
+		http.Error(w, "could not save prediction", http.StatusInternalServerError)
+		return
+	}
+	slog.Info("prediction submitted", "matchID", matchID, "userID", user.UserID, "homeGoals", home, "awayGoals", away)
 	if r.Header.Get("HX-Request") == "true" {
 		fmt.Fprintf(w, `<div data-testid="match-card"><div class="saved-score">%d – %d</div><div class="saved-label">Your Pick</div></div>`, home, away)
 		return

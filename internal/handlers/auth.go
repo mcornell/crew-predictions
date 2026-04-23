@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"net/http"
+	"os"
 
 	"github.com/mcornell/crew-predictions/internal/repository"
 )
@@ -15,6 +16,7 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		MaxAge:   -1,
 		HttpOnly: true,
+		Secure:   os.Getenv("FIREBASE_AUTH_EMULATOR_HOST") == "",
 		SameSite: http.SameSiteLaxMode,
 	})
 	http.Redirect(w, r, "/matches", http.StatusFound)

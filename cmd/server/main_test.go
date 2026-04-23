@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -67,6 +68,36 @@ func TestStartDailyRefresh_PopulatesStoreImmediately(t *testing.T) {
 	matches, _ := store.GetAll()
 	if len(matches) != 1 || matches[0].ID != "bg-match" {
 		t.Errorf("expected bg-match in store, got %+v", matches)
+	}
+}
+
+func TestStartDailyRefresh_BackfillsCompletedMatchResults(t *testing.T) {
+	etLoc, _ := time.LoadLocation("America/New_York")
+	matchStore := repository.NewMemoryMatchStore()
+	resultStore := repository.NewMemoryResultStore()
+	completedMatch := models.Match{
+		ID: "m-finished", HomeTeam: "Columbus Crew", AwayTeam: "LA Galaxy",
+		Status: "STATUS_FULL_TIME", HomeScore: "2", AwayScore: "1",
+		Kickoff: time.Now().Add(-3 * time.Hour),
+	}
+	fetcher := func() ([]models.Match, error) { return []models.Match{completedMatch}, nil }
+	poller := poll.NewMatchPoller(matchStore, resultStore, fetcher, func(time.Duration, func()) {})
+
+	stop := startDailyRefresh(matchStore, fetcher, poller, etLoc)
+	defer close(stop)
+
+	// startDailyRefresh calls refresh() immediately on startup; give it a moment
+	time.Sleep(50 * time.Millisecond)
+
+	result, err := resultStore.GetResult(context.Background(), "m-finished")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result == nil {
+		t.Fatal("expected backfill to save result for completed match, got nil")
+	}
+	if result.HomeGoals != 2 || result.AwayGoals != 1 {
+		t.Errorf("expected 2-1, got %d-%d", result.HomeGoals, result.AwayGoals)
 	}
 }
 
