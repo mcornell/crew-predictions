@@ -13,13 +13,14 @@ const mockMatch = {
 }
 
 const mockPredictions = [
-  { userID: 'google:u1', handle: 'fan1@bsky.mock', homeGoals: 2, awayGoals: 1, acesRadioPoints: 15, upper90ClubPoints: 3 },
-  { userID: 'google:u2', handle: 'fan2@bsky.mock', homeGoals: 0, awayGoals: 0, acesRadioPoints: 0, upper90ClubPoints: 0 },
+  { userID: 'google:u1', handle: 'fan1@bsky.mock', homeGoals: 2, awayGoals: 1, acesRadioPoints: 15, upper90ClubPoints: 3, grouchyPoints: 1 },
+  { userID: 'google:u2', handle: 'fan2@bsky.mock', homeGoals: 0, awayGoals: 0, acesRadioPoints: 0, upper90ClubPoints: 0, grouchyPoints: 0 },
 ]
 
 const mockScoringFormats = [
   { key: 'acesRadio', label: 'Aces Radio' },
   { key: 'upper90Club', label: 'Upper 90 Club' },
+  { key: 'grouchy', label: 'Grouchy™' },
 ]
 
 function makeRouter(matchId = 'm-test') {
@@ -192,5 +193,44 @@ describe('MatchDetailView', () => {
     await wrapper.find('[data-testid="mobile-sort-upper90"]').trigger('click')
     const rows = wrapper.findAll('[data-testid="prediction-row"]')
     expect(rows[0].find('[data-testid="prediction-upper90-points"]').text()).toBe('3')
+  })
+
+  it('shows Grouchy points in each row', async () => {
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    const rows = wrapper.findAll('[data-testid="prediction-row"]')
+    expect(rows[0].find('[data-testid="prediction-grouchy-points"]').text()).toBe('1')
+    expect(rows[1].find('[data-testid="prediction-grouchy-points"]').text()).toBe('0')
+  })
+
+  it('sorts by Grouchy when Grouchy column header is clicked', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: mockMatch,
+        predictions: [
+          { userID: 'u1', handle: 'fan1', homeGoals: 1, awayGoals: 0, acesRadioPoints: 0, upper90ClubPoints: 0, grouchyPoints: 1 },
+          { userID: 'u2', handle: 'fan2', homeGoals: 0, awayGoals: 1, acesRadioPoints: 0, upper90ClubPoints: 0, grouchyPoints: 0 },
+        ],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    await wrapper.find('[data-testid="sort-grouchy"]').trigger('click')
+    const rows = wrapper.findAll('[data-testid="prediction-row"]')
+    expect(rows[0].find('[data-testid="prediction-grouchy-points"]').text()).toBe('1')
+  })
+
+  it('renders mobile sort button for Grouchy', async () => {
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="mobile-sort-grouchy"]').exists()).toBe(true)
   })
 })

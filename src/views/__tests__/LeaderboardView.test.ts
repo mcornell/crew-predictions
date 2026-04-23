@@ -4,8 +4,8 @@ import LeaderboardView from '../LeaderboardView.vue'
 import { makeRouter } from '../../test-utils/router'
 
 const mockEntries = [
-  { userID: 'firebase:abc', handle: 'BlackAndGold@bsky.mock', acesRadioPoints: 15, upper90ClubPoints: 1, hasProfile: true },
-  { userID: 'firebase:def', handle: 'ColumbusNordecke@bsky.mock', acesRadioPoints: 10, upper90ClubPoints: 2, hasProfile: true },
+  { userID: 'firebase:abc', handle: 'BlackAndGold@bsky.mock', acesRadioPoints: 15, upper90ClubPoints: 1, grouchyPoints: 3, hasProfile: true },
+  { userID: 'firebase:def', handle: 'ColumbusNordecke@bsky.mock', acesRadioPoints: 10, upper90ClubPoints: 2, grouchyPoints: 1, hasProfile: true },
 ]
 
 const mockData = { entries: mockEntries }
@@ -145,5 +145,27 @@ describe('LeaderboardView', () => {
     await wrapper.find('[data-testid="mobile-sort-upper90"]').trigger('click')
     const rows = wrapper.findAll('[data-testid="leaderboard-row"]')
     expect(rows[0].find('[data-testid="leaderboard-upper90-points"]').text()).toBe('2')
+  })
+
+  it('shows Grouchy points in each row', async () => {
+    const wrapper = mount(LeaderboardView, { global: { plugins: [makeRouter()] } })
+    await flushPromises()
+    const rows = wrapper.findAll('[data-testid="leaderboard-row"]')
+    expect(rows[0].find('[data-testid="leaderboard-grouchy-points"]').text()).toBe('3')
+    expect(rows[1].find('[data-testid="leaderboard-grouchy-points"]').text()).toBe('1')
+  })
+
+  it('sorts by Grouchy when Grouchy column header is clicked', async () => {
+    const wrapper = mount(LeaderboardView, { global: { plugins: [makeRouter()] } })
+    await flushPromises()
+    await wrapper.find('[data-testid="sort-grouchy"]').trigger('click')
+    const rows = wrapper.findAll('[data-testid="leaderboard-row"]')
+    expect(rows[0].find('[data-testid="leaderboard-grouchy-points"]').text()).toBe('3')
+  })
+
+  it('renders mobile sort button for Grouchy', async () => {
+    const wrapper = mount(LeaderboardView, { global: { plugins: [makeRouter()] } })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="mobile-sort-grouchy"]').exists()).toBe(true)
   })
 })

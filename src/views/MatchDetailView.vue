@@ -30,13 +30,18 @@
           data-testid="mobile-sort-upper90"
           @click="activeFormat = 'upper90Club'"
         >Upper 90 Club</button>
+        <button
+          class="lb-sort-btn"
+          :class="{ 'lb-sort-btn--active': activeFormat === 'grouchy' }"
+          data-testid="mobile-sort-grouchy"
+          @click="activeFormat = 'grouchy'"
+        >Grouchy™</button>
       </div>
 
     <div class="lb-table lb-5col">
       <div class="lb-header">
         <span class="lb-cell lb-rank">RANK</span>
         <span class="lb-cell lb-handle">PREDICTOR</span>
-        <span class="lb-cell lb-pick">PICK</span>
         <button
           class="lb-cell lb-pts lb-sort-btn"
           :class="{ 'lb-sort-btn--active': activeFormat === 'acesRadio' }"
@@ -49,6 +54,12 @@
           data-testid="sort-upper90"
           @click="activeFormat = 'upper90Club'"
         >Upper 90 Club</button>
+        <button
+          class="lb-cell lb-pts lb-sort-btn"
+          :class="{ 'lb-sort-btn--active': activeFormat === 'grouchy' }"
+          data-testid="sort-grouchy"
+          @click="activeFormat = 'grouchy'"
+        >Grouchy™</button>
       </div>
 
       <div
@@ -58,8 +69,10 @@
         data-testid="prediction-row"
       >
         <span class="lb-cell lb-rank" data-testid="prediction-rank">{{ rankFor(i) }}</span>
-        <span class="lb-cell lb-handle">{{ entry.handle }}</span>
-        <span class="lb-cell lb-pick" data-testid="prediction-score">{{ entry.homeGoals }} – {{ entry.awayGoals }}</span>
+        <span class="lb-cell lb-handle">
+          <span class="lb-handle-name">{{ entry.handle }}</span>
+          <span class="lb-pick-sub" data-testid="prediction-score">{{ entry.homeGoals }} – {{ entry.awayGoals }}</span>
+        </span>
         <span
           class="lb-cell lb-pts"
           :class="{ 'lb-pts--active': activeFormat === 'acesRadio' }"
@@ -72,6 +85,12 @@
           data-testid="prediction-upper90-points"
           data-label="Upper 90 Club"
         >{{ entry.upper90ClubPoints }}</span>
+        <span
+          class="lb-cell lb-pts"
+          :class="{ 'lb-pts--active': activeFormat === 'grouchy' }"
+          data-testid="prediction-grouchy-points"
+          data-label="Grouchy™"
+        >{{ entry.grouchyPoints }}</span>
       </div>
     </div>
     </template>
@@ -99,24 +118,25 @@ interface PredictionEntry {
   awayGoals: number
   acesRadioPoints: number
   upper90ClubPoints: number
+  grouchyPoints: number
 }
 
 const route = useRoute()
 const match = ref<MatchInfo | null>(null)
 const predictions = ref<PredictionEntry[]>([])
-const activeFormat = ref<'acesRadio' | 'upper90Club'>('acesRadio')
+const activeFormat = ref<'acesRadio' | 'upper90Club' | 'grouchy'>('acesRadio')
 const loaded = ref(false)
 const loading = ref(true)
 const error = ref<string | null>(null)
 
 const sortedPredictions = computed(() => {
-  const key = activeFormat.value === 'acesRadio' ? 'acesRadioPoints' : 'upper90ClubPoints'
+  const key = activeFormat.value === 'acesRadio' ? 'acesRadioPoints' : activeFormat.value === 'upper90Club' ? 'upper90ClubPoints' : 'grouchyPoints'
   return [...predictions.value].sort((a, b) => b[key] - a[key])
 })
 
 function rankFor(i: number): number {
   if (i === 0) return 1
-  const key = activeFormat.value === 'acesRadio' ? 'acesRadioPoints' : 'upper90ClubPoints'
+  const key = activeFormat.value === 'acesRadio' ? 'acesRadioPoints' : activeFormat.value === 'upper90Club' ? 'upper90ClubPoints' : 'grouchyPoints'
   if (sortedPredictions.value[i][key] === sortedPredictions.value[i - 1][key]) return rankFor(i - 1)
   return i + 1
 }

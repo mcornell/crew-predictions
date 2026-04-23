@@ -543,14 +543,14 @@ body::after {
   border: 1px solid var(--border);
 }
 
-/* 4 columns: leaderboard (rank, handle, aces, upper90) */
-.lb-table.lb-4col {
-  grid-template-columns: auto 1fr auto auto;
-}
-
-/* 5 columns: match detail (rank, handle, pick, aces, upper90) */
+/* 5 columns: leaderboard (rank, handle, aces, upper90, grouchy) */
 .lb-table.lb-5col {
   grid-template-columns: auto 1fr auto auto auto;
+}
+
+/* 6 columns: reserved */
+.lb-table.lb-6col {
+  grid-template-columns: auto 1fr auto auto auto auto;
 }
 
 .lb-header {
@@ -617,7 +617,26 @@ body::after {
   padding-right: 1.1rem;
 }
 
-.lb-cell.lb-handle { min-width: 0; }
+.lb-cell.lb-handle {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  white-space: normal;
+}
+
+.lb-handle-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lb-pick-sub {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.82rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
 
 .lb-cell.lb-pts {
   text-align: right;
@@ -628,10 +647,6 @@ body::after {
   color: var(--gold);
 }
 
-.lb-cell.lb-pick {
-  color: var(--muted);
-  text-align: center;
-}
 
 .lb-handle-link {
   color: var(--text);
@@ -653,7 +668,6 @@ body::after {
   }
 
   /* Switch table container from CSS grid to block */
-  .lb-table.lb-4col,
   .lb-table.lb-5col {
     display: block;
     border: none;
@@ -699,12 +713,6 @@ body::after {
     flex: 1;
     min-width: 0;
     font-size: 1rem;
-  }
-
-  .lb-cell.lb-pick {
-    flex-shrink: 0;
-    color: var(--muted);
-    font-size: 0.9rem;
   }
 
   /* Hide both score columns by default on mobile */
