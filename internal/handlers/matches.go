@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"sort"
 
@@ -67,5 +68,7 @@ func (h *MatchesHandler) APIList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{"matches": out, "predictions": preds})
+	if err := json.NewEncoder(w).Encode(map[string]any{"matches": out, "predictions": preds}); err != nil {
+		log.Printf("matches: encode response: %v", err)
+	}
 }

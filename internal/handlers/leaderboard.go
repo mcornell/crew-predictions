@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"sort"
 
@@ -78,10 +79,12 @@ func (h *LeaderboardHandler) APIList(w http.ResponseWriter, r *http.Request) {
 
 	keys := allKeys(acesTotals, u90Totals)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	if err := json.NewEncoder(w).Encode(map[string]any{
 		"acesRadio":   toEntries(keys, keyHandle, acesTotals, knownUsers),
 		"upper90Club": toEntries(keys, keyHandle, u90Totals, knownUsers),
-	})
+	}); err != nil {
+		log.Printf("leaderboard: encode response: %v", err)
+	}
 }
 
 func toEntries(keys []string, keyHandle map[string]string, totals map[string]int, knownUsers map[string]bool) []leaderboardEntry {

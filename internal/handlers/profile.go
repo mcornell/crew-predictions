@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"sort"
 
@@ -70,14 +71,16 @@ func (h *ProfileHandler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	if err := json.NewEncoder(w).Encode(map[string]any{
 		"userID":          user.UserID,
 		"handle":          user.Handle,
 		"location":        user.Location,
 		"predictionCount": predictionCount,
 		"acesRadio":       rankFor(userID, acesTotals),
 		"upper90Club":     rankFor(userID, u90Totals),
-	})
+	}); err != nil {
+		log.Printf("profile: encode response: %v", err)
+	}
 }
 
 func rankFor(userID string, totals map[string]int) standingEntry {

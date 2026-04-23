@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/mcornell/crew-predictions/internal/repository"
@@ -92,12 +93,14 @@ func (h *MatchDetailHandler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	if err := json.NewEncoder(w).Encode(map[string]any{
 		"match": found,
 		"scoringFormats": []map[string]string{
 			{"key": "acesRadio", "label": "Aces Radio"},
 			{"key": "upper90Club", "label": "Upper 90 Club"},
 		},
 		"predictions": entries,
-	})
+	}); err != nil {
+		log.Printf("match_detail: encode response: %v", err)
+	}
 }
