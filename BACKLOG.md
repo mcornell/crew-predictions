@@ -2,11 +2,17 @@
 
 ## Up Next
 
-1. [ ] **Prod smoke suite** — unauthenticated-only scenarios (app loads, leaderboard/matches API responds, Vue hydrates); replaces current `curl` liveness check in `deploy-prod`.
+1. [ ] **STATUS_DELAYED support** — ESPN returns `STATUS_DELAYED` (type.id=7) for weather/other delays mid-match. Show a red "DELAYED" badge on the match card (same position as the LIVE badge). Treat as locked: no predictions allowed, same as in-progress. Confirmed live against Columbus Crew vs LA Galaxy on 2026-04-22.
 
-2. [ ] **Cache leaderboard scoring** — currently recalculated on every request; fine now but will need in-memory caching or pre-computation at scale.
+2. [ ] **Match ordering stability** — after kickoff, upcoming/results sort order can shift (Open Cup appeared above a later match on mobile). Sort server-side by kickoff time ascending for upcoming, descending for results — do not rely on ESPN's return order.
 
-3. [ ] **Remove stale `handle` from predictions** — `handle` on prediction documents is legacy; leaderboard now sources display names from `UserStore` by `userID`. Stop writing it on new predictions and remove the `p.Handle` fallback in the leaderboard once confirmed no UID-less predictions exist in prod.
+3. [ ] **Client-side kickoff lock** — the unlock button stays clickable past kickoff until the page is refreshed (server 403s but UI doesn't update). Add a Vue-side timer that watches `match.kickoff` and reactively sets the card to locked state at kickoff time without requiring a reload. Affects unlock button and score inputs.
+
+4. [ ] **Prod smoke suite** — unauthenticated-only scenarios (app loads, leaderboard/matches API responds, Vue hydrates); replaces current `curl` liveness check in `deploy-prod`.
+
+5. [ ] **Cache leaderboard scoring** — currently recalculated on every request; fine now but will need in-memory caching or pre-computation at scale.
+
+6. [ ] **Remove stale `handle` from predictions** — `handle` on prediction documents is legacy; leaderboard now sources display names from `UserStore` by `userID`. Stop writing it on new predictions and remove the `p.Handle` fallback in the leaderboard once confirmed no UID-less predictions exist in prod.
 
 ---
 
