@@ -16,7 +16,23 @@
       <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
     </div>
 
-    <div v-if="sortedPredictions.length > 0" class="lb-table lb-5col">
+    <template v-if="sortedPredictions.length > 0">
+      <div class="lb-mobile-sort">
+        <button
+          class="lb-sort-btn"
+          :class="{ 'lb-sort-btn--active': activeFormat === 'acesRadio' }"
+          data-testid="mobile-sort-aces"
+          @click="activeFormat = 'acesRadio'"
+        >Aces Radio</button>
+        <button
+          class="lb-sort-btn"
+          :class="{ 'lb-sort-btn--active': activeFormat === 'upper90Club' }"
+          data-testid="mobile-sort-upper90"
+          @click="activeFormat = 'upper90Club'"
+        >Upper 90 Club</button>
+      </div>
+
+    <div class="lb-table lb-5col">
       <div class="lb-header">
         <span class="lb-cell lb-rank">RANK</span>
         <span class="lb-cell lb-handle">PREDICTOR</span>
@@ -58,6 +74,7 @@
         >{{ entry.upper90ClubPoints }}</span>
       </div>
     </div>
+    </template>
     <p v-else-if="loaded" class="empty">No predictions were made for this match</p>
   </div>
 </template>

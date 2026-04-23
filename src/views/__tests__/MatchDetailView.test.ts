@@ -174,4 +174,23 @@ describe('MatchDetailView', () => {
     expect(backLink.exists()).toBe(true)
     expect(backLink.attributes('href')).toContain('/matches')
   })
+
+  it('renders mobile sort buttons for both scoring formats', async () => {
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="mobile-sort-aces"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="mobile-sort-upper90"]').exists()).toBe(true)
+  })
+
+  it('mobile sort upper90 button triggers sort change', async () => {
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    await wrapper.find('[data-testid="mobile-sort-upper90"]').trigger('click')
+    const rows = wrapper.findAll('[data-testid="prediction-row"]')
+    expect(rows[0].find('[data-testid="prediction-upper90-points"]').text()).toBe('3')
+  })
 })

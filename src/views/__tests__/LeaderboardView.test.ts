@@ -131,4 +131,19 @@ describe('LeaderboardView', () => {
     await flushPromises()
     expect(wrapper.find('[data-testid="error"]').exists()).toBe(true)
   })
+
+  it('renders mobile sort buttons for both scoring formats', async () => {
+    const wrapper = mount(LeaderboardView, { global: { plugins: [makeRouter()] } })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="mobile-sort-aces"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="mobile-sort-upper90"]').exists()).toBe(true)
+  })
+
+  it('mobile sort upper90 button triggers sort change', async () => {
+    const wrapper = mount(LeaderboardView, { global: { plugins: [makeRouter()] } })
+    await flushPromises()
+    await wrapper.find('[data-testid="mobile-sort-upper90"]').trigger('click')
+    const rows = wrapper.findAll('[data-testid="leaderboard-row"]')
+    expect(rows[0].find('[data-testid="leaderboard-upper90-points"]').text()).toBe('2')
+  })
 })

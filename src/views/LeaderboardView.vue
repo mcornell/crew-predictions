@@ -8,7 +8,23 @@
     <template v-else>
       <p v-if="sortedEntries.length === 0" class="empty">No predictions scored yet.</p>
 
-      <div v-else class="lb-table lb-4col">
+      <template v-else>
+        <div class="lb-mobile-sort">
+          <button
+            class="lb-sort-btn"
+            :class="{ 'lb-sort-btn--active': activeSort === 'aces' }"
+            data-testid="mobile-sort-aces"
+            @click="activeSort = 'aces'"
+          >Aces Radio</button>
+          <button
+            class="lb-sort-btn"
+            :class="{ 'lb-sort-btn--active': activeSort === 'upper90' }"
+            data-testid="mobile-sort-upper90"
+            @click="activeSort = 'upper90'"
+          >Upper 90 Club</button>
+        </div>
+
+        <div class="lb-table lb-4col">
         <div class="lb-header">
           <span class="lb-cell lb-rank">RANK</span>
           <span class="lb-cell lb-handle">PREDICTOR</span>
@@ -55,7 +71,8 @@
             data-label="Upper 90 Club"
           >{{ entry.upper90ClubPoints }}</span>
         </div>
-      </div>
+        </div>
+      </template>
     </template>
   </div>
 </template>

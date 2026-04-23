@@ -642,8 +642,19 @@ body::after {
 }
 .lb-handle-link:hover { color: var(--gold); }
 
+/* Mobile sort buttons — hidden on desktop, shown on mobile */
+.lb-mobile-sort {
+  display: none;
+}
+
 /* ── Mobile stacked cards (≤600px) ──────────────────────────────────────── */
 @media (max-width: 600px) {
+  .lb-mobile-sort {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
   /* Switch table container from CSS grid to block */
   .lb-table.lb-4col,
   .lb-table.lb-5col {
@@ -653,11 +664,12 @@ body::after {
 
   .lb-header { display: none; }
 
-  /* Each row becomes a 2-row card with 3 columns: [rank | col2 | col3] */
+  /* Each row: single flex line — rank | handle | (pick) | active score */
   .lb-row {
-    display: grid;
-    grid-template-columns: 3rem 1fr 1fr;
-    grid-template-rows: auto auto;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.85rem 0.9rem;
     border: 1px solid var(--border);
     border-left: 3px solid transparent;
     background: var(--card);
@@ -673,88 +685,43 @@ body::after {
   .lb-row .lb-cell {
     border-bottom: none;
     background: transparent;
+    padding: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  /* Rank: col 1, spans both rows, vertically centered */
   .lb-cell.lb-rank {
-    grid-column: 1;
-    grid-row: 1 / 3;
-    align-self: center;
     font-size: 0.85rem;
     text-align: center;
-    padding: 0.75rem 0.25rem;
+    flex-shrink: 0;
+    width: 1.75rem;
   }
 
-  /* Leaderboard (4col): handle spans cols 2–3 on row 1 */
-  .lb-4col .lb-cell.lb-handle {
-    grid-column: 2 / 4;
-    grid-row: 1;
-    padding: 0.75rem 0.75rem 0.3rem 0.5rem;
+  .lb-cell.lb-handle {
+    flex: 1;
+    min-width: 0;
     font-size: 1rem;
-    white-space: nowrap;
-  }
-
-  /* Match detail (5col): handle col 2 row 1, pick col 3 row 1 */
-  .lb-5col .lb-cell.lb-handle {
-    grid-column: 2;
-    grid-row: 1;
-    padding: 0.75rem 0.25rem 0.3rem 0.5rem;
-    font-size: 0.95rem;
-    white-space: nowrap;
   }
 
   .lb-cell.lb-pick {
-    grid-column: 3;
-    grid-row: 1;
-    padding: 0.75rem 0.75rem 0.3rem 0.25rem;
-    text-align: right;
+    flex-shrink: 0;
     color: var(--muted);
     font-size: 0.9rem;
-    white-space: nowrap;
   }
 
-  /* Aces points: col 2, row 2 */
-  .lb-4col .lb-row .lb-cell:nth-child(3),
-  .lb-5col .lb-row .lb-cell:nth-child(4) {
-    grid-column: 2;
-    grid-row: 2;
-  }
+  /* Hide both score columns by default on mobile */
+  .lb-cell.lb-pts { display: none; }
 
-  /* Upper 90 points: col 3, row 2 */
-  .lb-4col .lb-row .lb-cell:nth-child(4),
-  .lb-5col .lb-row .lb-cell:nth-child(5) {
-    grid-column: 3;
-    grid-row: 2;
+  /* Show only the active score, right-aligned */
+  .lb-cell.lb-pts.lb-pts--active {
+    display: block;
+    flex-shrink: 0;
+    color: var(--gold);
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-left: auto;
   }
-
-  /* Points cells shared styles */
-  .lb-cell.lb-pts {
-    padding: 0.2rem 0.75rem 0.9rem 0.5rem;
-    font-size: 1rem;
-    text-align: left;
-    color: var(--muted);
-    display: flex;
-    flex-direction: column;
-    white-space: nowrap;
-    overflow: visible;
-  }
-
-  .lb-cell.lb-pts::before {
-    content: attr(data-label);
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 0.65rem;
-    font-weight: 800;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 0.1rem;
-  }
-
-  .lb-cell.lb-pts.lb-pts--active { color: var(--gold); }
-  .lb-cell.lb-pts.lb-pts--active::before { color: var(--gold); }
 }
 
 /* ── Profile ─────────────────────────────────────────────────────────────── */
