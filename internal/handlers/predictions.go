@@ -42,6 +42,10 @@ func (h *PredictionsHandler) Submit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "goals must be integers", http.StatusBadRequest)
 		return
 	}
+	if home < 0 || home > 99 || away < 0 || away > 99 {
+		http.Error(w, "goals must be between 0 and 99", http.StatusBadRequest)
+		return
+	}
 
 	matches, err := h.fetcher()
 	if err != nil {

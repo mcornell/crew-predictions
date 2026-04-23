@@ -28,6 +28,10 @@ func (h *ResultsHandler) Submit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "away_goals must be an integer", http.StatusBadRequest)
 		return
 	}
+	if home < 0 || home > 99 || away < 0 || away > 99 {
+		http.Error(w, "goals must be between 0 and 99", http.StatusBadRequest)
+		return
+	}
 	h.store.SaveResult(r.Context(), repository.Result{
 		MatchID:   matchID,
 		HomeTeam:  r.FormValue("home_team"),

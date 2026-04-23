@@ -172,6 +172,30 @@ func TestSubmitPrediction_RejectsUnknownMatch(t *testing.T) {
 	}
 }
 
+func TestSubmitPrediction_RejectsNegativeGoals(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPost, "/predictions",
+		strings.NewReader("match_id=match1&home_goals=-1&away_goals=1"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(sessionCookie("google:abc123", "BlackAndGold@bsky.mock"))
+	w := httptest.NewRecorder()
+	newHandler().Submit(w, req)
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for negative goals, got %d", w.Code)
+	}
+}
+
+func TestSubmitPrediction_RejectsTooLargeGoals(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPost, "/predictions",
+		strings.NewReader("match_id=match1&home_goals=100&away_goals=0"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(sessionCookie("google:abc123", "BlackAndGold@bsky.mock"))
+	w := httptest.NewRecorder()
+	newHandler().Submit(w, req)
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for goals > 99, got %d", w.Code)
+	}
+}
+
 func TestSubmitPrediction_Returns500WhenSaveFails(t *testing.T) {
 	future := time.Now().Add(24 * time.Hour)
 	handler := handlers.NewPredictionsHandler(repository.NewErrorPredictionStore(), fetcherWithMatch("match1", future))

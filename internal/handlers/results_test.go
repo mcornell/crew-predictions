@@ -48,6 +48,30 @@ func TestResultsHandler_RejectsBadHomeGoals(t *testing.T) {
 	}
 }
 
+func TestResultsHandler_RejectsNegativeGoals(t *testing.T) {
+	rh := handlers.NewResultsHandler(repository.NewMemoryResultStore())
+	req := httptest.NewRequest(http.MethodPost, "/admin/results",
+		strings.NewReader("match_id=m1&home_goals=-1&away_goals=0"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	rh.Submit(w, req)
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for negative goals, got %d", w.Code)
+	}
+}
+
+func TestResultsHandler_RejectsTooLargeGoals(t *testing.T) {
+	rh := handlers.NewResultsHandler(repository.NewMemoryResultStore())
+	req := httptest.NewRequest(http.MethodPost, "/admin/results",
+		strings.NewReader("match_id=m1&home_goals=0&away_goals=100"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	rh.Submit(w, req)
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for goals > 99, got %d", w.Code)
+	}
+}
+
 func TestResultsHandler_RejectsBadAwayGoals(t *testing.T) {
 	rh := handlers.NewResultsHandler(repository.NewMemoryResultStore())
 	req := httptest.NewRequest(http.MethodPost, "/admin/results",
