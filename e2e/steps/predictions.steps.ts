@@ -7,7 +7,7 @@ let lastPredictionStatus = 0;
 
 function kickoffForStatus(status: string, state?: string): string {
   const d = new Date();
-  if (state === 'in') {
+  if (state === 'in' || status === 'STATUS_DELAYED') {
     d.setHours(d.getHours() - 1);
   } else {
     const isScheduled = status === 'STATUS_SCHEDULED' || status === 'STATUS_IN_PROGRESS';
@@ -60,7 +60,7 @@ Then('I should see a {string} button', async ({ page }, label: string) => {
 });
 
 Then('I should not see a {string} button', async ({ page }, label: string) => {
-  await expect(page.getByRole('button', { name: label, exact: true })).not.toBeVisible();
+  await expect(page.getByRole('button', { name: label, exact: true })).toHaveCount(0);
 });
 
 Then('I should see a disabled {string} button', async ({ page }, label: string) => {

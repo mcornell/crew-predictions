@@ -24,6 +24,14 @@ Feature: Score predictions
     When I submit a prediction via API for match "match-past-1"
     Then the server should reject it with 403
 
+  Scenario: Prediction is rejected for a delayed match
+    Given the following matches are seeded:
+      | id           | homeTeam      | awayTeam  | status         |
+      | match-delay-1 | Columbus Crew | LA Galaxy | STATUS_DELAYED |
+    And I am logged in as "BlackAndGold@bsky.mock"
+    When I submit a prediction via API for match "match-delay-1"
+    Then the server should reject it with 403
+
   Scenario: Guest user can enter a prediction without signing in
     Given I am not logged in
     When I visit the matches page

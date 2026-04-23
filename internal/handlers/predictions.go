@@ -58,7 +58,7 @@ func (h *PredictionsHandler) Submit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "match not found", http.StatusNotFound)
 		return
 	}
-	if match.Kickoff.Before(time.Now()) {
+	if match.Kickoff.Before(time.Now()) || match.Status == "STATUS_DELAYED" {
 		http.Error(w, "predictions are locked for this match", http.StatusForbidden)
 		return
 	}
