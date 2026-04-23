@@ -367,6 +367,17 @@ body::after {
   border-left: 3px solid var(--danger);
 }
 
+.match-card--link {
+  display: flex;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.match-card--link:hover {
+  border-left-color: var(--gold);
+}
+
 .now-playing-section {
   margin-bottom: 0.5rem;
 }
@@ -906,4 +917,91 @@ body::after {
   .hamburger         { display: flex; }
   .site-nav          { display: none; }
   .mobile-user-handle { display: block; }
+}
+
+/* ── Match Detail ─────────────────────────────────────────────────────────── */
+.back-link {
+  display: inline-block;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-decoration: none;
+  margin-bottom: 1.5rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.back-link:hover { color: var(--gold); }
+
+.match-detail-header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.sort-controls {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.sort-btn {
+  font-family: 'Bebas Neue', cursive;
+  font-size: 0.9rem;
+  letter-spacing: 0.06em;
+  padding: 0.35rem 0.9rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.sort-btn:hover { color: var(--text); border-color: var(--text); }
+.sort-btn--active { color: var(--gold); border-color: var(--gold); }
+
+.predictions-table { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.prediction-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 3px solid transparent;
+  padding: 0.75rem 1.25rem;
+}
+
+.prediction-rank {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--muted);
+  width: 1.5rem;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.prediction-handle {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.8rem;
+  color: var(--text);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prediction-score {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.8rem;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.prediction-points {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.9rem;
+  color: var(--gold);
+  flex-shrink: 0;
+  min-width: 2rem;
+  text-align: right;
 }

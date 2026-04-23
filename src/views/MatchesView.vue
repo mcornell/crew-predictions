@@ -73,10 +73,11 @@
     <section v-if="completedMatches.length > 0" data-testid="results-section">
       <h2 class="page-title" style="margin-top:2.5rem">Results</h2>
       <div class="match-list">
-        <div
+        <RouterLink
           v-for="match in completedMatches"
           :key="match.id"
-          class="match-card match-card--result"
+          :to="`/matches/${match.id}`"
+          class="match-card match-card--result match-card--link"
           :data-match-id="match.id"
           data-testid="result-card"
         >
@@ -94,7 +95,7 @@
             </div>
           </div>
           <div class="btn-spacer"></div>
-        </div>
+        </RouterLink>
       </div>
     </section>
 
