@@ -18,6 +18,10 @@ func NewSeedMatchHandler(store *repository.MemoryMatchStore) *SeedMatchHandler {
 
 func (h *SeedMatchHandler) Submit(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
+	if r.FormValue("id") == "" {
+		http.Error(w, "id is required", http.StatusBadRequest)
+		return
+	}
 	kickoff, err := time.Parse(time.RFC3339, r.FormValue("kickoff"))
 	if err != nil {
 		http.Error(w, "kickoff must be RFC3339", http.StatusBadRequest)

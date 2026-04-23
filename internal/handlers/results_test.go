@@ -72,6 +72,18 @@ func TestResultsHandler_RejectsTooLargeGoals(t *testing.T) {
 	}
 }
 
+func TestResultsHandler_RejectsEmptyMatchID(t *testing.T) {
+	rh := handlers.NewResultsHandler(repository.NewMemoryResultStore())
+	req := httptest.NewRequest(http.MethodPost, "/admin/results",
+		strings.NewReader("match_id=&home_goals=2&away_goals=0"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	rh.Submit(w, req)
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for empty match_id, got %d", w.Code)
+	}
+}
+
 func TestResultsHandler_RejectsBadAwayGoals(t *testing.T) {
 	rh := handlers.NewResultsHandler(repository.NewMemoryResultStore())
 	req := httptest.NewRequest(http.MethodPost, "/admin/results",
