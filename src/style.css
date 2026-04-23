@@ -545,12 +545,12 @@ body::after {
 
 /* 4 columns: leaderboard (rank, handle, aces, upper90) */
 .lb-table.lb-4col {
-  grid-template-columns: 2rem 1fr auto auto;
+  grid-template-columns: auto 1fr auto auto;
 }
 
 /* 5 columns: match detail (rank, handle, pick, aces, upper90) */
 .lb-table.lb-5col {
-  grid-template-columns: 2rem 1fr auto auto auto;
+  grid-template-columns: auto 1fr auto auto auto;
 }
 
 .lb-header {
@@ -595,9 +595,9 @@ body::after {
 
 .lb-row .lb-cell {
   font-family: 'DM Mono', monospace;
-  font-size: 1rem;
+  font-size: 1.05rem;
   color: var(--text);
-  padding: 0.85rem 1.1rem;
+  padding: 1rem 1.1rem;
   border-bottom: 1px solid var(--border);
   background: var(--card);
   transition: background 0.1s;
@@ -612,9 +612,10 @@ body::after {
 
 .lb-cell.lb-rank {
   color: var(--muted);
-  font-size: 0.8rem;
-  text-align: right;
-  padding-right: 0.5rem;
+  font-size: 0.85rem;
+  text-align: center;
+  padding-left: 1.1rem;
+  padding-right: 1.1rem;
 }
 
 .lb-cell.lb-handle { min-width: 0; }
@@ -655,7 +656,7 @@ body::after {
   /* Each row becomes a 2-row card with 3 columns: [rank | col2 | col3] */
   .lb-row {
     display: grid;
-    grid-template-columns: 2.25rem 1fr 1fr;
+    grid-template-columns: 3rem 1fr 1fr;
     grid-template-rows: auto auto;
     border: 1px solid var(--border);
     border-left: 3px solid transparent;
@@ -682,9 +683,9 @@ body::after {
     grid-column: 1;
     grid-row: 1 / 3;
     align-self: center;
-    font-size: 0.8rem;
-    text-align: right;
-    padding: 0.75rem 0.4rem 0.75rem 0.75rem;
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 0.75rem 0.25rem;
   }
 
   /* Leaderboard (4col): handle spans cols 2–3 on row 1 */
@@ -731,7 +732,7 @@ body::after {
 
   /* Points cells shared styles */
   .lb-cell.lb-pts {
-    padding: 0.2rem 0.5rem 0.75rem;
+    padding: 0.2rem 0.75rem 0.9rem 0.5rem;
     font-size: 1rem;
     text-align: left;
     color: var(--muted);

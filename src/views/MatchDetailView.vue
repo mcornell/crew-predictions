@@ -18,7 +18,7 @@
 
     <div v-if="sortedPredictions.length > 0" class="lb-table lb-5col">
       <div class="lb-header">
-        <span class="lb-cell lb-rank">#</span>
+        <span class="lb-cell lb-rank">RANK</span>
         <span class="lb-cell lb-handle">PREDICTOR</span>
         <span class="lb-cell lb-pick">PICK</span>
         <button

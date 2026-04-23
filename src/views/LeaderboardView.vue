@@ -10,7 +10,7 @@
 
       <div v-else class="lb-table lb-4col">
         <div class="lb-header">
-          <span class="lb-cell lb-rank">#</span>
+          <span class="lb-cell lb-rank">RANK</span>
           <span class="lb-cell lb-handle">PREDICTOR</span>
           <button
             class="lb-cell lb-pts lb-sort-btn"
