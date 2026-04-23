@@ -171,11 +171,26 @@ function updateCountdowns() {
 }
 
 let countdownTimer: ReturnType<typeof setInterval> | null = null
+let pollTimer: ReturnType<typeof setInterval> | null = null
 
 function formatKickoff(iso: string): string {
   const d = new Date(iso)
   if (isNaN(d.getTime())) return ''
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
+}
+
+async function fetchMatches() {
+  const res = await fetch('/api/matches')
+  if (!res.ok) return
+  const data = await res.json()
+  matches.value = data.matches
+  const guestPredictions: Record<string, Prediction> = JSON.parse(localStorage.getItem(GUEST_KEY) ?? '{}')
+  for (const m of data.matches) {
+    if (!inputs[m.id]) inputs[m.id] = { home: '', away: '' }
+    if (savedPredictions[m.id] === undefined) {
+      savedPredictions[m.id] = data.predictions[m.id] ?? guestPredictions[m.id] ?? null
+    }
+  }
 }
 
 onMounted(async () => {
@@ -192,10 +207,12 @@ onMounted(async () => {
     updateCountdowns()
     countdownTimer = setInterval(updateCountdowns, 1000)
   }
+  pollTimer = setInterval(fetchMatches, 30_000)
 })
 
 onUnmounted(() => {
   if (countdownTimer !== null) clearInterval(countdownTimer)
+  if (pollTimer !== null) clearInterval(pollTimer)
 })
 
 function unlock(matchId: string) {
