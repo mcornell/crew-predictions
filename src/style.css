@@ -106,11 +106,11 @@ body::after {
 }
 
 .btn-ghost {
-  font-family: 'Barlow', sans-serif;
-  font-size: 0.85rem;
-  font-weight: 500;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem;
   color: var(--text);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
   transition: color 0.15s;
 }
@@ -367,6 +367,17 @@ body::after {
   border-left: 3px solid var(--danger);
 }
 
+.match-card--link {
+  display: flex;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.match-card--link:hover {
+  border-left-color: var(--gold);
+}
+
 .now-playing-section {
   margin-bottom: 0.5rem;
 }
@@ -525,6 +536,189 @@ body::after {
   text-align: right;
 }
 
+/* ── Shared sortable table (leaderboard + match detail) ──────────────────── */
+.lb-table {
+  display: grid;
+  width: 100%;
+  border: 1px solid var(--border);
+}
+
+/* 4 columns: leaderboard (rank, handle, aces, upper90) */
+.lb-table.lb-4col {
+  grid-template-columns: auto 1fr auto auto;
+}
+
+/* 5 columns: match detail (rank, handle, pick, aces, upper90) */
+.lb-table.lb-5col {
+  grid-template-columns: auto 1fr auto auto auto;
+}
+
+.lb-header {
+  display: contents;
+}
+
+.lb-header .lb-cell {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--dark);
+  padding: 0.6rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.lb-sort-btn {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--dark);
+  border: none;
+  border-bottom: 1px solid var(--border);
+  padding: 0.6rem 1.1rem;
+  cursor: pointer;
+  text-align: right;
+  transition: color 0.12s;
+  white-space: nowrap;
+}
+.lb-sort-btn:hover { color: var(--text); }
+.lb-sort-btn--active { color: var(--gold); }
+
+.lb-row {
+  display: contents;
+}
+
+.lb-row .lb-cell {
+  font-family: 'DM Mono', monospace;
+  font-size: 1.05rem;
+  color: var(--text);
+  padding: 1rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+  transition: background 0.1s;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lb-row:hover .lb-cell {
+  background: #1f1f1f;
+}
+
+.lb-cell.lb-rank {
+  color: var(--muted);
+  text-align: center;
+  padding-left: 1.1rem;
+  padding-right: 1.1rem;
+}
+
+.lb-cell.lb-handle { min-width: 0; }
+
+.lb-cell.lb-pts {
+  text-align: right;
+  color: var(--muted);
+}
+
+.lb-cell.lb-pts.lb-pts--active {
+  color: var(--gold);
+}
+
+.lb-cell.lb-pick {
+  color: var(--muted);
+  text-align: center;
+}
+
+.lb-handle-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.lb-handle-link:hover { color: var(--gold); }
+
+/* Mobile sort buttons — hidden on desktop, shown on mobile */
+.lb-mobile-sort {
+  display: none;
+}
+
+/* ── Mobile stacked cards (≤600px) ──────────────────────────────────────── */
+@media (max-width: 600px) {
+  .lb-mobile-sort {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  /* Switch table container from CSS grid to block */
+  .lb-table.lb-4col,
+  .lb-table.lb-5col {
+    display: block;
+    border: none;
+  }
+
+  .lb-header { display: none; }
+
+  /* Each row: single flex line — rank | handle | (pick) | active score */
+  .lb-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.85rem 0.9rem;
+    border: 1px solid var(--border);
+    border-left: 3px solid transparent;
+    background: var(--card);
+    margin-bottom: 0.4rem;
+    transition: border-left-color 0.15s, background 0.15s;
+  }
+
+  .lb-row:hover {
+    border-left-color: var(--gold);
+    background: #1f1f1f;
+  }
+
+  .lb-row .lb-cell {
+    border-bottom: none;
+    background: transparent;
+    padding: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .lb-cell.lb-rank {
+    font-size: 0.85rem;
+    text-align: center;
+    flex-shrink: 0;
+    width: 1.75rem;
+  }
+
+  .lb-cell.lb-handle {
+    flex: 1;
+    min-width: 0;
+    font-size: 1rem;
+  }
+
+  .lb-cell.lb-pick {
+    flex-shrink: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  /* Hide both score columns by default on mobile */
+  .lb-cell.lb-pts { display: none; }
+
+  /* Show only the active score, right-aligned */
+  .lb-cell.lb-pts.lb-pts--active {
+    display: block;
+    flex-shrink: 0;
+    color: var(--gold);
+    margin-left: auto;
+  }
+}
+
 /* ── Profile ─────────────────────────────────────────────────────────────── */
 .profile-page {
   max-width: 680px;
@@ -572,24 +766,24 @@ body::after {
 .profile-stat {
   background: var(--card);
   border-top: 3px solid var(--gold);
-  padding: 1.25rem 1rem;
+  padding: 1.5rem 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.4rem;
 }
 
 .profile-stat-value {
   font-family: 'DM Mono', monospace;
-  font-size: 2rem;
+  font-size: 2.75rem;
   font-weight: 500;
   color: var(--gold);
   line-height: 1;
 }
 
 .profile-stat-label {
-  font-family: 'Barlow', sans-serif;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--muted);
@@ -597,11 +791,10 @@ body::after {
 
 .profile-stat-rank {
   font-family: 'DM Mono', monospace;
-  font-size: 0.75rem;
+  font-size: 0.9rem;
   color: var(--muted);
   letter-spacing: 0.04em;
-  margin-top: auto;
-  padding-top: 0.5rem;
+  margin-top: 0.25rem;
 }
 
 .profile-edit {
@@ -628,6 +821,18 @@ body::after {
   color: var(--muted);
   padding: 1.5rem 0;
   letter-spacing: 0.04em;
+}
+
+.status-msg {
+  font-family: 'DM Mono', monospace;
+  font-size: 1rem;
+  color: var(--muted);
+  padding: 2rem 0;
+  letter-spacing: 0.04em;
+}
+
+.status-msg--error {
+  color: var(--danger);
 }
 
 /* ── Mobile ──────────────────────────────────────────────────────────────── */
@@ -767,9 +972,10 @@ body::after {
 
 /* ── Rules ───────────────────────────────────────────────────────────────── */
 .rules-intro {
-  font-size: 1rem;
+  font-size: 1.1rem;
   color: var(--muted);
   margin-bottom: 2.5rem;
+  line-height: 1.6;
 }
 
 .rules-section {
@@ -777,10 +983,10 @@ body::after {
 }
 
 .rules-desc {
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   color: var(--muted);
   margin-bottom: 1.25rem;
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
 .rules-table {
@@ -817,7 +1023,7 @@ body::after {
 .rules-row--zero .rules-points     { color: var(--muted); }
 
 .rules-condition {
-  font-size: 0.95rem;
+  font-size: 1rem;
   color: var(--text);
   line-height: 1.5;
 }
@@ -906,4 +1112,91 @@ body::after {
   .hamburger         { display: flex; }
   .site-nav          { display: none; }
   .mobile-user-handle { display: block; }
+}
+
+/* ── Match Detail ─────────────────────────────────────────────────────────── */
+.back-link {
+  display: inline-block;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-decoration: none;
+  margin-bottom: 1.5rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.back-link:hover { color: var(--gold); }
+
+.match-detail-header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.sort-controls {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.sort-btn {
+  font-family: 'Bebas Neue', cursive;
+  font-size: 0.9rem;
+  letter-spacing: 0.06em;
+  padding: 0.35rem 0.9rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.sort-btn:hover { color: var(--text); border-color: var(--text); }
+.sort-btn--active { color: var(--gold); border-color: var(--gold); }
+
+.predictions-table { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.prediction-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 3px solid transparent;
+  padding: 0.75rem 1.25rem;
+}
+
+.prediction-rank {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--muted);
+  width: 1.5rem;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.prediction-handle {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.8rem;
+  color: var(--text);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prediction-score {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.8rem;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.prediction-points {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.9rem;
+  color: var(--gold);
+  flex-shrink: 0;
+  min-width: 2rem;
+  text-align: right;
 }

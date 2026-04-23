@@ -12,6 +12,7 @@ import (
 
 	firebase "firebase.google.com/go/v4"
 	"github.com/joho/godotenv"
+	"github.com/mcornell/crew-predictions/internal/bot"
 	"github.com/mcornell/crew-predictions/internal/espn"
 	"github.com/mcornell/crew-predictions/internal/handlers"
 	"github.com/mcornell/crew-predictions/internal/models"
@@ -145,6 +146,8 @@ func main() {
 	mux.HandleFunc("GET /api/leaderboard", lh.APIList)
 	prh := handlers.NewProfileHandler(predStore, resultStore, userStore, "Columbus Crew")
 	mux.HandleFunc("GET /api/profile/{userID}", prh.Get)
+	mdh := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, "Columbus Crew")
+	mux.HandleFunc("GET /api/matches/{matchId}", mdh.Get)
 	if os.Getenv("TEST_MODE") != "1" && os.Getenv("ADMIN_KEY") == "" {
 		log.Fatal("ADMIN_KEY env var must be set in production")
 	}
@@ -159,10 +162,12 @@ func main() {
 		)
 	}
 
+	twoOneBot := bot.New(predStore, userStore, "Columbus Crew")
 	onRefresh := func(matches []models.Match) {
 		if matchPoller != nil {
 			matchPoller.Reset(matches)
 		}
+		twoOneBot.Predict(context.Background(), matches)
 	}
 	rmh := handlers.NewRefreshMatchesHandler(matchStore, refreshFetcher, onRefresh)
 	mux.HandleFunc("POST /admin/refresh-matches", handlers.AdminAuth(rmh.Refresh))
@@ -208,7 +213,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("failed to load ET timezone: %v", err)
 		}
-		stop := startDailyRefresh(matchStore, refreshFetcher, matchPoller, etLoc)
+		stop := startDailyRefresh(matchStore, refreshFetcher, matchPoller, twoOneBot, etLoc)
 		defer close(stop)
 
 		pollerCtx, cancelPoller := context.WithCancel(context.Background())
@@ -231,7 +236,7 @@ func next4amET(now time.Time, loc *time.Location) time.Time {
 	return candidate
 }
 
-func startDailyRefresh(store repository.MatchStore, fetcher func() ([]models.Match, error), poller *poll.MatchPoller, etLoc *time.Location) chan struct{} {
+func startDailyRefresh(store repository.MatchStore, fetcher func() ([]models.Match, error), poller *poll.MatchPoller, twoOneBot *bot.TwoOneBot, etLoc *time.Location) chan struct{} {
 	stop := make(chan struct{})
 	go func() {
 		refresh := func() {
@@ -247,6 +252,7 @@ func startDailyRefresh(store repository.MatchStore, fetcher func() ([]models.Mat
 			// Backfill results for matches that finished while no poller was active
 			// (e.g., after a Cloud Run recycle, or matches completed before this deploy).
 			poller.Backfill(context.Background(), matches)
+			twoOneBot.Predict(context.Background(), matches)
 			slog.Info("daily match refresh complete", "matchCount", len(matches))
 			poller.Reset(matches)
 		}

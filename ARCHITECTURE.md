@@ -39,11 +39,12 @@ Entry point: `cmd/server/main.go`
 
 | Package | Responsibility |
 |---|---|
-| `internal/handlers` | HTTP handlers — matches, predictions, leaderboard, profile, auth, session, handle update |
+| `internal/handlers` | HTTP handlers — matches, predictions, leaderboard, profile, auth, session, handle update, match detail |
 | `internal/repository` | Data access — Firestore and in-memory stores; `WriteThroughMatchStore` |
 | `internal/scoring` | Scoring engines — AcesRadio and Upper90Club |
 | `internal/espn` | ESPN API client — fetches upcoming Crew matches |
 | `internal/poll` | Score polling — `MatchPoller` schedules per-match kickoff timers; `PollOnce` for manual/test triggers |
+| `internal/bot` | TwoOneBot — predicts Columbus 2-1 (home) / 1-2 (away) on every upcoming match at each refresh and daily tick |
 | `internal/models` | Domain types |
 
 ---
@@ -53,6 +54,7 @@ Entry point: `cmd/server/main.go`
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | `GET` | `/api/matches` | optional | Upcoming matches + caller's predictions |
+| `GET` | `/api/matches/:matchId` | none | Match detail: match info + all predictions with per-format scores + `scoringFormats` array |
 | `POST` | `/api/predictions` | required | Submit a score prediction (form data) |
 | `GET` | `/api/leaderboard` | none | Ranked scores for both formats; all users with ≥1 prediction appear (0 pts until results land); `hasProfile: bool` per entry — false for legacy handle-only users with no `UserStore` entry |
 | `GET` | `/api/me` | optional | Current session user `{userID, handle}` or 401; lazily upserts user to `UserStore` |
@@ -115,6 +117,7 @@ Entry: `src/main.ts` → loads `/auth/config.js` → mounts Vue app
 | `src/views/ResetView.vue` | `/reset` | Password reset request |
 | `src/views/LeaderboardView.vue` | `/leaderboard` | Aces Radio + Upper 90 Club rankings; handles link to `/profile/:userID` |
 | `src/views/ProfileView.vue` | `/profile/:userID` | Public profile (stats + location); edit form shown only on own profile |
+| `src/views/MatchDetailView.vue` | `/matches/:matchId` | Per-match predictions leaderboard; sort by scoring format; result cards link here |
 | `src/views/RulesView.vue` | `/rules` | Scoring format explainer |
 | `src/views/NotFoundView.vue` | `*` | 404 catch-all |
 | `src/components/AppHeader.vue` | (all) | Nav header; desktop nav + hamburger drawer at ≤480px |

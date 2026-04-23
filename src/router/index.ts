@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import MatchesView from '../views/MatchesView.vue'
+import MatchDetailView from '../views/MatchDetailView.vue'
 import LoginView from '../views/LoginView.vue'
 import SignupView from '../views/SignupView.vue'
 import ResetView from '../views/ResetView.vue'
@@ -13,6 +14,7 @@ export default createRouter({
   routes: [
     { path: '/', component: MatchesView },
     { path: '/matches', component: MatchesView },
+    { path: '/matches/:matchId', component: MatchDetailView },
     { path: '/login', component: LoginView },
     { path: '/signup', component: SignupView },
     { path: '/reset', component: ResetView },

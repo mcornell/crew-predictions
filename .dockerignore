@@ -1,0 +1,12 @@
+.git
+.env
+.env.*
+node_modules
+dist
+playwright-report
+test-results
+smoke-report
+.features-gen
+e2e
+*.md
+.claude

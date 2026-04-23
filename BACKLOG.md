@@ -2,29 +2,9 @@
 
 ## Up Next
 
-### Bugs
-
-5. [ ] **`localStorage` without try/catch** — `getItem`/`setItem`/`JSON.parse` on `localStorage` throw `SecurityError` in Safari Private Browsing and crash the entire `onMounted` handler. Wrap all `localStorage` access in try/catch and degrade gracefully. (`src/views/MatchesView.vue:187,213`)
-
-6. [ ] **Check `/auth/session` response in sign-in flows** — `postSession(token)` never checks `res.ok`; if the server returns 401 the cookie is never set but the client still routes to `/matches`, leaving the user in a broken logged-in-looking-but-not state. (`src/views/LoginView.vue:38`, `src/views/SignupView.vue:35`, `src/App.vue:29`)
-
-8. [ ] **Handle `json.NewEncoder(w).Encode()` errors** — encoding failures send truncated JSON with a 200 status because headers are already written; at minimum log the error. (`handlers/leaderboard.go`, `handlers/matches.go`, `handlers/profile.go`, `handlers/me.go`, `handlers/backfill.go`)
-
-### Infrastructure / Medium
-
-10. [ ] **Add `.dockerignore`** — without it `COPY . .` pulls `.env` files, `node_modules/`, `.git/`, and test fixtures into the Docker build context; local `.env` credentials can end up in image layers.
-
-11. [ ] **Run container as non-root** — Dockerfile final stage has no `USER` directive; the Go server runs as root. Add `RUN useradd -r -u 1001 app && USER app`.
-
-12. [ ] **Validate `match_id` for emptiness in results and seed handlers** — a result or seed saved with an empty `match_id` persists in the store and never matches any prediction lookup, silently poisoning the store. (`handlers/results.go:18`, `handlers/seed.go:19`)
-
-13. [ ] **`inject()` without default** — `inject<Ref<...>>('currentUser')` returns `undefined` if called outside the provide tree; use `inject('currentUser', ref(null))` to make the default explicit. (`src/views/MatchesView.vue:115`, `src/views/ProfileView.vue:72`)
-
 ### Low
 
 14. [ ] **Prod smoke suite** — unauthenticated-only scenarios (app loads, leaderboard/matches API responds, Vue hydrates); replaces current `curl` liveness check in `deploy-prod`.
-
-15. [ ] **Add loading and error states to views** — Leaderboard, Profile, and Matches views render a blank page during fetch and on error; users see nothing with no feedback. Add a loading indicator and an error message on non-ok responses.
 
 16. [ ] **Cache leaderboard scoring** — currently recalculated on every request; fine now but will need in-memory caching or pre-computation at scale.
 
@@ -64,6 +44,16 @@
 
 ## Done
 
+- [x] **TwoOneBot** — `internal/bot` package; `bot:twooonebot` user that predicts Columbus 2-1 (home) or 1-2 (away) on every upcoming match at every refresh and daily tick. Shown on leaderboard and match detail pages as any other user.
+- [x] **Match detail page** — `/matches/:matchId` route; per-match predictions leaderboard with sort buttons for Aces Radio and Upper 90 Club; result cards link to detail; upcoming cards do not. `GET /api/matches/:matchId` handler.
+- [x] **`localStorage` without try/catch** — `readGuestPredictions`/`writeGuestPredictions` helpers wrap all localStorage access; Safari Private Browsing degrades gracefully.
+- [x] **Check `/auth/session` response in sign-in flows** — `postSession(token)` returns `Promise<boolean>`; all callers (`LoginView`, `SignupView`, `App.vue` Google redirect) check `res.ok` before navigating.
+- [x] **Handle `json.NewEncoder(w).Encode()` errors** — all six JSON response handlers (`leaderboard`, `matches`, `profile`, `me`, `backfill`, `match_detail`) log encode errors.
+- [x] **Add `.dockerignore`** — excludes `.env*`, `node_modules/`, `.git/`, test artifacts, `.claude`; prevents credential leakage in image layers.
+- [x] **Run container as non-root** — final Dockerfile stage creates `app` user (uid 1001) and runs the server as that user.
+- [x] **Validate `match_id` for emptiness in results and seed handlers** — `handlers/results.go` and `handlers/seed_match.go` reject empty `match_id`/`id` with 400.
+- [x] **`inject()` without default** — `inject('currentUser', ref(null))` explicit defaults in `MatchesView`, `ProfileView`.
+- [x] **Add loading and error states to views** — `LeaderboardView`, `MatchesView`, `ProfileView`, `MatchDetailView` all show a loading indicator during fetch and an error message on non-ok responses.
 - [x] **Guard admin endpoints in prod** — `AdminAuth` middleware (X-Admin-Key, `crypto/subtle` compare) wraps `/admin/results`, `/admin/poll-scores`, `/admin/refresh-matches`, `/admin/backfill-users`. Server refuses to start if `ADMIN_KEY` unset in prod. **Deploy note: set `ADMIN_KEY` in Cloud Run (staging + prod) before merging.**
 - [x] **Add `Secure` flag to session cookie** — `Secure: os.Getenv("FIREBASE_AUTH_EMULATOR_HOST") == ""` in `writeSessionCookie` and `Logout`; off in local dev, on in prod.
 - [x] **Handle `Save()` error in predictions handler** — returns 500 and logs on Firestore write failure.

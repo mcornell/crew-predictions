@@ -32,11 +32,12 @@ const email = ref('')
 const password = ref('')
 const error = ref('')
 
-async function postSession(token: string) {
-  await fetch('/auth/session', {
+async function postSession(token: string): Promise<boolean> {
+  const res = await fetch('/auth/session', {
     method: 'POST',
     body: new URLSearchParams({ idToken: token }),
   })
+  return res.ok
 }
 
 const signUpErrorMessages: Record<string, string> = {
@@ -48,7 +49,11 @@ async function handleSubmit() {
   error.value = ''
   try {
     const token = await signUp(email.value, password.value)
-    await postSession(token)
+    const ok = await postSession(token)
+    if (!ok) {
+      error.value = 'Could not create session. Please try again.'
+      return
+    }
     router.push('/matches')
   } catch (e: any) {
     error.value = signUpErrorMessages[e?.code] ?? 'Could not create account.'

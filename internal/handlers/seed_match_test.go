@@ -73,6 +73,20 @@ func TestSeedMatchHandler_SavesMatchWithScores(t *testing.T) {
 	}
 }
 
+func TestSeedMatchHandler_RejectsEmptyID(t *testing.T) {
+	h := handlers.NewSeedMatchHandler(repository.NewMemoryMatchStore())
+	req := httptest.NewRequest(http.MethodPost, "/admin/seed-match",
+		strings.NewReader("id=&home_team=Columbus+Crew&away_team=LA+Galaxy&kickoff=2026-05-01T19:30:00Z&status=STATUS_SCHEDULED"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+
+	h.Submit(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for empty id, got %d", w.Code)
+	}
+}
+
 func TestSeedMatchHandler_RejectsBadKickoff(t *testing.T) {
 	h := handlers.NewSeedMatchHandler(repository.NewMemoryMatchStore())
 	req := httptest.NewRequest(http.MethodPost, "/admin/seed-match",

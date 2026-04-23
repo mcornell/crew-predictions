@@ -60,6 +60,41 @@ func TestMemoryPredictionStore_ConcurrentSave(t *testing.T) {
 	wg.Wait()
 }
 
+func TestMemoryPredictionStore_GetByMatch_ReturnsOnlyMatchPredictions(t *testing.T) {
+	store := repository.NewMemoryPredictionStore()
+	ctx := context.Background()
+
+	store.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "google:u1", Handle: "fan1@bsky.mock", HomeGoals: 2, AwayGoals: 1})
+	store.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "google:u2", Handle: "fan2@bsky.mock", HomeGoals: 0, AwayGoals: 0})
+	store.Save(ctx, repository.Prediction{MatchID: "m2", UserID: "google:u3", Handle: "fan3@bsky.mock", HomeGoals: 1, AwayGoals: 1})
+
+	got, err := store.GetByMatch(ctx, "m1")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(got) != 2 {
+		t.Errorf("expected 2 predictions for m1, got %d", len(got))
+	}
+	for _, p := range got {
+		if p.MatchID != "m1" {
+			t.Errorf("expected all predictions to be for m1, got %q", p.MatchID)
+		}
+	}
+}
+
+func TestMemoryPredictionStore_GetByMatch_ReturnsEmptyForNoMatch(t *testing.T) {
+	store := repository.NewMemoryPredictionStore()
+	ctx := context.Background()
+
+	got, err := store.GetByMatch(ctx, "nonexistent")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("expected 0 predictions, got %d", len(got))
+	}
+}
+
 func TestMemoryPredictionStore_SaveAndRetrieve(t *testing.T) {
 	store := repository.NewMemoryPredictionStore()
 	ctx := context.Background()

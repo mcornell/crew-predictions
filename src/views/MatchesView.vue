@@ -1,5 +1,8 @@
 <template>
   <div class="page">
+    <p v-if="loading" data-testid="loading" class="status-msg">Loading…</p>
+    <p v-else-if="error" data-testid="error" class="status-msg status-msg--error">{{ error }}</p>
+    <template v-else>
     <section v-if="nowPlayingMatches.length > 0" data-testid="now-playing-section" class="now-playing-section">
       <h1 class="page-title">Now Playing</h1>
       <div class="match-list">
@@ -73,10 +76,11 @@
     <section v-if="completedMatches.length > 0" data-testid="results-section">
       <h2 class="page-title" style="margin-top:2.5rem">Results</h2>
       <div class="match-list">
-        <div
+        <RouterLink
           v-for="match in completedMatches"
           :key="match.id"
-          class="match-card match-card--result"
+          :to="`/matches/${match.id}`"
+          class="match-card match-card--result match-card--link"
           :data-match-id="match.id"
           data-testid="result-card"
         >
@@ -94,7 +98,7 @@
             </div>
           </div>
           <div class="btn-spacer"></div>
-        </div>
+        </RouterLink>
       </div>
     </section>
 
@@ -103,6 +107,7 @@
     <div v-if="showNudge && !currentUser" class="guest-nudge" data-testid="guest-nudge">
       <a href="/signup">Create an account</a> to get on the leaderboard.
     </div>
+    </template>
   </div>
 </template>
 
@@ -112,7 +117,7 @@ import { useRouter } from 'vue-router'
 import { formatCountdown } from '../utils/countdown'
 import type { Ref } from 'vue'
 
-const currentUser = inject<Ref<{ handle: string; emailVerified: boolean } | null>>('currentUser')
+const currentUser = inject<Ref<{ handle: string; emailVerified: boolean } | null>>('currentUser', ref(null))
 const router = useRouter()
 
 interface Match {
@@ -139,6 +144,8 @@ const inputs = reactive<Record<string, { home: string; away: string }>>({})
 const countdowns = reactive<Record<string, string>>({})
 const showNudge = ref(false)
 const nowMs = ref(Date.now())
+const loading = ref(true)
+const error = ref<string | null>(null)
 
 const nowPlayingMatches = computed(() =>
   matches.value.filter(m => m.state === 'in' || m.status === 'STATUS_DELAYED')
@@ -179,12 +186,28 @@ function formatKickoff(iso: string): string {
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
 }
 
+function readGuestPredictions(): Record<string, Prediction> {
+  try {
+    return JSON.parse(localStorage.getItem(GUEST_KEY) ?? '{}')
+  } catch {
+    return {}
+  }
+}
+
+function writeGuestPredictions(data: Record<string, Prediction>) {
+  try {
+    localStorage.setItem(GUEST_KEY, JSON.stringify(data))
+  } catch {
+    // Safari Private Browsing blocks localStorage writes; degrade silently
+  }
+}
+
 async function fetchMatches() {
   const res = await fetch('/api/matches')
   if (!res.ok) return
   const data = await res.json()
   matches.value = data.matches
-  const guestPredictions: Record<string, Prediction> = JSON.parse(localStorage.getItem(GUEST_KEY) ?? '{}')
+  const guestPredictions = readGuestPredictions()
   for (const m of data.matches) {
     if (!inputs[m.id]) inputs[m.id] = { home: '', away: '' }
     if (savedPredictions[m.id] === undefined) {
@@ -199,14 +222,17 @@ onMounted(async () => {
   if (res.ok) {
     const data = await res.json()
     matches.value = data.matches
-    const guestPredictions: Record<string, Prediction> = JSON.parse(localStorage.getItem(GUEST_KEY) ?? '{}')
+    const guestPredictions = readGuestPredictions()
     for (const m of data.matches) {
       inputs[m.id] = { home: '', away: '' }
       savedPredictions[m.id] = data.predictions[m.id] ?? guestPredictions[m.id] ?? null
     }
     updateCountdowns()
     countdownTimer = setInterval(updateCountdowns, 1000)
+  } else {
+    error.value = 'Could not load matches. Try again later.'
   }
+  loading.value = false
   pollTimer = setInterval(fetchMatches, 30_000)
 })
 
@@ -227,9 +253,9 @@ async function submit(matchId: string) {
   const { home, away } = inputs[matchId]
   if (!currentUser?.value) {
     const prediction = { homeGoals: Number(home), awayGoals: Number(away) }
-    const stored: Record<string, Prediction> = JSON.parse(localStorage.getItem(GUEST_KEY) ?? '{}')
+    const stored = readGuestPredictions()
     stored[matchId] = prediction
-    localStorage.setItem(GUEST_KEY, JSON.stringify(stored))
+    writeGuestPredictions(stored)
     savedPredictions[matchId] = prediction
     showNudge.value = true
     return

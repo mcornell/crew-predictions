@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mcornell/crew-predictions/internal/bot"
 	"github.com/mcornell/crew-predictions/internal/models"
 	"github.com/mcornell/crew-predictions/internal/poll"
 	"github.com/mcornell/crew-predictions/internal/repository"
@@ -55,8 +56,9 @@ func TestStartDailyRefresh_PopulatesStoreImmediately(t *testing.T) {
 	}
 	poller := poll.NewMatchPoller(store, repository.NewMemoryResultStore(), fetcher,
 		func(time.Duration, func()) {})
+	noopBot := bot.New(repository.NewMemoryPredictionStore(), repository.NewMemoryUserStore(), "Columbus Crew")
 
-	stop := startDailyRefresh(store, fetcher, poller, etLoc)
+	stop := startDailyRefresh(store, fetcher, poller, noopBot, etLoc)
 	defer close(stop)
 
 	select {
@@ -82,8 +84,9 @@ func TestStartDailyRefresh_BackfillsCompletedMatchResults(t *testing.T) {
 	}
 	fetcher := func() ([]models.Match, error) { return []models.Match{completedMatch}, nil }
 	poller := poll.NewMatchPoller(matchStore, resultStore, fetcher, func(time.Duration, func()) {})
+	noopBot := bot.New(repository.NewMemoryPredictionStore(), repository.NewMemoryUserStore(), "Columbus Crew")
 
-	stop := startDailyRefresh(matchStore, fetcher, poller, etLoc)
+	stop := startDailyRefresh(matchStore, fetcher, poller, noopBot, etLoc)
 	defer close(stop)
 
 	// startDailyRefresh calls refresh() immediately on startup; give it a moment
@@ -98,6 +101,37 @@ func TestStartDailyRefresh_BackfillsCompletedMatchResults(t *testing.T) {
 	}
 	if result.HomeGoals != 2 || result.AwayGoals != 1 {
 		t.Errorf("expected 2-1, got %d-%d", result.HomeGoals, result.AwayGoals)
+	}
+}
+
+func TestStartDailyRefresh_BotPredictsUpcomingMatches(t *testing.T) {
+	etLoc, _ := time.LoadLocation("America/New_York")
+	matchStore := repository.NewMemoryMatchStore()
+	resultStore := repository.NewMemoryResultStore()
+	predStore := repository.NewMemoryPredictionStore()
+	userStore := repository.NewMemoryUserStore()
+	upcomingMatch := models.Match{
+		ID: "m-upcoming", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",
+		Status: "STATUS_SCHEDULED", Kickoff: time.Now().Add(24 * time.Hour),
+	}
+	fetcher := func() ([]models.Match, error) { return []models.Match{upcomingMatch}, nil }
+	poller := poll.NewMatchPoller(matchStore, resultStore, fetcher, func(time.Duration, func()) {})
+	twoOneBot := bot.New(predStore, userStore, "Columbus Crew")
+
+	stop := startDailyRefresh(matchStore, fetcher, poller, twoOneBot, etLoc)
+	defer close(stop)
+
+	time.Sleep(50 * time.Millisecond)
+
+	p, err := predStore.GetByMatchAndUser(context.Background(), "m-upcoming", bot.UserID)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if p == nil {
+		t.Fatal("expected bot prediction for upcoming match, got nil")
+	}
+	if p.HomeGoals != 2 || p.AwayGoals != 1 {
+		t.Errorf("expected 2-1, got %d-%d", p.HomeGoals, p.AwayGoals)
 	}
 }
 

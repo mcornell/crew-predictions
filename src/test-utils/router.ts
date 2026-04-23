@@ -8,6 +8,7 @@ export function makeRouter() {
     routes: [
       { path: '/', component: stub },
       { path: '/matches', component: stub },
+      { path: '/matches/:matchId', component: stub },
       { path: '/login', component: stub },
       { path: '/signup', component: stub },
       { path: '/reset', component: stub },

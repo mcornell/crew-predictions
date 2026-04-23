@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/mcornell/crew-predictions/internal/repository"
@@ -42,5 +43,7 @@ func (h *BackfillUsersHandler) Backfill(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]int{"backfilled": len(seen)})
+	if err := json.NewEncoder(w).Encode(map[string]int{"backfilled": len(seen)}); err != nil {
+		log.Printf("backfill: encode response: %v", err)
+	}
 }

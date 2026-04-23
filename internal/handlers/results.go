@@ -18,6 +18,10 @@ func NewResultsHandler(store repository.ResultStore) *ResultsHandler {
 func (h *ResultsHandler) Submit(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	matchID := r.FormValue("match_id")
+	if matchID == "" {
+		http.Error(w, "match_id is required", http.StatusBadRequest)
+		return
+	}
 	home, err := strconv.Atoi(r.FormValue("home_goals"))
 	if err != nil {
 		http.Error(w, "home_goals must be an integer", http.StatusBadRequest)

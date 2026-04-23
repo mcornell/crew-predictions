@@ -75,6 +75,23 @@ describe('LoginView', () => {
     expect(link.text()).toBe('Forgot password?')
   })
 
+  it('shows error and does not navigate when session endpoint returns non-ok', async () => {
+    const { signIn } = await import('../../firebase')
+    vi.mocked(signIn).mockResolvedValue('fake-token')
+    global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 401 })
+
+    await router.push('/login')
+    const wrapper = mount(LoginView, { global: { plugins: [router] } })
+
+    await wrapper.find('input[type="email"]').setValue('test@crew.mock')
+    await wrapper.find('input[type="password"]').setValue('pass123')
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+
+    expect(router.currentRoute.value.path).toBe('/login')
+    expect(wrapper.find('.form-error').exists()).toBe(true)
+  })
+
   it('calls signInWithGoogle on button click', async () => {
     const { signInWithGoogle } = await import('../../firebase')
     vi.mocked(signInWithGoogle).mockResolvedValue(undefined)
