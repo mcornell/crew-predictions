@@ -28,6 +28,7 @@ type matchDetailPrediction struct {
 	AwayGoals         int    `json:"awayGoals"`
 	AcesRadioPoints   int    `json:"acesRadioPoints"`
 	Upper90ClubPoints int    `json:"upper90ClubPoints"`
+	GrouchyPoints     int    `json:"grouchyPoints"`
 }
 
 type matchDetailMatch struct {
@@ -99,6 +100,7 @@ func (h *MatchDetailHandler) Get(w http.ResponseWriter, r *http.Request) {
 			targetIsHome := result.HomeTeam == h.targetTeam
 			entry.AcesRadioPoints = scoring.AcesRadio(res, pred)
 			entry.Upper90ClubPoints = scoring.Upper90Club(res, pred, targetIsHome)
+			entry.GrouchyPoints = scoring.Grouchy(res, pred, targetIsHome)
 		}
 		entries = append(entries, entry)
 	}
@@ -109,6 +111,7 @@ func (h *MatchDetailHandler) Get(w http.ResponseWriter, r *http.Request) {
 		"scoringFormats": []map[string]string{
 			{"key": "acesRadio", "label": "Aces Radio"},
 			{"key": "upper90Club", "label": "Upper 90 Club"},
+			{"key": "grouchy", "label": "Grouchy\u2122"},
 		},
 		"predictions": entries,
 	}); err != nil {
