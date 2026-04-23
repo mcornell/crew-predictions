@@ -536,6 +536,118 @@ body::after {
   text-align: right;
 }
 
+/* ── Shared sortable table (leaderboard + match detail) ──────────────────── */
+.lb-table {
+  display: grid;
+  width: 100%;
+  border: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.lb-header {
+  display: contents;
+}
+
+.lb-header .lb-cell {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--dark);
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.lb-sort-btn {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--dark);
+  border: none;
+  border-bottom: 1px solid var(--border);
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  text-align: right;
+  transition: color 0.12s;
+  white-space: nowrap;
+}
+.lb-sort-btn:hover { color: var(--text); }
+.lb-sort-btn--active { color: var(--gold); }
+
+.lb-row {
+  display: contents;
+}
+
+.lb-row .lb-cell {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.85rem;
+  color: var(--text);
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+  transition: background 0.1s;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lb-row:hover .lb-cell {
+  background: #1f1f1f;
+}
+
+.lb-cell.lb-rank {
+  color: var(--muted);
+  font-size: 0.7rem;
+  text-align: right;
+  width: 2rem;
+  min-width: 2rem;
+}
+
+.lb-cell.lb-handle {
+  flex: 1;
+  min-width: 0;
+}
+
+.lb-cell.lb-pts {
+  text-align: right;
+  color: var(--muted);
+  font-size: 0.9rem;
+  min-width: 5.5rem;
+}
+
+.lb-cell.lb-pts.lb-pts--active {
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.lb-cell.lb-pick {
+  color: var(--muted);
+  min-width: 4rem;
+  text-align: center;
+}
+
+/* 4 columns: leaderboard (rank, handle, aces, upper90) */
+.lb-table.lb-4col {
+  grid-template-columns: 2rem 1fr 5.5rem 5.5rem;
+}
+
+/* 5 columns: match detail (rank, handle, pick, aces, upper90) */
+.lb-table.lb-5col {
+  grid-template-columns: 2rem 1fr 4rem 5.5rem 5.5rem;
+}
+
+.lb-handle-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.lb-handle-link:hover { color: var(--gold); }
+
 /* ── Profile ─────────────────────────────────────────────────────────────── */
 .profile-page {
   max-width: 680px;

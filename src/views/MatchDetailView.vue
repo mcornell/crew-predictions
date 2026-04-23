@@ -16,29 +16,44 @@
       <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
     </div>
 
-    <div class="sort-controls" v-if="scoringFormats.length > 0">
-      <button
-        v-for="fmt in scoringFormats"
-        :key="fmt.key"
-        class="sort-btn"
-        :class="{ 'sort-btn--active': activeFormat === fmt.key }"
-        @click="activeFormat = fmt.key"
-      >
-        {{ fmt.label }}
-      </button>
-    </div>
+    <div v-if="sortedPredictions.length > 0" class="lb-table lb-5col">
+      <div class="lb-header">
+        <span class="lb-cell lb-rank">#</span>
+        <span class="lb-cell lb-handle">PREDICTOR</span>
+        <span class="lb-cell lb-pick">PICK</span>
+        <button
+          class="lb-cell lb-pts lb-sort-btn"
+          :class="{ 'lb-sort-btn--active': activeFormat === 'acesRadio' }"
+          data-testid="sort-aces"
+          @click="activeFormat = 'acesRadio'"
+        >Aces Radio</button>
+        <button
+          class="lb-cell lb-pts lb-sort-btn"
+          :class="{ 'lb-sort-btn--active': activeFormat === 'upper90Club' }"
+          data-testid="sort-upper90"
+          @click="activeFormat = 'upper90Club'"
+        >Upper 90 Club</button>
+      </div>
 
-    <div v-if="sortedPredictions.length > 0" class="predictions-table">
       <div
         v-for="(entry, i) in sortedPredictions"
         :key="entry.userID"
-        class="prediction-row"
+        class="lb-row"
         data-testid="prediction-row"
       >
-        <span class="prediction-rank">{{ rankFor(i, sortedPredictions) }}</span>
-        <span class="prediction-handle">{{ entry.handle }}</span>
-        <span class="prediction-score">{{ entry.homeGoals }} – {{ entry.awayGoals }}</span>
-        <span class="prediction-points">{{ pointsFor(entry) }}</span>
+        <span class="lb-cell lb-rank" data-testid="prediction-rank">{{ rankFor(i) }}</span>
+        <span class="lb-cell lb-handle">{{ entry.handle }}</span>
+        <span class="lb-cell lb-pick" data-testid="prediction-score">{{ entry.homeGoals }} – {{ entry.awayGoals }}</span>
+        <span
+          class="lb-cell lb-pts"
+          :class="{ 'lb-pts--active': activeFormat === 'acesRadio' }"
+          data-testid="prediction-aces-points"
+        >{{ entry.acesRadioPoints }}</span>
+        <span
+          class="lb-cell lb-pts"
+          :class="{ 'lb-pts--active': activeFormat === 'upper90Club' }"
+          data-testid="prediction-upper90-points"
+        >{{ entry.upper90ClubPoints }}</span>
       </div>
     </div>
     <p v-else-if="loaded" class="empty">No predictions were made for this match</p>
@@ -58,11 +73,6 @@ interface MatchInfo {
   awayScore: string
 }
 
-interface ScoringFormat {
-  key: string
-  label: string
-}
-
 interface PredictionEntry {
   userID: string
   handle: string
@@ -75,8 +85,7 @@ interface PredictionEntry {
 const route = useRoute()
 const match = ref<MatchInfo | null>(null)
 const predictions = ref<PredictionEntry[]>([])
-const scoringFormats = ref<ScoringFormat[]>([])
-const activeFormat = ref('acesRadio')
+const activeFormat = ref<'acesRadio' | 'upper90Club'>('acesRadio')
 const loaded = ref(false)
 const loading = ref(true)
 const error = ref<string | null>(null)
@@ -86,14 +95,10 @@ const sortedPredictions = computed(() => {
   return [...predictions.value].sort((a, b) => b[key] - a[key])
 })
 
-function pointsFor(entry: PredictionEntry): number {
-  return activeFormat.value === 'acesRadio' ? entry.acesRadioPoints : entry.upper90ClubPoints
-}
-
-function rankFor(i: number, sorted: PredictionEntry[]): number {
+function rankFor(i: number): number {
   if (i === 0) return 1
   const key = activeFormat.value === 'acesRadio' ? 'acesRadioPoints' : 'upper90ClubPoints'
-  if (sorted[i][key] === sorted[i - 1][key]) return rankFor(i - 1, sorted)
+  if (sortedPredictions.value[i][key] === sortedPredictions.value[i - 1][key]) return rankFor(i - 1)
   return i + 1
 }
 
@@ -110,7 +115,6 @@ onMounted(async () => {
     const data = await res.json()
     match.value = data.match
     predictions.value = data.predictions ?? []
-    scoringFormats.value = data.scoringFormats ?? []
     if (data.scoringFormats?.length > 0) {
       activeFormat.value = data.scoringFormats[0].key
     }

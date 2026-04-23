@@ -13,7 +13,7 @@ const mockMatch = {
 }
 
 const mockPredictions = [
-  { userID: 'google:u1', handle: 'fan1@bsky.mock', homeGoals: 2, awayGoals: 1, acesRadioPoints: 15, upper90ClubPoints: 10 },
+  { userID: 'google:u1', handle: 'fan1@bsky.mock', homeGoals: 2, awayGoals: 1, acesRadioPoints: 15, upper90ClubPoints: 3 },
   { userID: 'google:u2', handle: 'fan2@bsky.mock', homeGoals: 0, awayGoals: 0, acesRadioPoints: 0, upper90ClubPoints: 0 },
 ]
 
@@ -50,9 +50,7 @@ describe('MatchDetailView', () => {
   it('shows match header with team names and score', async () => {
     const router = makeRouter()
     await router.isReady()
-    const wrapper = mount(MatchDetailView, {
-      global: { plugins: [router] },
-    })
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
     await flushPromises()
     expect(wrapper.text()).toContain('Columbus Crew')
     expect(wrapper.text()).toContain('FC Dallas')
@@ -62,34 +60,80 @@ describe('MatchDetailView', () => {
   it('renders a row for each predictor', async () => {
     const router = makeRouter()
     await router.isReady()
-    const wrapper = mount(MatchDetailView, {
-      global: { plugins: [router] },
-    })
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
     await flushPromises()
     const rows = wrapper.findAll('[data-testid="prediction-row"]')
-    expect(rows.length).toBe(2)
+    expect(rows).toHaveLength(2)
   })
 
-  it('shows sort buttons for each scoring format', async () => {
+  it('shows column headers for both scoring formats', async () => {
     const router = makeRouter()
     await router.isReady()
-    const wrapper = mount(MatchDetailView, {
-      global: { plugins: [router] },
-    })
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
     await flushPromises()
-    expect(wrapper.text()).toContain('Aces Radio')
-    expect(wrapper.text()).toContain('Upper 90 Club')
+    expect(wrapper.find('[data-testid="sort-aces"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="sort-upper90"]').exists()).toBe(true)
+  })
+
+  it('shows both Aces Radio and Upper 90 Club points in each row', async () => {
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    const rows = wrapper.findAll('[data-testid="prediction-row"]')
+    expect(rows[0].find('[data-testid="prediction-aces-points"]').text()).toBe('15')
+    expect(rows[0].find('[data-testid="prediction-upper90-points"]').text()).toBe('3')
+  })
+
+  it('shows the predicted score in each row', async () => {
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    const rows = wrapper.findAll('[data-testid="prediction-row"]')
+    expect(rows[0].find('[data-testid="prediction-score"]').text()).toContain('2')
   })
 
   it('sorts by Aces Radio descending by default — highest points first', async () => {
     const router = makeRouter()
     await router.isReady()
-    const wrapper = mount(MatchDetailView, {
-      global: { plugins: [router] },
-    })
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
     await flushPromises()
     const rows = wrapper.findAll('[data-testid="prediction-row"]')
     expect(rows[0].text()).toContain('fan1@bsky.mock')
+  })
+
+  it('sorts by Upper 90 Club when that column header is clicked', async () => {
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    await wrapper.find('[data-testid="sort-upper90"]').trigger('click')
+    const rows = wrapper.findAll('[data-testid="prediction-row"]')
+    expect(rows[0].find('[data-testid="prediction-upper90-points"]').text()).toBe('3')
+  })
+
+  it('rank is dynamic — ties share rank', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: mockMatch,
+        predictions: [
+          { userID: 'u1', handle: 'Fan1', homeGoals: 2, awayGoals: 1, acesRadioPoints: 10, upper90ClubPoints: 2 },
+          { userID: 'u2', handle: 'Fan2', homeGoals: 2, awayGoals: 0, acesRadioPoints: 10, upper90ClubPoints: 1 },
+          { userID: 'u3', handle: 'Fan3', homeGoals: 1, awayGoals: 0, acesRadioPoints: 0, upper90ClubPoints: 0 },
+        ],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    const rows = wrapper.findAll('[data-testid="prediction-row"]')
+    expect(rows[0].find('[data-testid="prediction-rank"]').text()).toBe('1')
+    expect(rows[1].find('[data-testid="prediction-rank"]').text()).toBe('1')
+    expect(rows[2].find('[data-testid="prediction-rank"]').text()).toBe('3')
   })
 
   it('shows empty state when no predictions were made', async () => {
@@ -99,9 +143,7 @@ describe('MatchDetailView', () => {
     }))
     const router = makeRouter()
     await router.isReady()
-    const wrapper = mount(MatchDetailView, {
-      global: { plugins: [router] },
-    })
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
     await flushPromises()
     expect(wrapper.text()).toContain('No predictions were made for this match')
   })
@@ -126,9 +168,7 @@ describe('MatchDetailView', () => {
   it('shows a back link to /matches', async () => {
     const router = makeRouter()
     await router.isReady()
-    const wrapper = mount(MatchDetailView, {
-      global: { plugins: [router] },
-    })
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
     await flushPromises()
     const backLink = wrapper.find('[data-testid="back-link"]')
     expect(backLink.exists()).toBe(true)
