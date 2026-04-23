@@ -42,6 +42,18 @@ func (s *FirestorePredictionStore) GetAll(ctx context.Context) ([]Prediction, er
 	return toPredictions(docs)
 }
 
+func (s *FirestorePredictionStore) GetByMatch(ctx context.Context, matchID string) ([]Prediction, error) {
+	snapshots, err := s.client.Collection("predictions").Where("MatchID", "==", matchID).Documents(ctx).GetAll()
+	if err != nil {
+		return nil, err
+	}
+	docs := make([]dataMapper, len(snapshots))
+	for i, d := range snapshots {
+		docs[i] = d
+	}
+	return toPredictions(docs)
+}
+
 func (s *FirestorePredictionStore) GetByMatchAndUser(ctx context.Context, matchID, userID string) (*Prediction, error) {
 	snap, err := s.client.Collection("predictions").Doc(matchID + "|" + userID).Get(ctx)
 	if err != nil {

@@ -16,6 +16,7 @@ type Prediction struct {
 type PredictionStore interface {
 	Save(ctx context.Context, p Prediction) error
 	GetByMatchAndUser(ctx context.Context, matchID, userID string) (*Prediction, error)
+	GetByMatch(ctx context.Context, matchID string) ([]Prediction, error)
 	GetAll(ctx context.Context) ([]Prediction, error)
 }
 
@@ -49,6 +50,18 @@ func (s *MemoryPredictionStore) Reset() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.data = make(map[string]Prediction)
+}
+
+func (s *MemoryPredictionStore) GetByMatch(ctx context.Context, matchID string) ([]Prediction, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var result []Prediction
+	for _, p := range s.data {
+		if p.MatchID == matchID {
+			result = append(result, p)
+		}
+	}
+	return result, nil
 }
 
 func (s *MemoryPredictionStore) GetAll(ctx context.Context) ([]Prediction, error) {

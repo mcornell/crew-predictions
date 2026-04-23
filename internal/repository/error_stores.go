@@ -18,6 +18,10 @@ func (e *ErrorPredictionStore) GetByMatchAndUser(_ context.Context, _, _ string)
 	return nil, nil
 }
 
+func (e *ErrorPredictionStore) GetByMatch(_ context.Context, _ string) ([]Prediction, error) {
+	return nil, nil
+}
+
 func (e *ErrorPredictionStore) GetAll(_ context.Context) ([]Prediction, error) {
 	return nil, nil
 }
