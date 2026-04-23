@@ -13,6 +13,28 @@ import (
 	"github.com/mcornell/crew-predictions/internal/repository"
 )
 
+func TestWriteSessionCookie_SecureFlagSetOutsideEmulator(t *testing.T) {
+	t.Setenv("FIREBASE_AUTH_EMULATOR_HOST", "")
+	w := httptest.NewRecorder()
+	writeSessionCookie(w, sessionPayload{UserID: "u1", Handle: "fan"})
+	for _, c := range w.Result().Cookies() {
+		if c.Name == "__session" && !c.Secure {
+			t.Error("expected Secure=true when FIREBASE_AUTH_EMULATOR_HOST is unset")
+		}
+	}
+}
+
+func TestWriteSessionCookie_SecureFlagOffInEmulator(t *testing.T) {
+	t.Setenv("FIREBASE_AUTH_EMULATOR_HOST", "localhost:9099")
+	w := httptest.NewRecorder()
+	writeSessionCookie(w, sessionPayload{UserID: "u1", Handle: "fan"})
+	for _, c := range w.Result().Cookies() {
+		if c.Name == "__session" && c.Secure {
+			t.Error("expected Secure=false when FIREBASE_AUTH_EMULATOR_HOST is set (local dev)")
+		}
+	}
+}
+
 func sessionCookie(userID, handle string) *http.Cookie {
 	data, _ := json.Marshal(sessionPayload{UserID: userID, Handle: handle, EmailVerified: true})
 	return &http.Cookie{Name: "__session", Value: base64.StdEncoding.EncodeToString(data)}

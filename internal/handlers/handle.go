@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"net/http"
+	"os"
 
 	"github.com/mcornell/crew-predictions/internal/repository"
 )
@@ -57,6 +58,7 @@ func writeSessionCookie(w http.ResponseWriter, payload sessionPayload) {
 		Path:     "/",
 		MaxAge:   86400 * 7,
 		HttpOnly: true,
+		Secure:   os.Getenv("FIREBASE_AUTH_EMULATOR_HOST") == "",
 		SameSite: http.SameSiteLaxMode,
 	})
 }
