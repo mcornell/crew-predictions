@@ -28,6 +28,7 @@ type leaderboardBody struct {
 		Handle          string `json:"handle"`
 		AcesRadioPoints int    `json:"acesRadioPoints"`
 		Upper90Points   int    `json:"upper90ClubPoints"`
+		GrouchyPoints   int    `json:"grouchyPoints"`
 		HasProfile      bool   `json:"hasProfile"`
 	} `json:"entries"`
 }
@@ -199,6 +200,26 @@ func TestLeaderboardAPIHandler_HasProfileTrueWhenUserInStore(t *testing.T) {
 	}
 	if byHandle["legacyfan"] {
 		t.Errorf("expected hasProfile=false for legacy handle-only user, got %+v", body.Entries)
+	}
+}
+
+func TestLeaderboardAPIHandler_IncludesGrouchyPoints(t *testing.T) {
+	predictions := repository.NewMemoryPredictionStore()
+	results := repository.NewMemoryResultStore()
+	ctx := context.Background()
+
+	// Columbus home, predicted 3-0 (Win by 2+), actual 2-0 (Win by 2+) → 1 Grouchy pt
+	predictions.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "u1", Handle: "GrouchyFan", HomeGoals: 3, AwayGoals: 0})
+	results.SaveResult(ctx, repository.Result{MatchID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", HomeGoals: 2, AwayGoals: 0})
+
+	lh := newLeaderboard(predictions, results)
+	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
+	w := httptest.NewRecorder()
+	lh.APIList(w, req)
+
+	body := decodeLeaderboard(t, w)
+	if len(body.Entries) == 0 || body.Entries[0].GrouchyPoints != 1 {
+		t.Errorf("expected grouchyPoints=1, got %+v", body.Entries)
 	}
 }
 

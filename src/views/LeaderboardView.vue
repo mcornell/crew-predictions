@@ -22,9 +22,15 @@
             data-testid="mobile-sort-upper90"
             @click="activeSort = 'upper90'"
           >Upper 90 Club</button>
+          <button
+            class="lb-sort-btn"
+            :class="{ 'lb-sort-btn--active': activeSort === 'grouchy' }"
+            data-testid="mobile-sort-grouchy"
+            @click="activeSort = 'grouchy'"
+          >Grouchy™</button>
         </div>
 
-        <div class="lb-table lb-4col">
+        <div class="lb-table lb-5col">
         <div class="lb-header">
           <span class="lb-cell lb-rank">RANK</span>
           <span class="lb-cell lb-handle">PREDICTOR</span>
@@ -40,6 +46,12 @@
             data-testid="sort-upper90"
             @click="activeSort = 'upper90'"
           >UPPER 90 CLUB</button>
+          <button
+            class="lb-cell lb-pts lb-sort-btn"
+            :class="{ 'lb-sort-btn--active': activeSort === 'grouchy' }"
+            data-testid="sort-grouchy"
+            @click="activeSort = 'grouchy'"
+          >GROUCHY™</button>
         </div>
 
         <div
@@ -70,6 +82,12 @@
             data-testid="leaderboard-upper90-points"
             data-label="Upper 90 Club"
           >{{ entry.upper90ClubPoints }}</span>
+          <span
+            class="lb-cell lb-pts"
+            :class="{ 'lb-pts--active': activeSort === 'grouchy' }"
+            data-testid="leaderboard-grouchy-points"
+            data-label="Grouchy™"
+          >{{ entry.grouchyPoints }}</span>
         </div>
         </div>
       </template>
@@ -85,22 +103,23 @@ interface Entry {
   handle: string
   acesRadioPoints: number
   upper90ClubPoints: number
+  grouchyPoints: number
   hasProfile: boolean
 }
 
 const entries = ref<Entry[]>([])
-const activeSort = ref<'aces' | 'upper90'>('aces')
+const activeSort = ref<'aces' | 'upper90' | 'grouchy'>('aces')
 const loading = ref(true)
 const error = ref<string | null>(null)
 
 const sortedEntries = computed(() => {
-  const key = activeSort.value === 'aces' ? 'acesRadioPoints' : 'upper90ClubPoints'
+  const key = activeSort.value === 'aces' ? 'acesRadioPoints' : activeSort.value === 'upper90' ? 'upper90ClubPoints' : 'grouchyPoints'
   return [...entries.value].sort((a, b) => b[key] - a[key])
 })
 
 function rankFor(i: number): number {
   if (i === 0) return 1
-  const key = activeSort.value === 'aces' ? 'acesRadioPoints' : 'upper90ClubPoints'
+  const key = activeSort.value === 'aces' ? 'acesRadioPoints' : activeSort.value === 'upper90' ? 'upper90ClubPoints' : 'grouchyPoints'
   if (sortedEntries.value[i][key] === sortedEntries.value[i - 1][key]) return rankFor(i - 1)
   return i + 1
 }

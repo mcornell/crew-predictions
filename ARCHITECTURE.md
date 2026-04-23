@@ -43,7 +43,7 @@ Entry point: `cmd/server/main.go`
 |---|---|
 | `internal/handlers` | HTTP handlers — matches, predictions, leaderboard, profile, auth, session, handle update, match detail |
 | `internal/repository` | Data access — Firestore and in-memory stores; `WriteThroughMatchStore` |
-| `internal/scoring` | Scoring engines — AcesRadio and Upper90Club |
+| `internal/scoring` | Scoring engines — AcesRadio, Upper90Club, and Grouchy |
 | `internal/espn` | ESPN API client — fetches upcoming Crew matches |
 | `internal/poll` | Score polling — `MatchPoller` schedules per-match kickoff timers; `PollOnce` for manual/test triggers |
 | `internal/bot` | TwoOneBot — predicts Columbus 2-1 (home) / 1-2 (away) on every upcoming match at each refresh and daily tick |
@@ -58,7 +58,7 @@ Entry point: `cmd/server/main.go`
 | `GET` | `/api/matches` | optional | Upcoming matches + caller's predictions |
 | `GET` | `/api/matches/:matchId` | none | Match detail: match info + all predictions with per-format scores + `scoringFormats` array |
 | `POST` | `/api/predictions` | required | Submit a score prediction (form data) |
-| `GET` | `/api/leaderboard` | none | `{entries: [{userID, handle, acesRadioPoints, upper90ClubPoints, hasProfile}]}` sorted by Aces Radio desc; all users with ≥1 prediction appear (0 pts until results land); `hasProfile: bool` false for legacy handle-only users |
+| `GET` | `/api/leaderboard` | none | `{entries: [{userID, handle, acesRadioPoints, upper90ClubPoints, grouchyPoints, hasProfile}]}` sorted by Aces Radio desc; all users with ≥1 prediction appear (0 pts until results land); `hasProfile: bool` false for legacy handle-only users |
 | `GET` | `/api/me` | optional | Current session user `{userID, handle}` or 401; lazily upserts user to `UserStore` |
 | `GET` | `/api/profile/:userID` | required | Public profile: handle, location, predictionCount, Aces Radio + Upper 90 Club standing |
 | `POST` | `/auth/handle` | required | Update display name + location; upserts to `UserStore`, rewrites session cookie |
@@ -117,9 +117,9 @@ Entry: `src/main.ts` → loads `/auth/config.js` → mounts Vue app
 | `src/views/LoginView.vue` | `/login` | Email/password sign-in + Google SSO |
 | `src/views/SignupView.vue` | `/signup` | New account creation (email/password + Google SSO) |
 | `src/views/ResetView.vue` | `/reset` | Password reset request |
-| `src/views/LeaderboardView.vue` | `/leaderboard` | Unified sortable table (RANK · PREDICTOR · ACES RADIO · UPPER 90 CLUB); click column headers to sort; handles link to `/profile/:userID`; mobile: stacked cards, sort buttons above, active format score shown only |
+| `src/views/LeaderboardView.vue` | `/leaderboard` | Unified sortable table (RANK · PREDICTOR · ACES RADIO · UPPER 90 CLUB · GROUCHY™); click column headers to sort; handles link to `/profile/:userID`; mobile: stacked cards, sort buttons above, active format score shown only |
 | `src/views/ProfileView.vue` | `/profile/:userID` | Public profile (stats + location); edit form shown only on own profile |
-| `src/views/MatchDetailView.vue` | `/matches/:matchId` | Unified sortable table (RANK · PREDICTOR · PICK · Aces Radio · Upper 90 Club); click column headers to sort; result cards link here, upcoming cards do not; mobile: stacked cards with active format score |
+| `src/views/MatchDetailView.vue` | `/matches/:matchId` | Unified sortable table (RANK · PREDICTOR+PICK · ACES RADIO · UPPER 90 CLUB · GROUCHY™); click column headers to sort; prediction shown below handle; result cards link here, upcoming cards do not; mobile: stacked cards with active format score |
 | `src/views/RulesView.vue` | `/rules` | Scoring format explainer |
 | `src/views/NotFoundView.vue` | `*` | 404 catch-all |
 | `src/components/AppHeader.vue` | (all) | Nav header; desktop nav + hamburger drawer at ≤480px |

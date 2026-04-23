@@ -25,6 +25,17 @@ Predictions lock at published kickoff time. No excuses.
 | Correct Columbus Crew goal count | +1 |
 | Correct opponent goal count | +1 |
 
+**Grouchy™** — one point for landing in the right outcome bucket:
+| Columbus margin | Category |
+|---|---|
+| +2 or more | Win by 2+ |
+| +1 | Win by 1 |
+| 0 | Draw |
+| −1 | Lose by 1 |
+| −2 or worse | Lose by 2+ |
+
+Predict the correct bucket: +1. Wrong bucket: 0. Exact score doesn't matter.
+
 ---
 
 ## Running Locally

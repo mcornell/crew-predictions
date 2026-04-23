@@ -26,6 +26,7 @@ type leaderboardEntry struct {
 	Handle          string `json:"handle"`
 	AcesRadioPoints int    `json:"acesRadioPoints"`
 	Upper90Points   int    `json:"upper90ClubPoints"`
+	GrouchyPoints   int    `json:"grouchyPoints"`
 	HasProfile      bool   `json:"hasProfile"`
 }
 
@@ -49,6 +50,7 @@ func (h *LeaderboardHandler) APIList(w http.ResponseWriter, r *http.Request) {
 	// Seed totals from all predictions so users with ≥1 prediction appear at 0 pts before results land.
 	acesTotals := map[string]int{}
 	u90Totals := map[string]int{}
+	grouchyTotals := map[string]int{}
 	keyHandle := map[string]string{} // key → display handle
 
 	for _, p := range allPredictions {
@@ -66,6 +68,7 @@ func (h *LeaderboardHandler) APIList(w http.ResponseWriter, r *http.Request) {
 		if _, seen := acesTotals[key]; !seen {
 			acesTotals[key] = 0
 			u90Totals[key] = 0
+			grouchyTotals[key] = 0
 		}
 		result, err := h.results.GetResult(ctx, p.MatchID)
 		if err != nil || result == nil {
@@ -76,9 +79,10 @@ func (h *LeaderboardHandler) APIList(w http.ResponseWriter, r *http.Request) {
 		targetIsHome := result.HomeTeam == h.targetTeam
 		acesTotals[key] += scoring.AcesRadio(res, pred)
 		u90Totals[key] += scoring.Upper90Club(res, pred, targetIsHome)
+		grouchyTotals[key] += scoring.Grouchy(res, pred, targetIsHome)
 	}
 
-	keys := allKeys(acesTotals, u90Totals)
+	keys := allKeys(acesTotals, u90Totals, grouchyTotals)
 	entries := make([]leaderboardEntry, 0, len(keys))
 	for _, k := range keys {
 		entries = append(entries, leaderboardEntry{
@@ -86,6 +90,7 @@ func (h *LeaderboardHandler) APIList(w http.ResponseWriter, r *http.Request) {
 			Handle:          keyHandle[k],
 			AcesRadioPoints: acesTotals[k],
 			Upper90Points:   u90Totals[k],
+			GrouchyPoints:   grouchyTotals[k],
 			HasProfile:      knownUsers[k],
 		})
 	}

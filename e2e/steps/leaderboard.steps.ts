@@ -34,3 +34,8 @@ Then('I should see {string} with {int} Upper 90 Club points', async ({ page }, h
   const row = page.locator('[data-testid="leaderboard-row"]').filter({ hasText: handle }).first();
   await expect(row.locator('[data-testid="leaderboard-upper90-points"]')).toHaveText(String(points));
 });
+
+Then('I should see {string} with {int} Grouchy points', async ({ page }, handle: string, points: number) => {
+  const row = page.locator('[data-testid="leaderboard-row"]').filter({ hasText: handle }).first();
+  await expect(row.locator('[data-testid="leaderboard-grouchy-points"]')).toHaveText(String(points));
+});

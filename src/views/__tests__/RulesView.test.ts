@@ -34,4 +34,24 @@ describe('RulesView', () => {
     const wrapper = mount(RulesView, { global: { plugins: [makeRouter()] } })
     expect(wrapper.text()).toContain('+10')
   })
+
+  it('renders a Grouchy section', () => {
+    const wrapper = mount(RulesView, { global: { plugins: [makeRouter()] } })
+    expect(wrapper.text()).toContain('Grouchy')
+  })
+
+  it('shows the 5 outcome categories for Grouchy', () => {
+    const wrapper = mount(RulesView, { global: { plugins: [makeRouter()] } })
+    const text = wrapper.text()
+    expect(text).toContain('Win by 2')
+    expect(text).toContain('Win by 1')
+    expect(text).toContain('Draw')
+    expect(text).toContain('Lose by 1')
+    expect(text).toContain('Lose by 2')
+  })
+
+  it('explains Grouchy gives 1 point per correct category', () => {
+    const wrapper = mount(RulesView, { global: { plugins: [makeRouter()] } })
+    expect(wrapper.text()).toContain('+1')
+  })
 })

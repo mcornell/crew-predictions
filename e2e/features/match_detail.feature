@@ -34,6 +34,17 @@ Feature: Match detail page
     When I visit the matches page
     Then the upcoming card for match "m-sched" should not have a detail link
 
+  Scenario: Grouchy column appears in match detail predictions table
+    Given I am logged in as "GrouchyFan@bsky.mock"
+    And the following matches are seeded:
+      | id       | homeTeam      | awayTeam  | status          | homeScore | awayScore |
+      | m-done-g | Columbus Crew | FC Dallas | STATUS_FULL_TIME | 2         | 0         |
+    And "GrouchyFan@bsky.mock" predicted 3-0 for match "m-done-g"
+    And the final score for match "m-done-g" was 2-0 with Columbus home
+    When I visit the match detail page for "m-done-g"
+    Then I should see the Grouchy column header in the predictions table
+    And "GrouchyFan@bsky.mock" should have 1 Grouchy point in the predictions table
+
   Scenario: No predictions made shows empty state
     Given I am not logged in
     And the following matches are seeded:

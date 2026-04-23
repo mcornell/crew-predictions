@@ -10,7 +10,9 @@ export default defineConfig({
   testDir,
   workers: 2,
   globalSetup: './e2e/global-setup.ts',
-  reporter: [['list'], ['html', { open: 'never' }]],
+  reporter: process.env.CI
+    ? [['github'], ['html', { open: 'never' }]]
+    : [['list'], ['html', { open: 'never' }]],
   use: {
     baseURL: 'http://localhost:8082',
     screenshot: 'only-on-failure',

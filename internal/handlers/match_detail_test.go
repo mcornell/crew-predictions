@@ -81,6 +81,72 @@ func TestMatchDetailHandler_ReturnsPredictionsWithScores(t *testing.T) {
 	}
 }
 
+func TestMatchDetailHandler_IncludesGrouchyPoints(t *testing.T) {
+	predStore := repository.NewMemoryPredictionStore()
+	resultStore := repository.NewMemoryResultStore()
+	matchStore := repository.NewMemoryMatchStore()
+	ctx := context.Background()
+
+	matchStore.Seed([]models.Match{{
+		ID: "m-grouchy", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",
+		Kickoff: time.Now().Add(-24 * time.Hour), Status: "STATUS_FULL_TIME",
+		HomeScore: "2", AwayScore: "0",
+	}})
+	// Columbus home, predicted 3-0 (Win by 2+), actual 2-0 (Win by 2+) → 1 pt
+	predStore.Save(ctx, repository.Prediction{MatchID: "m-grouchy", UserID: "u1", Handle: "GrouchyFan", HomeGoals: 3, AwayGoals: 0})
+	resultStore.SaveResult(ctx, repository.Result{
+		MatchID: "m-grouchy", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", HomeGoals: 2, AwayGoals: 0,
+	})
+
+	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, repository.NewMemoryUserStore(), "Columbus Crew")
+	req := httptest.NewRequest("GET", "/api/matches/m-grouchy", nil)
+	req.SetPathValue("matchId", "m-grouchy")
+	w := httptest.NewRecorder()
+	h.Get(w, req)
+
+	var resp map[string]any
+	json.NewDecoder(w.Body).Decode(&resp)
+	predictions := resp["predictions"].([]any)
+	grouchy := predictions[0].(map[string]any)["grouchyPoints"].(float64)
+	if grouchy != 1 {
+		t.Errorf("expected grouchyPoints=1, got %v", grouchy)
+	}
+}
+
+func TestMatchDetailHandler_ScoringFormatsIncludesGrouchy(t *testing.T) {
+	predStore := repository.NewMemoryPredictionStore()
+	resultStore := repository.NewMemoryResultStore()
+	matchStore := repository.NewMemoryMatchStore()
+	matchStore.Seed([]models.Match{{
+		ID: "m-fmt", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",
+		Kickoff: time.Now().Add(-24 * time.Hour), Status: "STATUS_FULL_TIME",
+		HomeScore: "1", AwayScore: "0",
+	}})
+
+	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, repository.NewMemoryUserStore(), "Columbus Crew")
+	req := httptest.NewRequest("GET", "/api/matches/m-fmt", nil)
+	req.SetPathValue("matchId", "m-fmt")
+	w := httptest.NewRecorder()
+	h.Get(w, req)
+
+	var resp map[string]any
+	json.NewDecoder(w.Body).Decode(&resp)
+	formats := resp["scoringFormats"].([]any)
+	keys := make([]string, 0, len(formats))
+	for _, f := range formats {
+		keys = append(keys, f.(map[string]any)["key"].(string))
+	}
+	found := false
+	for _, k := range keys {
+		if k == "grouchy" {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("expected grouchy in scoringFormats, got %v", keys)
+	}
+}
+
 func TestMatchDetailHandler_UsesCurrentHandleFromUserStore(t *testing.T) {
 	predStore := repository.NewMemoryPredictionStore()
 	resultStore := repository.NewMemoryResultStore()

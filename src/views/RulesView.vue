@@ -1,7 +1,7 @@
 <template>
   <div class="page">
     <h1 class="page-title">Rules</h1>
-    <p class="rules-intro">Two ways to be wrong. Pick your poison — actually, you don't have a choice, you're in all of the contests.</p>
+    <p class="rules-intro">Three ways to be wrong. Pick your poison — actually, you don't have a choice, you're in all of the contests.</p>
 
     <section class="rules-section">
       <h2 class="section-title">Aces Radio</h2>
@@ -40,6 +40,38 @@
         </div>
       </div>
       <p class="rules-note">Points stack. Nail the result and the Crew's goal tally and you're at +2.</p>
+    </section>
+
+    <section class="rules-section">
+      <h2 class="section-title">Grouchy™</h2>
+      <p class="rules-desc">Named after the Nordecke's most lovable curmudgeon. Simpler scoring — did you predict the right margin of victory? That's it. That's the whole deal.</p>
+      <div class="rules-table">
+        <div class="rules-row rules-row--positive">
+          <span class="rules-points">+1</span>
+          <span class="rules-condition">Win by 2+ — you predicted a comfortable Crew victory and got one</span>
+        </div>
+        <div class="rules-row rules-row--positive">
+          <span class="rules-points">+1</span>
+          <span class="rules-condition">Win by 1 — a nervy Crew win and you called it</span>
+        </div>
+        <div class="rules-row rules-row--positive">
+          <span class="rules-points">+1</span>
+          <span class="rules-condition">Draw — 90 minutes of nothing and you predicted it</span>
+        </div>
+        <div class="rules-row rules-row--positive">
+          <span class="rules-points">+1</span>
+          <span class="rules-condition">Lose by 1 — a heartbreaker and you saw it coming</span>
+        </div>
+        <div class="rules-row rules-row--positive">
+          <span class="rules-points">+1</span>
+          <span class="rules-condition">Lose by 2+ — a disaster and somehow you predicted that too</span>
+        </div>
+        <div class="rules-row rules-row--zero">
+          <span class="rules-points">0</span>
+          <span class="rules-condition">Wrong category. Touch grass.</span>
+        </div>
+      </div>
+      <p class="rules-note">Categories are based on Columbus Crew margin. Predict the right bucket and you get the point — exact score doesn't matter.</p>
     </section>
   </div>
 </template>

@@ -14,3 +14,10 @@ Feature: Leaderboard
     And the final score for match "match-scoring-2" was 3-0 with Columbus away
     When I visit the leaderboard
     Then I should see "ColumbusNordecke@bsky.mock" with 2 Upper 90 Club points
+
+  Scenario: User sees Grouchy points after a correct category prediction
+    Given I am logged in as "GrouchyFan@bsky.mock"
+    And "GrouchyFan@bsky.mock" predicted 3-1 for match "match-scoring-3"
+    And the final score for match "match-scoring-3" was 4-0 with Columbus away
+    When I visit the leaderboard
+    Then I should see "GrouchyFan@bsky.mock" with 1 Grouchy points

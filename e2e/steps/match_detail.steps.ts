@@ -52,3 +52,12 @@ When('I visit the match detail page for {string}', async ({ page }, matchID: str
 Then('I should see {string}', async ({ page }, text: string) => {
   await expect(page.getByText(text).first()).toBeVisible();
 });
+
+Then('I should see the Grouchy column header in the predictions table', async ({ page }) => {
+  await expect(page.locator('[data-testid="sort-grouchy"]')).toBeVisible();
+});
+
+Then('{string} should have {int} Grouchy point in the predictions table', async ({ page }, handle: string, points: number) => {
+  const row = page.locator('[data-testid="prediction-row"]').filter({ hasText: handle }).first();
+  await expect(row.locator('[data-testid="prediction-grouchy-points"]')).toHaveText(String(points));
+});
