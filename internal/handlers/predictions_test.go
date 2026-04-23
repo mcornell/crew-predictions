@@ -172,6 +172,20 @@ func TestSubmitPrediction_RejectsUnknownMatch(t *testing.T) {
 	}
 }
 
+func TestSubmitPrediction_Returns500WhenSaveFails(t *testing.T) {
+	future := time.Now().Add(24 * time.Hour)
+	handler := handlers.NewPredictionsHandler(repository.NewErrorPredictionStore(), fetcherWithMatch("match1", future))
+	req := httptest.NewRequest(http.MethodPost, "/predictions",
+		strings.NewReader("match_id=match1&home_goals=2&away_goals=1"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(sessionCookie("google:abc123", "BlackAndGold@bsky.mock"))
+	w := httptest.NewRecorder()
+	handler.Submit(w, req)
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("expected 500 when Save fails, got %d", w.Code)
+	}
+}
+
 func TestSubmitPrediction_SavesPredictionToStore(t *testing.T) {
 	store := repository.NewMemoryPredictionStore()
 	req := httptest.NewRequest(http.MethodPost, "/predictions",
