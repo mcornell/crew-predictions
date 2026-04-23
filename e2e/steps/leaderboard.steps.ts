@@ -27,10 +27,10 @@ When('I visit the leaderboard', async ({ page }) => {
 
 Then('I should see {string} with {int} Aces Radio points', async ({ page }, handle: string, points: number) => {
   const row = page.locator('[data-testid="leaderboard-row"]').filter({ hasText: handle }).first();
-  await expect(row.locator('[data-testid="leaderboard-points"]')).toHaveText(String(points));
+  await expect(row.locator('[data-testid="leaderboard-aces-points"]')).toHaveText(String(points));
 });
 
-Then('I should see {string} with {int} Upper90Club points', async ({ page }, handle: string, points: number) => {
-  const row = page.locator('[data-testid="leaderboard-row"]').filter({ hasText: handle }).last();
-  await expect(row.locator('[data-testid="leaderboard-points"]')).toHaveText(String(points));
+Then('I should see {string} with {int} Upper 90 Club points', async ({ page }, handle: string, points: number) => {
+  const row = page.locator('[data-testid="leaderboard-row"]').filter({ hasText: handle }).first();
+  await expect(row.locator('[data-testid="leaderboard-upper90-points"]')).toHaveText(String(points));
 });

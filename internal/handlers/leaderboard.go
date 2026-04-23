@@ -22,10 +22,11 @@ func NewLeaderboardHandler(predictions repository.PredictionStore, results repos
 }
 
 type leaderboardEntry struct {
-	UserID     string `json:"userID"`
-	Handle     string `json:"handle"`
-	Points     int    `json:"points"`
-	HasProfile bool   `json:"hasProfile"`
+	UserID          string `json:"userID"`
+	Handle          string `json:"handle"`
+	AcesRadioPoints int    `json:"acesRadioPoints"`
+	Upper90Points   int    `json:"upper90ClubPoints"`
+	HasProfile      bool   `json:"hasProfile"`
 }
 
 func (h *LeaderboardHandler) APIList(w http.ResponseWriter, r *http.Request) {
@@ -78,22 +79,22 @@ func (h *LeaderboardHandler) APIList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	keys := allKeys(acesTotals, u90Totals)
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(map[string]any{
-		"acesRadio":   toEntries(keys, keyHandle, acesTotals, knownUsers),
-		"upper90Club": toEntries(keys, keyHandle, u90Totals, knownUsers),
-	}); err != nil {
-		log.Printf("leaderboard: encode response: %v", err)
-	}
-}
-
-func toEntries(keys []string, keyHandle map[string]string, totals map[string]int, knownUsers map[string]bool) []leaderboardEntry {
 	entries := make([]leaderboardEntry, 0, len(keys))
 	for _, k := range keys {
-		entries = append(entries, leaderboardEntry{UserID: k, Handle: keyHandle[k], Points: totals[k], HasProfile: knownUsers[k]})
+		entries = append(entries, leaderboardEntry{
+			UserID:          k,
+			Handle:          keyHandle[k],
+			AcesRadioPoints: acesTotals[k],
+			Upper90Points:   u90Totals[k],
+			HasProfile:      knownUsers[k],
+		})
 	}
-	sort.Slice(entries, func(i, j int) bool { return entries[i].Points > entries[j].Points })
-	return entries
+	sort.Slice(entries, func(i, j int) bool { return entries[i].AcesRadioPoints > entries[j].AcesRadioPoints })
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(map[string]any{"entries": entries}); err != nil {
+		log.Printf("leaderboard: encode response: %v", err)
+	}
 }
 
 func allKeys(maps ...map[string]int) []string {
