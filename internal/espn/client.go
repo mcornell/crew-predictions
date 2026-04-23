@@ -83,11 +83,14 @@ func scheduleURL(base, league string) string {
 }
 
 func upcomingURL(base, league string, from time.Time) string {
+	// Start 2 days back so delayed/rescheduled matches aren't dropped when
+	// ESPN still indexes them under their original kickoff date.
+	start := from.AddDate(0, 0, -2)
 	end := from.AddDate(0, 0, 8)
 	return fmt.Sprintf(
 		"%s/%s/scoreboard?dates=%s-%s&limit=500",
 		base, league,
-		from.Format("20060102"),
+		start.Format("20060102"),
 		end.Format("20060102"),
 	)
 }
