@@ -69,7 +69,7 @@ interface Profile {
   upper90Club: Standing
 }
 
-const currentUser = inject<Ref<{ userID: string; handle: string; emailVerified: boolean } | null>>('currentUser')
+const currentUser = inject<Ref<{ userID: string; handle: string; emailVerified: boolean } | null>>('currentUser', ref(null))
 const route = useRoute()
 const router = useRouter()
 

@@ -394,6 +394,37 @@ describe('MatchesView', () => {
     vi.useRealTimers()
   })
 
+  it('mounts without error when currentUser is not provided', async () => {
+    const wrapper = mount(MatchesView, { global: { plugins: [makeRouter()] } })
+    await flushPromises()
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('still renders matches when localStorage.getItem throws (Safari Private Browsing)', async () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('SecurityError') })
+    const wrapper = mountMatches()
+    await flushPromises()
+    expect(wrapper.findAll('[data-testid="match-card"]').length).toBeGreaterThan(0)
+    vi.restoreAllMocks()
+  })
+
+  it('handles localStorage.setItem throwing when saving guest prediction', async () => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('SecurityError') })
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ matches: mockMatches, predictions: {} }),
+    }))
+    const wrapper = mountMatches({ currentUser: ref(null) })
+    await flushPromises()
+    const card = wrapper.find('[data-testid="match-card"]')
+    await card.find('input[name="home_goals"]').setValue('2')
+    await card.find('input[name="away_goals"]').setValue('1')
+    await card.find('button').trigger('click')
+    await flushPromises()
+    expect(wrapper.exists()).toBe(true)
+    vi.restoreAllMocks()
+  })
+
   it('past-kickoff scheduled match has no Predict button', async () => {
     vi.useFakeTimers()
     const pastKickoff = new Date(Date.now() - 5 * 60 * 1000).toISOString()
