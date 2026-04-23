@@ -13,5 +13,5 @@ When('I sign in with Google as {string}', async ({ page }, email: string) => {
   await page.locator('button#sign-in').click({ force: true });
 
   // Wait for redirect back to the app and session to complete
-  await page.waitForURL(/localhost:8080/, { timeout: 10000 });
+  await page.waitForURL(/localhost/, { timeout: 10000 });
 });

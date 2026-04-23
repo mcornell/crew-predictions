@@ -12,7 +12,7 @@ export default defineConfig({
   globalSetup: './e2e/global-setup.ts',
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
-    baseURL: 'http://localhost:8080',
+    baseURL: 'http://localhost:8082',
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
   },
@@ -29,9 +29,10 @@ export default defineConfig({
   ],
   webServer: {
     command: 'vite build --logLevel silent && go run ./cmd/server',
-    port: 8080,
+    port: 8082,
     reuseExistingServer: !process.env.CI,
     env: {
+      PORT: '8082',
       FIREBASE_AUTH_EMULATOR_HOST: 'localhost:9099',
       FIREBASE_PROJECT_ID: 'crew-predictions',
       FIREBASE_API_KEY: 'fake-api-key',
