@@ -2,27 +2,13 @@
 
 ## Up Next
 
-### Security / Critical
-
-1. [ ] **Guard admin endpoints in prod** — `/admin/results`, `/admin/poll-scores`, `/admin/refresh-matches`, and `/admin/backfill-users` are fully unauthenticated; anyone can POST fake results and corrupt the leaderboard. Add a shared-secret middleware: check an `X-Admin-Key` header against a Cloud Run env var secret. Only `/admin/reset` and `/admin/seed-*` are already TEST_MODE-gated. (`main.go:131–151`, `handlers/results.go`, `handlers/refresh_matches.go`, `handlers/poll_scores.go`, `handlers/backfill.go`)
-
-2. [ ] **Add `Secure` flag to session cookie** — `writeSessionCookie` sets `HttpOnly` and `SameSite` but omits `Secure: true`; cookie transmits over plain HTTP. Set `Secure: os.Getenv("FIREBASE_AUTH_EMULATOR_HOST") == ""` so it's off in the emulator and on in prod. Same fix needed in the logout cookie. (`handlers/handle.go:54`, `handlers/auth.go:12`)
-
-3. [ ] **Handle `Save()` error in predictions handler** — Firestore write failure is silently discarded; user gets a 302 success redirect while the prediction is lost. Return 500 if `h.store.Save()` errors. (`handlers/predictions.go:66`)
-
 ### Bugs
-
-4. [ ] **Server-side goals range validation** — `strconv.Atoi` accepts negative numbers and values in the billions; HTML `min`/`max` is client-only. Reject `home_goals` or `away_goals` outside 0–99 with 400. (`handlers/predictions.go:34`, `handlers/results.go:21`)
 
 5. [ ] **`localStorage` without try/catch** — `getItem`/`setItem`/`JSON.parse` on `localStorage` throw `SecurityError` in Safari Private Browsing and crash the entire `onMounted` handler. Wrap all `localStorage` access in try/catch and degrade gracefully. (`src/views/MatchesView.vue:187,213`)
 
 6. [ ] **Check `/auth/session` response in sign-in flows** — `postSession(token)` never checks `res.ok`; if the server returns 401 the cookie is never set but the client still routes to `/matches`, leaving the user in a broken logged-in-looking-but-not state. (`src/views/LoginView.vue:38`, `src/views/SignupView.vue:35`, `src/App.vue:29`)
 
-7. [ ] **Handle `r.ParseForm()` errors** — called without checking the return value in five handlers; a malformed or oversized body silently yields `""` for all fields, causing misleading downstream errors. Return 400 on parse failure. (`handlers/predictions.go:28`, `handlers/session.go:41`, `handlers/handle.go:25`, `handlers/results.go:19`, `handlers/seed.go:19`)
-
 8. [ ] **Handle `json.NewEncoder(w).Encode()` errors** — encoding failures send truncated JSON with a 200 status because headers are already written; at minimum log the error. (`handlers/leaderboard.go`, `handlers/matches.go`, `handlers/profile.go`, `handlers/me.go`, `handlers/backfill.go`)
-
-9. [ ] **Discard `json.Marshal` error in `serveFirebaseConfig`** — `cfg, _ := json.Marshal(...)` sends `null` to every browser on failure, breaking Firebase init on every page load. (`main.go:246`)
 
 ### Infrastructure / Medium
 
@@ -78,6 +64,12 @@
 
 ## Done
 
+- [x] **Guard admin endpoints in prod** — `AdminAuth` middleware (X-Admin-Key, `crypto/subtle` compare) wraps `/admin/results`, `/admin/poll-scores`, `/admin/refresh-matches`, `/admin/backfill-users`. Server refuses to start if `ADMIN_KEY` unset in prod. **Deploy note: set `ADMIN_KEY` in Cloud Run (staging + prod) before merging.**
+- [x] **Add `Secure` flag to session cookie** — `Secure: os.Getenv("FIREBASE_AUTH_EMULATOR_HOST") == ""` in `writeSessionCookie` and `Logout`; off in local dev, on in prod.
+- [x] **Handle `Save()` error in predictions handler** — returns 500 and logs on Firestore write failure.
+- [x] **Server-side goals range validation** — predictions and results handlers reject `home_goals`/`away_goals` outside 0–99 with 400.
+- [x] **Handle `r.ParseForm()` errors** — all 5 handlers already return 400 on parse failure; regression tests added.
+- [x] **Discard `json.Marshal` error in `serveFirebaseConfig`** — marshaling `map[string]string` cannot fail; existing test covers the response.
 - [x] **STATUS_DELAYED support** — blinking red DELAYED badge; match moves to new "Now Playing" section above Upcoming; server rejects predictions with 403; no Predict/Unlock buttons. Confirmed live vs LA Galaxy 2026-04-22.
 - [x] **Match ordering stability** — `sort.Slice` by `Kickoff` ascending in `APIList`; `completedMatches` Vue computed sorts descending explicitly; no longer relies on ESPN return order.
 - [x] **Client-side kickoff lock** — reactive `nowMs` ref updated each countdown tick; `isLocked()` gates Predict/Unlock at kickoff time without reload; covers STATUS_DELAYED and state='in' too.
