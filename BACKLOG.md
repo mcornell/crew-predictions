@@ -2,11 +2,47 @@
 
 ## Up Next
 
-1. [ ] **Prod smoke suite** — unauthenticated-only scenarios (app loads, leaderboard/matches API responds, Vue hydrates); replaces current `curl` liveness check in `deploy-prod`.
+### Security / Critical
 
-5. [ ] **Cache leaderboard scoring** — currently recalculated on every request; fine now but will need in-memory caching or pre-computation at scale.
+1. [ ] **Guard admin endpoints in prod** — `/admin/results`, `/admin/poll-scores`, `/admin/refresh-matches`, and `/admin/backfill-users` are fully unauthenticated; anyone can POST fake results and corrupt the leaderboard. Add a shared-secret middleware: check an `X-Admin-Key` header against a Cloud Run env var secret. Only `/admin/reset` and `/admin/seed-*` are already TEST_MODE-gated. (`main.go:131–151`, `handlers/results.go`, `handlers/refresh_matches.go`, `handlers/poll_scores.go`, `handlers/backfill.go`)
 
-6. [ ] **Remove stale `handle` from predictions** — `handle` on prediction documents is legacy; leaderboard now sources display names from `UserStore` by `userID`. Stop writing it on new predictions and remove the `p.Handle` fallback in the leaderboard once confirmed no UID-less predictions exist in prod.
+2. [ ] **Add `Secure` flag to session cookie** — `writeSessionCookie` sets `HttpOnly` and `SameSite` but omits `Secure: true`; cookie transmits over plain HTTP. Set `Secure: os.Getenv("FIREBASE_AUTH_EMULATOR_HOST") == ""` so it's off in the emulator and on in prod. Same fix needed in the logout cookie. (`handlers/handle.go:54`, `handlers/auth.go:12`)
+
+3. [ ] **Handle `Save()` error in predictions handler** — Firestore write failure is silently discarded; user gets a 302 success redirect while the prediction is lost. Return 500 if `h.store.Save()` errors. (`handlers/predictions.go:66`)
+
+### Bugs
+
+4. [ ] **Server-side goals range validation** — `strconv.Atoi` accepts negative numbers and values in the billions; HTML `min`/`max` is client-only. Reject `home_goals` or `away_goals` outside 0–99 with 400. (`handlers/predictions.go:34`, `handlers/results.go:21`)
+
+5. [ ] **`localStorage` without try/catch** — `getItem`/`setItem`/`JSON.parse` on `localStorage` throw `SecurityError` in Safari Private Browsing and crash the entire `onMounted` handler. Wrap all `localStorage` access in try/catch and degrade gracefully. (`src/views/MatchesView.vue:187,213`)
+
+6. [ ] **Check `/auth/session` response in sign-in flows** — `postSession(token)` never checks `res.ok`; if the server returns 401 the cookie is never set but the client still routes to `/matches`, leaving the user in a broken logged-in-looking-but-not state. (`src/views/LoginView.vue:38`, `src/views/SignupView.vue:35`, `src/App.vue:29`)
+
+7. [ ] **Handle `r.ParseForm()` errors** — called without checking the return value in five handlers; a malformed or oversized body silently yields `""` for all fields, causing misleading downstream errors. Return 400 on parse failure. (`handlers/predictions.go:28`, `handlers/session.go:41`, `handlers/handle.go:25`, `handlers/results.go:19`, `handlers/seed.go:19`)
+
+8. [ ] **Handle `json.NewEncoder(w).Encode()` errors** — encoding failures send truncated JSON with a 200 status because headers are already written; at minimum log the error. (`handlers/leaderboard.go`, `handlers/matches.go`, `handlers/profile.go`, `handlers/me.go`, `handlers/backfill.go`)
+
+9. [ ] **Discard `json.Marshal` error in `serveFirebaseConfig`** — `cfg, _ := json.Marshal(...)` sends `null` to every browser on failure, breaking Firebase init on every page load. (`main.go:246`)
+
+### Infrastructure / Medium
+
+10. [ ] **Add `.dockerignore`** — without it `COPY . .` pulls `.env` files, `node_modules/`, `.git/`, and test fixtures into the Docker build context; local `.env` credentials can end up in image layers.
+
+11. [ ] **Run container as non-root** — Dockerfile final stage has no `USER` directive; the Go server runs as root. Add `RUN useradd -r -u 1001 app && USER app`.
+
+12. [ ] **Validate `match_id` for emptiness in results and seed handlers** — a result or seed saved with an empty `match_id` persists in the store and never matches any prediction lookup, silently poisoning the store. (`handlers/results.go:18`, `handlers/seed.go:19`)
+
+13. [ ] **`inject()` without default** — `inject<Ref<...>>('currentUser')` returns `undefined` if called outside the provide tree; use `inject('currentUser', ref(null))` to make the default explicit. (`src/views/MatchesView.vue:115`, `src/views/ProfileView.vue:72`)
+
+### Low
+
+14. [ ] **Prod smoke suite** — unauthenticated-only scenarios (app loads, leaderboard/matches API responds, Vue hydrates); replaces current `curl` liveness check in `deploy-prod`.
+
+15. [ ] **Add loading and error states to views** — Leaderboard, Profile, and Matches views render a blank page during fetch and on error; users see nothing with no feedback. Add a loading indicator and an error message on non-ok responses.
+
+16. [ ] **Cache leaderboard scoring** — currently recalculated on every request; fine now but will need in-memory caching or pre-computation at scale.
+
+17. [ ] **Remove stale `handle` from predictions** — `handle` on prediction documents is legacy; leaderboard now sources display names from `UserStore` by `userID`. Stop writing it on new predictions and remove the `p.Handle` fallback in the leaderboard once confirmed no UID-less predictions exist in prod.
 
 ---
 
