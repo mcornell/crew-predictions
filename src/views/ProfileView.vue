@@ -1,6 +1,8 @@
 <template>
   <div class="page">
-    <div v-if="profile" class="profile-page">
+    <p v-if="loading" data-testid="loading" class="status-msg">Loading…</p>
+    <p v-else-if="loadError" data-testid="error" class="status-msg status-msg--error">{{ loadError }}</p>
+    <div v-else-if="profile" class="profile-page">
 
       <div class="profile-header">
         <h1 class="profile-handle">{{ profile.handle }}</h1>
@@ -77,6 +79,8 @@ const profile = ref<Profile | null>(null)
 const displayName = ref('')
 const location = ref('')
 const error = ref('')
+const loading = ref(true)
+const loadError = ref<string | null>(null)
 
 const isOwnProfile = computed(() =>
   !!currentUser?.value && !!profile.value && currentUser.value.userID === profile.value.userID
@@ -90,12 +94,14 @@ onMounted(async () => {
   }
   const res = await fetch(`/api/profile/${userID}`)
   if (!res.ok) {
-    router.replace('/login')
+    loadError.value = 'Could not load profile. Try again later.'
+    loading.value = false
     return
   }
   profile.value = await res.json()
   displayName.value = profile.value!.handle
   location.value = profile.value!.location
+  loading.value = false
 })
 
 async function handleSubmit() {

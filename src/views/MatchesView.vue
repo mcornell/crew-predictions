@@ -1,5 +1,8 @@
 <template>
   <div class="page">
+    <p v-if="loading" data-testid="loading" class="status-msg">Loading…</p>
+    <p v-else-if="error" data-testid="error" class="status-msg status-msg--error">{{ error }}</p>
+    <template v-else>
     <section v-if="nowPlayingMatches.length > 0" data-testid="now-playing-section" class="now-playing-section">
       <h1 class="page-title">Now Playing</h1>
       <div class="match-list">
@@ -104,6 +107,7 @@
     <div v-if="showNudge && !currentUser" class="guest-nudge" data-testid="guest-nudge">
       <a href="/signup">Create an account</a> to get on the leaderboard.
     </div>
+    </template>
   </div>
 </template>
 
@@ -140,6 +144,8 @@ const inputs = reactive<Record<string, { home: string; away: string }>>({})
 const countdowns = reactive<Record<string, string>>({})
 const showNudge = ref(false)
 const nowMs = ref(Date.now())
+const loading = ref(true)
+const error = ref<string | null>(null)
 
 const nowPlayingMatches = computed(() =>
   matches.value.filter(m => m.state === 'in' || m.status === 'STATUS_DELAYED')
@@ -223,7 +229,10 @@ onMounted(async () => {
     }
     updateCountdowns()
     countdownTimer = setInterval(updateCountdowns, 1000)
+  } else {
+    error.value = 'Could not load matches. Try again later.'
   }
+  loading.value = false
   pollTimer = setInterval(fetchMatches, 30_000)
 })
 

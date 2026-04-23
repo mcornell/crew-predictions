@@ -2,6 +2,9 @@
   <div class="page">
     <RouterLink to="/matches" class="back-link" data-testid="back-link">← All Matches</RouterLink>
 
+    <p v-if="loading" data-testid="loading" class="status-msg">Loading…</p>
+    <p v-else-if="error" data-testid="error" class="status-msg status-msg--error">{{ error }}</p>
+
     <div v-if="match" class="match-detail-header">
       <div class="matchup matchup--input" data-testid="match-score">
         <span class="team-name team-home">{{ match.homeTeam }}</span>
@@ -75,6 +78,8 @@ const predictions = ref<PredictionEntry[]>([])
 const scoringFormats = ref<ScoringFormat[]>([])
 const activeFormat = ref('acesRadio')
 const loaded = ref(false)
+const loading = ref(true)
+const error = ref<string | null>(null)
 
 const sortedPredictions = computed(() => {
   const key = activeFormat.value === 'acesRadio' ? 'acesRadioPoints' : 'upper90ClubPoints'
@@ -112,7 +117,10 @@ onMounted(async () => {
     if (match.value) {
       document.title = `${match.value.homeTeam} vs ${match.value.awayTeam} — Crew Predictions`
     }
+  } else {
+    error.value = 'Could not load match. Try again later.'
   }
   loaded.value = true
+  loading.value = false
 })
 </script>

@@ -106,6 +106,23 @@ describe('MatchDetailView', () => {
     expect(wrapper.text()).toContain('No predictions were made for this match')
   })
 
+  it('shows loading state before fetch resolves', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise(() => {})))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    expect(wrapper.find('[data-testid="loading"]').exists()).toBe(true)
+  })
+
+  it('shows error state when fetch fails', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="error"]').exists()).toBe(true)
+  })
+
   it('shows a back link to /matches', async () => {
     const router = makeRouter()
     await router.isReady()

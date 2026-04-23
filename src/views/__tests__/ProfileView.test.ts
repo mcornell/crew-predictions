@@ -92,6 +92,25 @@ describe('ProfileView', () => {
     expect(r.currentRoute.value.path).toBe('/matches')
   })
 
+  it('shows loading state before fetch resolves', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise(() => {})))
+    const r = makeRouter()
+    r.addRoute({ path: '/profile/:userID', component: ProfileView })
+    await r.push('/profile/firebase:abc')
+    const wrapper = mount(ProfileView, { global: { plugins: [r], provide: { currentUser: ref(null) } } })
+    expect(wrapper.find('[data-testid="loading"]').exists()).toBe(true)
+  })
+
+  it('shows error state when fetch fails', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
+    const r = makeRouter()
+    r.addRoute({ path: '/profile/:userID', component: ProfileView })
+    await r.push('/profile/firebase:abc')
+    const wrapper = mount(ProfileView, { global: { plugins: [r], provide: { currentUser: ref(null) } } })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="error"]').exists()).toBe(true)
+  })
+
   it('shows error when save fails', async () => {
     const { updateDisplayName } = await import('../../firebase')
     vi.mocked(updateDisplayName).mockRejectedValue(new Error('network'))

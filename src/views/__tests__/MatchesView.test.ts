@@ -425,6 +425,19 @@ describe('MatchesView', () => {
     vi.restoreAllMocks()
   })
 
+  it('shows loading state before fetch resolves', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise(() => {})))
+    const wrapper = mountMatches()
+    expect(wrapper.find('[data-testid="loading"]').exists()).toBe(true)
+  })
+
+  it('shows error state when fetch fails', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
+    const wrapper = mountMatches()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="error"]').exists()).toBe(true)
+  })
+
   it('past-kickoff scheduled match has no Predict button', async () => {
     vi.useFakeTimers()
     const pastKickoff = new Date(Date.now() - 5 * 60 * 1000).toISOString()

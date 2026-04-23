@@ -640,6 +640,18 @@ body::after {
   letter-spacing: 0.04em;
 }
 
+.status-msg {
+  font-family: 'DM Mono', monospace;
+  font-size: 1rem;
+  color: var(--muted);
+  padding: 2rem 0;
+  letter-spacing: 0.04em;
+}
+
+.status-msg--error {
+  color: var(--danger);
+}
+
 /* ── Mobile ──────────────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
   .page {

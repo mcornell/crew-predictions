@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import LeaderboardView from '../LeaderboardView.vue'
 import { makeRouter } from '../../test-utils/router'
@@ -13,6 +13,10 @@ beforeEach(() => {
     ok: true,
     json: () => Promise.resolve(mockData),
   }))
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
 })
 
 describe('LeaderboardView', () => {
@@ -46,6 +50,19 @@ describe('LeaderboardView', () => {
     await flushPromises()
     const link = wrapper.find('[data-testid="leaderboard-row"] a')
     expect(link.attributes('href')).toContain('firebase:abc')
+  })
+
+  it('shows loading state before fetch resolves', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise(() => {})))
+    const wrapper = mount(LeaderboardView, { global: { plugins: [makeRouter()] } })
+    expect(wrapper.find('[data-testid="loading"]').exists()).toBe(true)
+  })
+
+  it('shows error state when fetch fails', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
+    const wrapper = mount(LeaderboardView, { global: { plugins: [makeRouter()] } })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="error"]').exists()).toBe(true)
   })
 
   it('renders plain span instead of link when hasProfile is false', async () => {
