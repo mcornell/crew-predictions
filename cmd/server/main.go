@@ -12,6 +12,7 @@ import (
 
 	firebase "firebase.google.com/go/v4"
 	"github.com/joho/godotenv"
+	"github.com/mcornell/crew-predictions/internal/bot"
 	"github.com/mcornell/crew-predictions/internal/espn"
 	"github.com/mcornell/crew-predictions/internal/handlers"
 	"github.com/mcornell/crew-predictions/internal/models"
@@ -210,7 +211,8 @@ func main() {
 		if err != nil {
 			log.Fatalf("failed to load ET timezone: %v", err)
 		}
-		stop := startDailyRefresh(matchStore, refreshFetcher, matchPoller, etLoc)
+		twoOneBot := bot.New(predStore, userStore, "Columbus Crew")
+		stop := startDailyRefresh(matchStore, refreshFetcher, matchPoller, twoOneBot, etLoc)
 		defer close(stop)
 
 		pollerCtx, cancelPoller := context.WithCancel(context.Background())
@@ -233,7 +235,7 @@ func next4amET(now time.Time, loc *time.Location) time.Time {
 	return candidate
 }
 
-func startDailyRefresh(store repository.MatchStore, fetcher func() ([]models.Match, error), poller *poll.MatchPoller, etLoc *time.Location) chan struct{} {
+func startDailyRefresh(store repository.MatchStore, fetcher func() ([]models.Match, error), poller *poll.MatchPoller, twoOneBot *bot.TwoOneBot, etLoc *time.Location) chan struct{} {
 	stop := make(chan struct{})
 	go func() {
 		refresh := func() {
@@ -249,6 +251,7 @@ func startDailyRefresh(store repository.MatchStore, fetcher func() ([]models.Mat
 			// Backfill results for matches that finished while no poller was active
 			// (e.g., after a Cloud Run recycle, or matches completed before this deploy).
 			poller.Backfill(context.Background(), matches)
+			twoOneBot.Predict(context.Background(), matches)
 			slog.Info("daily match refresh complete", "matchCount", len(matches))
 			poller.Reset(matches)
 		}
