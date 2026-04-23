@@ -612,7 +612,6 @@ body::after {
 
 .lb-cell.lb-rank {
   color: var(--muted);
-  font-size: 0.85rem;
   text-align: center;
   padding-left: 1.1rem;
   padding-right: 1.1rem;
@@ -623,12 +622,10 @@ body::after {
 .lb-cell.lb-pts {
   text-align: right;
   color: var(--muted);
-  font-size: 1.1rem;
 }
 
 .lb-cell.lb-pts.lb-pts--active {
   color: var(--gold);
-  font-weight: 600;
 }
 
 .lb-cell.lb-pick {
@@ -718,8 +715,6 @@ body::after {
     display: block;
     flex-shrink: 0;
     color: var(--gold);
-    font-size: 1.15rem;
-    font-weight: 600;
     margin-left: auto;
   }
 }
