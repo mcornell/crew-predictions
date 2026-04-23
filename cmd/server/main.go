@@ -244,6 +244,9 @@ func startDailyRefresh(store repository.MatchStore, fetcher func() ([]models.Mat
 				slog.Error("daily match refresh: store save failed", "error", err)
 				return
 			}
+			// Backfill results for matches that finished while no poller was active
+			// (e.g., after a Cloud Run recycle, or matches completed before this deploy).
+			poller.Backfill(context.Background(), matches)
 			slog.Info("daily match refresh complete", "matchCount", len(matches))
 			poller.Reset(matches)
 		}

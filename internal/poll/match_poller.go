@@ -158,6 +158,20 @@ func (p *MatchPoller) Run(ctx context.Context, interval time.Duration) {
 	}
 }
 
+// Backfill saves results for any terminal-status matches in the provided list
+// without re-fetching from ESPN. Called after a daily refresh to catch matches
+// that finished while no active poller was running for them.
+func (p *MatchPoller) Backfill(ctx context.Context, matches []models.Match) {
+	for _, m := range matches {
+		if !terminalStatuses[m.Status] {
+			continue
+		}
+		if err := saveResult(ctx, p.resultStore, m); err != nil {
+			slog.Error("poller: backfill result failed", "matchID", m.ID, "error", err)
+		}
+	}
+}
+
 // ActiveCount returns the number of matches currently being polled (for testing).
 func (p *MatchPoller) ActiveCount() int {
 	p.mu.Lock()
