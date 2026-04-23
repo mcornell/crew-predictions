@@ -48,11 +48,13 @@
           class="lb-cell lb-pts"
           :class="{ 'lb-pts--active': activeFormat === 'acesRadio' }"
           data-testid="prediction-aces-points"
+          data-label="Aces Radio"
         >{{ entry.acesRadioPoints }}</span>
         <span
           class="lb-cell lb-pts"
           :class="{ 'lb-pts--active': activeFormat === 'upper90Club' }"
           data-testid="prediction-upper90-points"
+          data-label="Upper 90 Club"
         >{{ entry.upper90ClubPoints }}</span>
       </div>
     </div>

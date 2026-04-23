@@ -46,11 +46,13 @@
             class="lb-cell lb-pts"
             :class="{ 'lb-pts--active': activeSort === 'aces' }"
             data-testid="leaderboard-aces-points"
+            data-label="Aces Radio"
           >{{ entry.acesRadioPoints }}</span>
           <span
             class="lb-cell lb-pts"
             :class="{ 'lb-pts--active': activeSort === 'upper90' }"
             data-testid="leaderboard-upper90-points"
+            data-label="Upper 90 Club"
           >{{ entry.upper90ClubPoints }}</span>
         </div>
       </div>

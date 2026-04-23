@@ -541,7 +541,16 @@ body::after {
   display: grid;
   width: 100%;
   border: 1px solid var(--border);
-  overflow-x: auto;
+}
+
+/* 4 columns: leaderboard (rank, handle, aces, upper90) */
+.lb-table.lb-4col {
+  grid-template-columns: 2rem 1fr auto auto;
+}
+
+/* 5 columns: match detail (rank, handle, pick, aces, upper90) */
+.lb-table.lb-5col {
+  grid-template-columns: 2rem 1fr auto auto auto;
 }
 
 .lb-header {
@@ -551,12 +560,12 @@ body::after {
 .lb-header .lb-cell {
   font-family: 'Barlow Condensed', sans-serif;
   font-weight: 800;
-  font-size: 0.75rem;
+  font-size: 0.9rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
   background: var(--dark);
-  padding: 0.5rem 0.75rem;
+  padding: 0.6rem 1.1rem;
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
 }
@@ -564,14 +573,14 @@ body::after {
 .lb-sort-btn {
   font-family: 'Barlow Condensed', sans-serif;
   font-weight: 800;
-  font-size: 0.75rem;
+  font-size: 0.9rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
   background: var(--dark);
   border: none;
   border-bottom: 1px solid var(--border);
-  padding: 0.5rem 0.75rem;
+  padding: 0.6rem 1.1rem;
   cursor: pointer;
   text-align: right;
   transition: color 0.12s;
@@ -586,9 +595,9 @@ body::after {
 
 .lb-row .lb-cell {
   font-family: 'DM Mono', monospace;
-  font-size: 0.85rem;
+  font-size: 1rem;
   color: var(--text);
-  padding: 0.65rem 0.75rem;
+  padding: 0.85rem 1.1rem;
   border-bottom: 1px solid var(--border);
   background: var(--card);
   transition: background 0.1s;
@@ -603,22 +612,17 @@ body::after {
 
 .lb-cell.lb-rank {
   color: var(--muted);
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   text-align: right;
-  width: 2rem;
-  min-width: 2rem;
+  padding-right: 0.5rem;
 }
 
-.lb-cell.lb-handle {
-  flex: 1;
-  min-width: 0;
-}
+.lb-cell.lb-handle { min-width: 0; }
 
 .lb-cell.lb-pts {
   text-align: right;
   color: var(--muted);
-  font-size: 0.9rem;
-  min-width: 5.5rem;
+  font-size: 1.1rem;
 }
 
 .lb-cell.lb-pts.lb-pts--active {
@@ -628,18 +632,7 @@ body::after {
 
 .lb-cell.lb-pick {
   color: var(--muted);
-  min-width: 4rem;
   text-align: center;
-}
-
-/* 4 columns: leaderboard (rank, handle, aces, upper90) */
-.lb-table.lb-4col {
-  grid-template-columns: 2rem 1fr 5.5rem 5.5rem;
-}
-
-/* 5 columns: match detail (rank, handle, pick, aces, upper90) */
-.lb-table.lb-5col {
-  grid-template-columns: 2rem 1fr 4rem 5.5rem 5.5rem;
 }
 
 .lb-handle-link {
@@ -647,6 +640,121 @@ body::after {
   text-decoration: none;
 }
 .lb-handle-link:hover { color: var(--gold); }
+
+/* ── Mobile stacked cards (≤600px) ──────────────────────────────────────── */
+@media (max-width: 600px) {
+  /* Switch table container from CSS grid to block */
+  .lb-table.lb-4col,
+  .lb-table.lb-5col {
+    display: block;
+    border: none;
+  }
+
+  .lb-header { display: none; }
+
+  /* Each row becomes a 2-row card with 3 columns: [rank | col2 | col3] */
+  .lb-row {
+    display: grid;
+    grid-template-columns: 2.25rem 1fr 1fr;
+    grid-template-rows: auto auto;
+    border: 1px solid var(--border);
+    border-left: 3px solid transparent;
+    background: var(--card);
+    margin-bottom: 0.4rem;
+    transition: border-left-color 0.15s, background 0.15s;
+  }
+
+  .lb-row:hover {
+    border-left-color: var(--gold);
+    background: #1f1f1f;
+  }
+
+  .lb-row .lb-cell {
+    border-bottom: none;
+    background: transparent;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Rank: col 1, spans both rows, vertically centered */
+  .lb-cell.lb-rank {
+    grid-column: 1;
+    grid-row: 1 / 3;
+    align-self: center;
+    font-size: 0.8rem;
+    text-align: right;
+    padding: 0.75rem 0.4rem 0.75rem 0.75rem;
+  }
+
+  /* Leaderboard (4col): handle spans cols 2–3 on row 1 */
+  .lb-4col .lb-cell.lb-handle {
+    grid-column: 2 / 4;
+    grid-row: 1;
+    padding: 0.75rem 0.75rem 0.3rem 0.5rem;
+    font-size: 1rem;
+    white-space: nowrap;
+  }
+
+  /* Match detail (5col): handle col 2 row 1, pick col 3 row 1 */
+  .lb-5col .lb-cell.lb-handle {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 0.75rem 0.25rem 0.3rem 0.5rem;
+    font-size: 0.95rem;
+    white-space: nowrap;
+  }
+
+  .lb-cell.lb-pick {
+    grid-column: 3;
+    grid-row: 1;
+    padding: 0.75rem 0.75rem 0.3rem 0.25rem;
+    text-align: right;
+    color: var(--muted);
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+
+  /* Aces points: col 2, row 2 */
+  .lb-4col .lb-row .lb-cell:nth-child(3),
+  .lb-5col .lb-row .lb-cell:nth-child(4) {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  /* Upper 90 points: col 3, row 2 */
+  .lb-4col .lb-row .lb-cell:nth-child(4),
+  .lb-5col .lb-row .lb-cell:nth-child(5) {
+    grid-column: 3;
+    grid-row: 2;
+  }
+
+  /* Points cells shared styles */
+  .lb-cell.lb-pts {
+    padding: 0.2rem 0.5rem 0.75rem;
+    font-size: 1rem;
+    text-align: left;
+    color: var(--muted);
+    display: flex;
+    flex-direction: column;
+    white-space: nowrap;
+    overflow: visible;
+  }
+
+  .lb-cell.lb-pts::before {
+    content: attr(data-label);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.1rem;
+  }
+
+  .lb-cell.lb-pts.lb-pts--active { color: var(--gold); }
+  .lb-cell.lb-pts.lb-pts--active::before { color: var(--gold); }
+}
 
 /* ── Profile ─────────────────────────────────────────────────────────────── */
 .profile-page {
