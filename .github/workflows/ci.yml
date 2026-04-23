@@ -146,12 +146,6 @@ jobs:
         env:
           STAGING_API_KEY: ${{ secrets.STAGING_FIREBASE_API_KEY }}
 
-      - name: Refresh matches on staging
-        run: |
-          STAGING_URL=$(gcloud run services describe crew-predictions-staging --region=us-east5 --project=crew-predictions-staging --format='value(status.url)')
-          ADMIN_KEY=$(gcloud secrets versions access latest --secret=admin-key --project=crew-predictions-staging)
-          curl -f -X POST "$STAGING_URL/admin/refresh-matches" -H "X-Admin-Key: $ADMIN_KEY"
-
       - name: Smoke test staging
         run: |
           STAGING_URL=$(gcloud run services describe crew-predictions-staging --region=us-east5 --project=crew-predictions-staging --format='value(status.url)')
@@ -252,12 +246,6 @@ jobs:
             --region=us-east5 \
             --update-secrets=ADMIN_KEY=admin-key:latest \
             --quiet
-
-      - name: Refresh matches on prod
-        run: |
-          PROD_URL=$(gcloud run services describe crew-predictions --region=us-east5 --format='value(status.url)')
-          ADMIN_KEY=$(gcloud secrets versions access latest --secret=admin-key --project=crew-predictions)
-          curl -f -X POST "$PROD_URL/admin/refresh-matches" -H "X-Admin-Key: $ADMIN_KEY"
 
       - name: Find staging run ID
         run: echo "STAGING_RUN_ID=$(gh run list --workflow=ci.yml --branch=develop --event=push --commit=${{ env.DEVELOP_SHA }} --json=databaseId --jq='.[0].databaseId')" >> $GITHUB_ENV
