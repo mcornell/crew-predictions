@@ -27,6 +27,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { signIn, signInWithGoogle } from '../firebase'
+import { flushGuestPredictions } from '../guestPredictions'
 
 onMounted(() => { document.title = 'Sign In — Crew Predictions' })
 
@@ -52,6 +53,7 @@ async function handleSubmit() {
       error.value = 'Sign-in failed. Please try again.'
       return
     }
+    await flushGuestPredictions()
     router.push('/matches')
   } catch {
     error.value = 'Invalid email or password'

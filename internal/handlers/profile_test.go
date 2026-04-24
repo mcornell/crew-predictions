@@ -94,6 +94,40 @@ func TestProfileHandler_ReturnsLeaderboardStanding(t *testing.T) {
 	}
 }
 
+func TestProfileHandler_ReturnsGrouchyStanding(t *testing.T) {
+	users := repository.NewMemoryUserStore()
+	preds := repository.NewMemoryPredictionStore()
+	results := repository.NewMemoryResultStore()
+	ctx := context.Background()
+
+	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "GrouchyFan"})
+	users.Upsert(ctx, repository.User{UserID: "u2", Handle: "OtherFan"})
+	// Columbus home, 2-0 win (Win by 2+). u1 predicts 3-0 (Win by 2+) → 1 pt. u2 predicts 0-1 (Lose by 1) → 0 pt.
+	preds.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "u1", HomeGoals: 3, AwayGoals: 0})
+	preds.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "u2", HomeGoals: 0, AwayGoals: 1})
+	results.SaveResult(ctx, repository.Result{MatchID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", HomeGoals: 2, AwayGoals: 0})
+
+	h := NewProfileHandler(preds, results, users, "Columbus Crew")
+	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", nil)
+	req.SetPathValue("userID", "u1")
+	w := httptest.NewRecorder()
+	h.Get(w, req)
+
+	var body struct {
+		Grouchy struct {
+			Points int `json:"points"`
+			Rank   int `json:"rank"`
+		} `json:"grouchy"`
+	}
+	json.NewDecoder(w.Body).Decode(&body)
+	if body.Grouchy.Points != 1 {
+		t.Errorf("expected 1 Grouchy point, got %d", body.Grouchy.Points)
+	}
+	if body.Grouchy.Rank != 1 {
+		t.Errorf("expected rank 1, got %d", body.Grouchy.Rank)
+	}
+}
+
 func TestProfileHandler_Returns404ForUnknownUser(t *testing.T) {
 	h := NewProfileHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), repository.NewMemoryUserStore(), "Columbus Crew")
 	req := httptest.NewRequest(http.MethodGet, "/api/profile/nobody", nil)

@@ -50,6 +50,7 @@ func (h *ProfileHandler) Get(w http.ResponseWriter, r *http.Request) {
 	predictionCount := 0
 	acesTotals := map[string]int{}
 	u90Totals := map[string]int{}
+	grouchyTotals := map[string]int{}
 
 	for _, p := range allPredictions {
 		if p.UserID == userID {
@@ -68,6 +69,7 @@ func (h *ProfileHandler) Get(w http.ResponseWriter, r *http.Request) {
 		targetIsHome := result.HomeTeam == h.targetTeam
 		acesTotals[key] += scoring.AcesRadio(res, pred)
 		u90Totals[key] += scoring.Upper90Club(res, pred, targetIsHome)
+		grouchyTotals[key] += scoring.Grouchy(res, pred, targetIsHome)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -78,6 +80,7 @@ func (h *ProfileHandler) Get(w http.ResponseWriter, r *http.Request) {
 		"predictionCount": predictionCount,
 		"acesRadio":       rankFor(userID, acesTotals),
 		"upper90Club":     rankFor(userID, u90Totals),
+		"grouchy":         rankFor(userID, grouchyTotals),
 	}); err != nil {
 		log.Printf("profile: encode response: %v", err)
 	}

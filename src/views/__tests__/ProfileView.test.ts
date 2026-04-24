@@ -15,6 +15,7 @@ const profileData = {
   predictionCount: 3,
   acesRadio: { points: 15, rank: 1 },
   upper90Club: { points: 2, rank: 2 },
+  grouchy: { points: 1, rank: 1 },
 }
 
 async function mountProfile(userID: string, currentUserID: string | null = null, data = profileData) {
@@ -109,6 +110,19 @@ describe('ProfileView', () => {
     const wrapper = mount(ProfileView, { global: { plugins: [r], provide: { currentUser: ref(null) } } })
     await flushPromises()
     expect(wrapper.find('[data-testid="error"]').exists()).toBe(true)
+  })
+
+  it('shows Grouchy points and rank on profile', async () => {
+    const wrapper = await mountProfile('firebase:abc')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="grouchy-points"]').text()).toBe('1')
+    expect(wrapper.find('[data-testid="grouchy-rank"]').text()).toBe('#1')
+  })
+
+  it('hides Grouchy rank when not yet ranked', async () => {
+    const wrapper = await mountProfile('firebase:abc', null, { ...profileData, grouchy: { points: 0, rank: 0 } })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="grouchy-rank"]').exists()).toBe(false)
   })
 
   it('shows error when save fails', async () => {

@@ -8,6 +8,7 @@ import { ref, provide, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppHeader from './components/AppHeader.vue'
 import { getGoogleRedirectResult } from './firebase'
+import { flushGuestPredictions } from './guestPredictions'
 
 const route = useRoute()
 const router = useRouter()
@@ -31,6 +32,7 @@ onMounted(async () => {
         body: new URLSearchParams({ idToken: token }),
       })
       if (res.ok) {
+        await flushGuestPredictions()
         await fetchUser()
         router.push('/matches')
         return

@@ -477,6 +477,22 @@ body::after {
 }
 .btn-google:hover { opacity: 0.88; }
 
+.auth-alt {
+  margin-top: 1rem;
+  font-family: 'Barlow', sans-serif;
+  font-size: 0.9rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.auth-alt a {
+  color: var(--gold);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.auth-alt a:hover { text-decoration: underline; }
+
 /* ── Leaderboard ─────────────────────────────────────────────────────────── */
 .leaderboard-section {
   margin-bottom: 3rem;
@@ -764,7 +780,7 @@ body::after {
 
 .profile-stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 1px;
   background: var(--border);
   border: 1px solid var(--border);
@@ -1116,7 +1132,7 @@ body::after {
   max-width: 140px;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 600px) {
   .hamburger         { display: flex; }
   .site-nav          { display: none; }
   .mobile-user-handle { display: block; }

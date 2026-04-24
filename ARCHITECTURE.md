@@ -60,7 +60,7 @@ Entry point: `cmd/server/main.go`
 | `POST` | `/api/predictions` | required | Submit a score prediction (form data) |
 | `GET` | `/api/leaderboard` | none | `{entries: [{userID, handle, acesRadioPoints, upper90ClubPoints, grouchyPoints, hasProfile}]}` sorted by Aces Radio desc; all users with ≥1 prediction appear (0 pts until results land); `hasProfile: bool` false for legacy handle-only users |
 | `GET` | `/api/me` | optional | Current session user `{userID, handle}` or 401; lazily upserts user to `UserStore` |
-| `GET` | `/api/profile/:userID` | required | Public profile: handle, location, predictionCount, Aces Radio + Upper 90 Club standing |
+| `GET` | `/api/profile/:userID` | required | Public profile: handle, location, predictionCount, Aces Radio + Upper 90 Club + Grouchy™ standing |
 | `POST` | `/auth/handle` | required | Update display name + location; upserts to `UserStore`, rewrites session cookie |
 | `POST` | `/auth/session` | — | Exchange Firebase ID token for session cookie (form data) |
 | `GET` | `/auth/logout` | — | Clear session cookie, redirect to /matches |
@@ -118,13 +118,14 @@ Entry: `src/main.ts` → loads `/auth/config.js` → mounts Vue app
 | `src/views/SignupView.vue` | `/signup` | New account creation (email/password + Google SSO) |
 | `src/views/ResetView.vue` | `/reset` | Password reset request |
 | `src/views/LeaderboardView.vue` | `/leaderboard` | Unified sortable table (RANK · PREDICTOR · ACES RADIO · UPPER 90 CLUB · GROUCHY™); click column headers to sort; handles link to `/profile/:userID`; mobile: stacked cards, sort buttons above, active format score shown only |
-| `src/views/ProfileView.vue` | `/profile/:userID` | Public profile (stats + location); edit form shown only on own profile |
+| `src/views/ProfileView.vue` | `/profile/:userID` | Public profile; 4-stat grid (Predictions · Aces Radio · Upper 90 Club · Grouchy™, each with rank); edit form shown only on own profile |
 | `src/views/MatchDetailView.vue` | `/matches/:matchId` | Unified sortable table (RANK · PREDICTOR+PICK · ACES RADIO · UPPER 90 CLUB · GROUCHY™); click column headers to sort; prediction shown below handle; result cards link here, upcoming cards do not; mobile: stacked cards with active format score |
 | `src/views/RulesView.vue` | `/rules` | Scoring format explainer |
 | `src/views/NotFoundView.vue` | `*` | 404 catch-all |
-| `src/components/AppHeader.vue` | (all) | Nav header; desktop nav + hamburger drawer at ≤480px |
+| `src/components/AppHeader.vue` | (all) | Nav header; desktop nav + hamburger drawer at ≤600px |
 | `src/App.vue` | — | Root: fetches `/api/me` on mount + route change; handles Google redirect result |
 | `src/firebase.ts` | — | Firebase Auth SDK init + `signIn` / `signInWithGoogle` helpers |
+| `src/guestPredictions.ts` | — | Shared guest prediction helpers: `readGuestPredictions`, `writeGuestPredictions`, `flushGuestPredictions` (auto-submits localStorage predictions on login; called from LoginView, SignupView, App.vue Google redirect) |
 
 **CSS:** `src/style.css` — Industrial Black & Gold Brutalism design tokens as CSS variables, imported in `src/main.ts`.
 
