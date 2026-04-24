@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import AppHeader from '../AppHeader.vue'
 
@@ -68,5 +68,33 @@ describe('AppHeader', () => {
     await wrapper.find('button[data-testid="hamburger"]').trigger('click')
     await wrapper.find('[data-testid="mobile-drawer"] a').trigger('click')
     expect(wrapper.find('[data-testid="mobile-drawer"]').exists()).toBe(false)
+  })
+
+  it('drawer shows user profile link and sign out when logged in', async () => {
+    const wrapper = mount(AppHeader, { props: { user: { userID: 'firebase:abc', handle: 'CrewFan' } } })
+    await wrapper.find('button[data-testid="hamburger"]').trigger('click')
+    const drawer = wrapper.find('[data-testid="mobile-drawer"]')
+    expect(drawer.find('a[href="/profile/firebase:abc"]').exists()).toBe(true)
+    expect(drawer.find('a[href="/auth/logout"]').exists()).toBe(true)
+  })
+
+  it('drawer shows Sign In when no user and not loading', async () => {
+    const wrapper = mount(AppHeader, { props: { user: null } })
+    await wrapper.find('button[data-testid="hamburger"]').trigger('click')
+    expect(wrapper.find('[data-testid="mobile-drawer"] a[href="/login"]').exists()).toBe(true)
+  })
+
+  it('drawer hides Sign In when auth is loading', async () => {
+    const wrapper = mount(AppHeader, { props: { user: null, loading: true } })
+    await wrapper.find('button[data-testid="hamburger"]').trigger('click')
+    expect(wrapper.find('[data-testid="mobile-drawer"] a[href="/login"]').exists()).toBe(false)
+  })
+
+  it('removes resize listener on unmount', () => {
+    const removeSpy = vi.spyOn(window, 'removeEventListener')
+    const wrapper = mount(AppHeader, { props: { user: null } })
+    wrapper.unmount()
+    expect(removeSpy).toHaveBeenCalledWith('resize', expect.any(Function))
+    removeSpy.mockRestore()
   })
 })
