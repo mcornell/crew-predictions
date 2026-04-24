@@ -135,6 +135,40 @@ func (e *errMatchStore) GetAll() ([]models.Match, error)    { return nil, nil }
 func (e *errMatchStore) SaveAll(_ []models.Match) error     { return fmt.Errorf("store failed") }
 func (e *errMatchStore) Reset()                             {}
 
+func TestSaveResult_SkipsNonNumericHomeScore(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	resultStore := repository.NewMemoryResultStore()
+	matches := []models.Match{
+		{ID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", Status: "STATUS_FULL_TIME", HomeScore: "TBD", AwayScore: "1"},
+	}
+	fetcher := func() ([]models.Match, error) { return matches, nil }
+
+	if err := poll.PollOnce(context.Background(), matchStore, resultStore, fetcher); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	result, _ := resultStore.GetResult(context.Background(), "m1")
+	if result != nil {
+		t.Errorf("expected no result saved for non-numeric home score, got %+v", result)
+	}
+}
+
+func TestSaveResult_SkipsNonNumericAwayScore(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	resultStore := repository.NewMemoryResultStore()
+	matches := []models.Match{
+		{ID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", Status: "STATUS_FULL_TIME", HomeScore: "2", AwayScore: "TBD"},
+	}
+	fetcher := func() ([]models.Match, error) { return matches, nil }
+
+	if err := poll.PollOnce(context.Background(), matchStore, resultStore, fetcher); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	result, _ := resultStore.GetResult(context.Background(), "m1")
+	if result != nil {
+		t.Errorf("expected no result saved for non-numeric away score, got %+v", result)
+	}
+}
+
 func TestPollOnce_ReturnsErrorWhenFetcherFails(t *testing.T) {
 	matchStore := repository.NewMemoryMatchStore()
 	resultStore := repository.NewMemoryResultStore()
