@@ -46,6 +46,8 @@ func TestNext4amET_ExactlyFourAM_ReturnsTomorrowAt4AM(t *testing.T) {
 	}
 }
 
+func noopRecalc(_ context.Context) {}
+
 func TestStartDailyRefresh_PopulatesStoreImmediately(t *testing.T) {
 	etLoc, _ := time.LoadLocation("America/New_York")
 	store := repository.NewMemoryMatchStore()
@@ -58,7 +60,7 @@ func TestStartDailyRefresh_PopulatesStoreImmediately(t *testing.T) {
 		func(time.Duration, func()) {})
 	noopBot := bot.New(repository.NewMemoryPredictionStore(), repository.NewMemoryUserStore(), "Columbus Crew")
 
-	stop := startDailyRefresh(store, fetcher, poller, noopBot, etLoc)
+	stop := startDailyRefresh(store, fetcher, poller, noopBot, noopRecalc, etLoc)
 	defer close(stop)
 
 	select {
@@ -88,7 +90,7 @@ func TestStartDailyRefresh_BackfillsCompletedMatchResults(t *testing.T) {
 	poller := poll.NewMatchPoller(matchStore, resultStore, fetcher, func(time.Duration, func()) {})
 	noopBot := bot.New(repository.NewMemoryPredictionStore(), repository.NewMemoryUserStore(), "Columbus Crew")
 
-	stop := startDailyRefresh(matchStore, fetcher, poller, noopBot, etLoc)
+	stop := startDailyRefresh(matchStore, fetcher, poller, noopBot, noopRecalc, etLoc)
 	defer close(stop)
 
 	// startDailyRefresh calls refresh() immediately on startup; give it a moment
@@ -120,7 +122,7 @@ func TestStartDailyRefresh_BotPredictsUpcomingMatches(t *testing.T) {
 	poller := poll.NewMatchPoller(matchStore, resultStore, fetcher, func(time.Duration, func()) {})
 	twoOneBot := bot.New(predStore, userStore, "Columbus Crew")
 
-	stop := startDailyRefresh(matchStore, fetcher, poller, twoOneBot, etLoc)
+	stop := startDailyRefresh(matchStore, fetcher, poller, twoOneBot, noopRecalc, etLoc)
 	defer close(stop)
 
 	time.Sleep(50 * time.Millisecond)
@@ -134,6 +136,32 @@ func TestStartDailyRefresh_BotPredictsUpcomingMatches(t *testing.T) {
 	}
 	if p.HomeGoals != 2 || p.AwayGoals != 1 {
 		t.Errorf("expected 2-1, got %d-%d", p.HomeGoals, p.AwayGoals)
+	}
+}
+
+func TestStartDailyRefresh_CallsRecalcAfterBackfill(t *testing.T) {
+	etLoc, _ := time.LoadLocation("America/New_York")
+	matchStore := repository.NewMemoryMatchStore()
+	resultStore := repository.NewMemoryResultStore()
+	completedMatch := models.Match{
+		ID: "m-done", HomeTeam: "Columbus Crew", AwayTeam: "LA Galaxy",
+		Status: "STATUS_FULL_TIME", HomeScore: "2", AwayScore: "1",
+		Kickoff: time.Now().Add(-3 * time.Hour),
+	}
+	fetcher := func() ([]models.Match, error) { return []models.Match{completedMatch}, nil }
+	poller := poll.NewMatchPoller(matchStore, resultStore, fetcher, func(time.Duration, func()) {})
+	noopBot := bot.New(repository.NewMemoryPredictionStore(), repository.NewMemoryUserStore(), "Columbus Crew")
+
+	recalcCalled := make(chan struct{}, 1)
+	recalcFn := func(_ context.Context) { recalcCalled <- struct{}{} }
+
+	stop := startDailyRefresh(matchStore, fetcher, poller, noopBot, recalcFn, etLoc)
+	defer close(stop)
+
+	select {
+	case <-recalcCalled:
+	case <-time.After(time.Second):
+		t.Fatal("recalcFn was not called within 1 second of startup")
 	}
 }
 

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 
@@ -8,11 +9,12 @@ import (
 )
 
 type ResultsHandler struct {
-	store repository.ResultStore
+	store     repository.ResultStore
+	recalcFn  func(context.Context)
 }
 
-func NewResultsHandler(store repository.ResultStore) *ResultsHandler {
-	return &ResultsHandler{store: store}
+func NewResultsHandler(store repository.ResultStore, recalcFn func(context.Context)) *ResultsHandler {
+	return &ResultsHandler{store: store, recalcFn: recalcFn}
 }
 
 func (h *ResultsHandler) Submit(w http.ResponseWriter, r *http.Request) {
@@ -43,5 +45,6 @@ func (h *ResultsHandler) Submit(w http.ResponseWriter, r *http.Request) {
 		HomeGoals: home,
 		AwayGoals: away,
 	})
+	h.recalcFn(r.Context())
 	w.WriteHeader(http.StatusNoContent)
 }

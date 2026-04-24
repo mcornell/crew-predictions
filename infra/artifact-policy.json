@@ -1,0 +1,36 @@
+[
+    {
+        "name": "keep-prod",
+        "action": {
+            "type": "Keep"
+        },
+        "condition": {
+            "tagState": "tagged",
+            "tagPrefixes": [
+                "prod"
+            ]
+        }
+    },
+    {
+        "name": "keep-latest",
+        "action": {
+            "type": "Keep"
+        },
+        "condition": {
+            "tagState": "tagged",
+            "tagPrefixes": [
+                "latest"
+            ]
+        }
+    },
+    {
+        "name": "delete-old",
+        "action": {
+            "type": "Delete"
+        },
+        "condition": {
+            "tagState": "any",
+            "olderThan": "14400s"
+        }
+    }
+]

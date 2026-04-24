@@ -245,6 +245,86 @@ func TestMatchPoller_Backfill_SkipsNonTerminalMatch(t *testing.T) {
 	}
 }
 
+func TestMatchPoller_Backfill_LogsErrorWhenSaveResultFails(t *testing.T) {
+	p := newPoller(repository.NewMemoryMatchStore(), repository.NewErrorResultStore(), nil, capturingTimer(new([]time.Duration)))
+
+	// Should not panic — error is logged
+	p.Backfill(context.Background(), []models.Match{
+		{ID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", Status: "STATUS_FULL_TIME", HomeScore: "2", AwayScore: "1"},
+	})
+}
+
+func TestMatchPoller_Tick_LogsErrorWhenSaveAllFails(t *testing.T) {
+	resultStore := repository.NewMemoryResultStore()
+	fetcher := func() ([]models.Match, error) {
+		return []models.Match{{ID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", Status: "STATUS_IN_PROGRESS", HomeScore: "1", AwayScore: "0"}}, nil
+	}
+	p := poll.NewMatchPoller(&errMatchStore{}, resultStore, fetcher, immediateTimer)
+
+	pastMatch := models.Match{ID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", Status: "STATUS_SCHEDULED", Kickoff: time.Now().Add(-1 * time.Hour)}
+	p.Schedule([]models.Match{pastMatch})
+
+	// Should not panic — error is logged
+	p.Tick(context.Background())
+}
+
+func TestMatchPoller_Tick_LogsErrorWhenSaveResultFails(t *testing.T) {
+	fetcher := func() ([]models.Match, error) {
+		return []models.Match{{ID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", Status: "STATUS_FULL_TIME", HomeScore: "2", AwayScore: "1", Kickoff: time.Now().Add(-2 * time.Hour)}}, nil
+	}
+	p := poll.NewMatchPoller(repository.NewMemoryMatchStore(), repository.NewErrorResultStore(), fetcher, immediateTimer)
+
+	preMatch := models.Match{ID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", Status: "STATUS_SCHEDULED", Kickoff: time.Now().Add(-2 * time.Hour)}
+	p.Schedule([]models.Match{preMatch})
+
+	// Should not panic — error is logged
+	p.Tick(context.Background())
+}
+
+func TestMatchPoller_Tick_CallsOnResultSavedWhenMatchFinishes(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	resultStore := repository.NewMemoryResultStore()
+
+	terminalMatch := models.Match{
+		ID: "m-done", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",
+		Status: "STATUS_FULL_TIME", State: "post", HomeScore: "2", AwayScore: "1",
+		Kickoff: time.Now().Add(-2 * time.Hour),
+	}
+	p := newPoller(matchStore, resultStore, []models.Match{terminalMatch}, immediateTimer)
+	p.Schedule([]models.Match{{ID: "m-done", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", Status: "STATUS_SCHEDULED", Kickoff: time.Now().Add(-2 * time.Hour)}})
+
+	called := 0
+	p.SetOnResultSaved(func(_ context.Context) { called++ })
+
+	p.Tick(context.Background())
+
+	if called != 1 {
+		t.Errorf("expected onResultSaved called once, got %d", called)
+	}
+}
+
+func TestMatchPoller_Tick_DoesNotCallOnResultSavedWhenMatchStillLive(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	resultStore := repository.NewMemoryResultStore()
+
+	liveMatch := models.Match{
+		ID: "m-live", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",
+		Status: "STATUS_IN_PROGRESS", State: "in", HomeScore: "1", AwayScore: "0",
+		Kickoff: time.Now().Add(-1 * time.Hour),
+	}
+	p := newPoller(matchStore, resultStore, []models.Match{liveMatch}, immediateTimer)
+	p.Schedule([]models.Match{liveMatch})
+
+	called := 0
+	p.SetOnResultSaved(func(_ context.Context) { called++ })
+
+	p.Tick(context.Background())
+
+	if called != 0 {
+		t.Errorf("expected onResultSaved not called for live match, got %d", called)
+	}
+}
+
 func TestMatchPoller_Reset_ClearsActiveAndReschedules(t *testing.T) {
 	matchStore := repository.NewMemoryMatchStore()
 	resultStore := repository.NewMemoryResultStore()

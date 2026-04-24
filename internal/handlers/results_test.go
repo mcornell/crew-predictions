@@ -11,9 +11,39 @@ import (
 	"github.com/mcornell/crew-predictions/internal/repository"
 )
 
+func noopRecalc(_ context.Context) {}
+
+func TestResultsHandler_CallsRecalcFnAfterSave(t *testing.T) {
+	called := 0
+	recalcFn := func(_ context.Context) { called++ }
+	rh := handlers.NewResultsHandler(repository.NewMemoryResultStore(), recalcFn)
+	req := httptest.NewRequest(http.MethodPost, "/admin/results",
+		strings.NewReader("match_id=m1&home_goals=2&away_goals=0"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	rh.Submit(w, req)
+	if called != 1 {
+		t.Errorf("expected recalcFn called once, got %d", called)
+	}
+}
+
+func TestResultsHandler_DoesNotCallRecalcFnOnBadRequest(t *testing.T) {
+	called := 0
+	recalcFn := func(_ context.Context) { called++ }
+	rh := handlers.NewResultsHandler(repository.NewMemoryResultStore(), recalcFn)
+	req := httptest.NewRequest(http.MethodPost, "/admin/results",
+		strings.NewReader("match_id=&home_goals=2&away_goals=0"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	rh.Submit(w, req)
+	if called != 0 {
+		t.Errorf("expected recalcFn not called on bad request, got %d", called)
+	}
+}
+
 func TestResultsHandler_SavesResult(t *testing.T) {
 	store := repository.NewMemoryResultStore()
-	rh := handlers.NewResultsHandler(store)
+	rh := handlers.NewResultsHandler(store, noopRecalc)
 
 	req := httptest.NewRequest(http.MethodPost, "/admin/results",
 		strings.NewReader("match_id=m1&home_goals=2&away_goals=0"))
@@ -35,7 +65,7 @@ func TestResultsHandler_SavesResult(t *testing.T) {
 }
 
 func TestResultsHandler_RejectsBadHomeGoals(t *testing.T) {
-	rh := handlers.NewResultsHandler(repository.NewMemoryResultStore())
+	rh := handlers.NewResultsHandler(repository.NewMemoryResultStore(), noopRecalc)
 	req := httptest.NewRequest(http.MethodPost, "/admin/results",
 		strings.NewReader("match_id=m1&home_goals=bad&away_goals=0"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -49,7 +79,7 @@ func TestResultsHandler_RejectsBadHomeGoals(t *testing.T) {
 }
 
 func TestResultsHandler_RejectsNegativeGoals(t *testing.T) {
-	rh := handlers.NewResultsHandler(repository.NewMemoryResultStore())
+	rh := handlers.NewResultsHandler(repository.NewMemoryResultStore(), noopRecalc)
 	req := httptest.NewRequest(http.MethodPost, "/admin/results",
 		strings.NewReader("match_id=m1&home_goals=-1&away_goals=0"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -61,7 +91,7 @@ func TestResultsHandler_RejectsNegativeGoals(t *testing.T) {
 }
 
 func TestResultsHandler_RejectsTooLargeGoals(t *testing.T) {
-	rh := handlers.NewResultsHandler(repository.NewMemoryResultStore())
+	rh := handlers.NewResultsHandler(repository.NewMemoryResultStore(), noopRecalc)
 	req := httptest.NewRequest(http.MethodPost, "/admin/results",
 		strings.NewReader("match_id=m1&home_goals=0&away_goals=100"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -73,7 +103,7 @@ func TestResultsHandler_RejectsTooLargeGoals(t *testing.T) {
 }
 
 func TestResultsHandler_RejectsEmptyMatchID(t *testing.T) {
-	rh := handlers.NewResultsHandler(repository.NewMemoryResultStore())
+	rh := handlers.NewResultsHandler(repository.NewMemoryResultStore(), noopRecalc)
 	req := httptest.NewRequest(http.MethodPost, "/admin/results",
 		strings.NewReader("match_id=&home_goals=2&away_goals=0"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -85,7 +115,7 @@ func TestResultsHandler_RejectsEmptyMatchID(t *testing.T) {
 }
 
 func TestResultsHandler_RejectsBadAwayGoals(t *testing.T) {
-	rh := handlers.NewResultsHandler(repository.NewMemoryResultStore())
+	rh := handlers.NewResultsHandler(repository.NewMemoryResultStore(), noopRecalc)
 	req := httptest.NewRequest(http.MethodPost, "/admin/results",
 		strings.NewReader("match_id=m1&home_goals=2&away_goals=bad"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")

@@ -2,6 +2,7 @@ package handlers_test
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -11,6 +12,55 @@ import (
 	"github.com/mcornell/crew-predictions/internal/models"
 	"github.com/mcornell/crew-predictions/internal/repository"
 )
+
+func TestPollScoresHandler_CallsRecalcFnAfterSuccessfulPoll(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	matchStore.Seed([]models.Match{{
+		ID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",
+		Kickoff: time.Now().Add(-2 * time.Hour), Status: "STATUS_FULL_TIME", State: "post",
+		HomeScore: "2", AwayScore: "0",
+	}})
+	fetcher := func() ([]models.Match, error) { return matchStore.GetAll() }
+
+	called := 0
+	recalcFn := func(_ context.Context) { called++ }
+	h := handlers.NewPollScoresHandler(matchStore, repository.NewMemoryResultStore(), fetcher, recalcFn)
+	req := httptest.NewRequest(http.MethodPost, "/admin/poll-scores", nil)
+	w := httptest.NewRecorder()
+	h.Poll(w, req)
+
+	if called != 1 {
+		t.Errorf("expected recalcFn called once, got %d", called)
+	}
+}
+
+func TestPollScoresHandler_DoesNotCallRecalcFnOnFetcherFailure(t *testing.T) {
+	called := 0
+	recalcFn := func(_ context.Context) { called++ }
+	fetcher := func() ([]models.Match, error) { return nil, fmt.Errorf("espn down") }
+	h := handlers.NewPollScoresHandler(repository.NewMemoryMatchStore(), repository.NewMemoryResultStore(), fetcher, recalcFn)
+	req := httptest.NewRequest(http.MethodPost, "/admin/poll-scores", nil)
+	w := httptest.NewRecorder()
+	h.Poll(w, req)
+	if called != 0 {
+		t.Errorf("expected recalcFn not called on fetch failure, got %d", called)
+	}
+}
+
+func TestPollScoresHandler_Returns500WhenFetcherFails(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	resultStore := repository.NewMemoryResultStore()
+	fetcher := func() ([]models.Match, error) { return nil, fmt.Errorf("espn down") }
+
+	h := handlers.NewPollScoresHandler(matchStore, resultStore, fetcher, func(_ context.Context) {})
+	req := httptest.NewRequest(http.MethodPost, "/admin/poll-scores", nil)
+	w := httptest.NewRecorder()
+	h.Poll(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("expected 500, got %d", w.Code)
+	}
+}
 
 func TestPollScoresHandler_CallsFetcherAndWritesResult(t *testing.T) {
 	matchStore := repository.NewMemoryMatchStore()
@@ -24,7 +74,7 @@ func TestPollScoresHandler_CallsFetcherAndWritesResult(t *testing.T) {
 
 	fetcher := func() ([]models.Match, error) { return matchStore.GetAll() }
 
-	h := handlers.NewPollScoresHandler(matchStore, resultStore, fetcher)
+	h := handlers.NewPollScoresHandler(matchStore, resultStore, fetcher, func(_ context.Context) {})
 	req := httptest.NewRequest(http.MethodPost, "/admin/poll-scores", nil)
 	w := httptest.NewRecorder()
 

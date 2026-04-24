@@ -54,6 +54,50 @@ func TestFirestoreUserStore_UpsertPreservesLocationWhenEmpty(t *testing.T) {
 	}
 }
 
+func TestFirestoreUserStore_UpdateScoresRoundTrips(t *testing.T) {
+	store := firestoreUserStoreOrSkip(t)
+	ctx := context.Background()
+
+	_ = store.Upsert(ctx, repository.User{UserID: "fs-user-scores", Handle: "fan"})
+	if err := store.UpdateScores(ctx, "fs-user-scores", 3, 15, 6, 1); err != nil {
+		t.Fatalf("UpdateScores failed: %v", err)
+	}
+
+	got, err := store.GetByID(ctx, "fs-user-scores")
+	if err != nil {
+		t.Fatalf("GetByID failed: %v", err)
+	}
+	if got.AcesRadioPoints != 15 {
+		t.Errorf("expected AcesRadioPoints 15, got %d", got.AcesRadioPoints)
+	}
+	if got.Upper90Points != 6 {
+		t.Errorf("expected Upper90Points 6, got %d", got.Upper90Points)
+	}
+	if got.GrouchyPoints != 1 {
+		t.Errorf("expected GrouchyPoints 1, got %d", got.GrouchyPoints)
+	}
+	if got.PredictionCount != 3 {
+		t.Errorf("expected PredictionCount 3, got %d", got.PredictionCount)
+	}
+}
+
+func TestFirestoreUserStore_UpsertPreservesScoringFields(t *testing.T) {
+	store := firestoreUserStoreOrSkip(t)
+	ctx := context.Background()
+
+	_ = store.Upsert(ctx, repository.User{UserID: "fs-user-scores-preserve", Handle: "fan"})
+	_ = store.UpdateScores(ctx, "fs-user-scores-preserve", 3, 15, 6, 1)
+	_ = store.Upsert(ctx, repository.User{UserID: "fs-user-scores-preserve", Handle: "fan-updated"}) // auth handler upsert
+
+	got, err := store.GetByID(ctx, "fs-user-scores-preserve")
+	if err != nil {
+		t.Fatalf("GetByID failed: %v", err)
+	}
+	if got.AcesRadioPoints != 15 {
+		t.Errorf("expected AcesRadioPoints 15 preserved after Upsert, got %d", got.AcesRadioPoints)
+	}
+}
+
 func TestFirestoreUserStore_UpsertUpdatesHandle(t *testing.T) {
 	store := firestoreUserStoreOrSkip(t)
 	ctx := context.Background()

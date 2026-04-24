@@ -112,6 +112,29 @@ func TestTwoOneBot_SkipsNonScheduledMatch(t *testing.T) {
 	}
 }
 
+func TestTwoOneBot_SkipsMatchOnGetByMatchAndUserError(t *testing.T) {
+	ctx := context.Background()
+	preds := repository.NewGetByMatchAndUserErrorPredictionStore()
+	b := bot.New(preds, repository.NewMemoryUserStore(), "Columbus Crew")
+
+	b.Predict(ctx, []models.Match{upcoming("m-err", "Columbus Crew", "FC Dallas")})
+
+	// GetByMatchAndUser errored, so no prediction should have been saved
+	all, _ := preds.GetByMatch(ctx, "m-err")
+	if len(all) != 0 {
+		t.Errorf("expected no prediction saved when GetByMatchAndUser fails, got %d", len(all))
+	}
+}
+
+func TestTwoOneBot_LogsErrorOnUpsertFailure(t *testing.T) {
+	ctx := context.Background()
+	preds := repository.NewMemoryPredictionStore()
+	b := bot.New(preds, repository.NewErrorUpsertUserStore(), "Columbus Crew")
+
+	// Should not panic — error is logged
+	b.Predict(ctx, nil)
+}
+
 func TestTwoOneBot_RegistersUserInUserStore(t *testing.T) {
 	ctx := context.Background()
 	preds := repository.NewMemoryPredictionStore()

@@ -11,14 +11,22 @@ import (
 )
 
 type MatchPoller struct {
-	matchStore  repository.MatchStore
-	resultStore repository.ResultStore
-	fetcher     func() ([]models.Match, error)
+	matchStore    repository.MatchStore
+	resultStore   repository.ResultStore
+	fetcher       func() ([]models.Match, error)
+	onResultSaved func(ctx context.Context)
 
 	mu        sync.Mutex
 	scheduled map[string]bool
 	active    map[string]bool
 	timerFunc func(time.Duration, func())
+}
+
+// SetOnResultSaved registers a callback invoked after each result is saved during Tick.
+func (p *MatchPoller) SetOnResultSaved(fn func(ctx context.Context)) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.onResultSaved = fn
 }
 
 func NewMatchPoller(
@@ -136,11 +144,20 @@ func (p *MatchPoller) Tick(ctx context.Context) {
 	}
 	p.mu.Unlock()
 
+	savedAny := false
 	for _, m := range toSave {
 		slog.Info("poller: match finished, saving result", "matchID", m.ID, "status", m.Status, "homeScore", m.HomeScore, "awayScore", m.AwayScore)
 		if err := saveResult(ctx, p.resultStore, m); err != nil {
 			slog.Error("poller: save result failed", "matchID", m.ID, "error", err)
+		} else {
+			savedAny = true
 		}
+	}
+	p.mu.Lock()
+	fn := p.onResultSaved
+	p.mu.Unlock()
+	if savedAny && fn != nil {
+		fn(ctx)
 	}
 }
 

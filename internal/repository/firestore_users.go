@@ -30,6 +30,17 @@ func (s *FirestoreUserStore) Upsert(ctx context.Context, u User) error {
 	return err
 }
 
+func (s *FirestoreUserStore) UpdateScores(ctx context.Context, userID string, count, aces, u90, grouchy int) error {
+	data := map[string]any{
+		"acesRadioPoints": aces,
+		"upper90Points":   u90,
+		"grouchyPoints":   grouchy,
+		"predictionCount": count,
+	}
+	_, err := s.client.Collection("users").Doc(userID).Set(ctx, data, firestore.MergeAll)
+	return err
+}
+
 func (s *FirestoreUserStore) GetByID(ctx context.Context, userID string) (*User, error) {
 	snap, err := s.client.Collection("users").Doc(userID).Get(ctx)
 	if err != nil {
@@ -59,12 +70,25 @@ func (s *FirestoreUserStore) GetAll(ctx context.Context) ([]User, error) {
 
 func toUser(userID string, snap *firestore.DocumentSnapshot) (*User, error) {
 	var doc struct {
-		Handle   string `firestore:"handle"`
-		Provider string `firestore:"provider"`
-		Location string `firestore:"location"`
+		Handle          string `firestore:"handle"`
+		Provider        string `firestore:"provider"`
+		Location        string `firestore:"location"`
+		AcesRadioPoints int    `firestore:"acesRadioPoints"`
+		Upper90Points   int    `firestore:"upper90Points"`
+		GrouchyPoints   int    `firestore:"grouchyPoints"`
+		PredictionCount int    `firestore:"predictionCount"`
 	}
 	if err := snap.DataTo(&doc); err != nil {
 		return nil, err
 	}
-	return &User{UserID: userID, Handle: doc.Handle, Provider: doc.Provider, Location: doc.Location}, nil
+	return &User{
+		UserID:          userID,
+		Handle:          doc.Handle,
+		Provider:        doc.Provider,
+		Location:        doc.Location,
+		AcesRadioPoints: doc.AcesRadioPoints,
+		Upper90Points:   doc.Upper90Points,
+		GrouchyPoints:   doc.GrouchyPoints,
+		PredictionCount: doc.PredictionCount,
+	}, nil
 }
