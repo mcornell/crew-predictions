@@ -2,6 +2,7 @@ package handlers_test
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -11,6 +12,21 @@ import (
 	"github.com/mcornell/crew-predictions/internal/models"
 	"github.com/mcornell/crew-predictions/internal/repository"
 )
+
+func TestPollScoresHandler_Returns500WhenFetcherFails(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	resultStore := repository.NewMemoryResultStore()
+	fetcher := func() ([]models.Match, error) { return nil, fmt.Errorf("espn down") }
+
+	h := handlers.NewPollScoresHandler(matchStore, resultStore, fetcher)
+	req := httptest.NewRequest(http.MethodPost, "/admin/poll-scores", nil)
+	w := httptest.NewRecorder()
+	h.Poll(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("expected 500, got %d", w.Code)
+	}
+}
 
 func TestPollScoresHandler_CallsFetcherAndWritesResult(t *testing.T) {
 	matchStore := repository.NewMemoryMatchStore()
