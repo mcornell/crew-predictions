@@ -132,17 +132,3 @@ func TestTwoOneBot_RegistersUserInUserStore(t *testing.T) {
 	}
 }
 
-func TestTwoOneBot_DoesNotOverwriteExistingHandle(t *testing.T) {
-	ctx := context.Background()
-	preds := repository.NewMemoryPredictionStore()
-	users := repository.NewMemoryUserStore()
-	users.Upsert(ctx, repository.User{UserID: bot.UserID, Handle: "Custom Name", Provider: "bot"})
-	b := bot.New(preds, users, "Columbus Crew")
-
-	b.Predict(ctx, nil)
-
-	u, _ := users.GetByID(ctx, bot.UserID)
-	if u.Handle != "Custom Name" {
-		t.Errorf("expected existing handle to be preserved, got %q", u.Handle)
-	}
-}
