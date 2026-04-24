@@ -239,6 +239,11 @@ jobs:
           docker push us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions:sha-${{ github.sha }}
           docker push us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions:latest
 
+      - name: Tag staging image
+        run: |
+          IMAGE=us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions
+          gcloud artifacts docker tags add ${IMAGE}:sha-${{ github.sha }} ${IMAGE}:staging-${{ github.sha }} --quiet
+
       - name: Deploy to staging Cloud Run
         run: |
           gcloud run deploy crew-predictions-staging \
@@ -373,3 +378,8 @@ jobs:
           PROD_URL=$(gcloud run services describe crew-predictions --region=us-east5 --format='value(status.url)')
           curl -f "$PROD_URL/"
           curl -f "$PROD_URL/api/matches"
+
+      - name: Tag validated prod image
+        run: |
+          IMAGE=us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions
+          gcloud artifacts docker tags add ${IMAGE}:sha-${{ env.DEVELOP_SHA }} ${IMAGE}:prod --quiet
