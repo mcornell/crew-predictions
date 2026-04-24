@@ -41,6 +41,27 @@ func (e *GetByMatchAndUserErrorPredictionStore) GetByMatchAndUser(_ context.Cont
 	return nil, fmt.Errorf("simulated GetByMatchAndUser failure")
 }
 
+// ErrorGetAllPredictionStore is a test double that always fails on GetAll.
+type ErrorGetAllPredictionStore struct{}
+
+func NewErrorGetAllPredictionStore() *ErrorGetAllPredictionStore {
+	return &ErrorGetAllPredictionStore{}
+}
+
+func (e *ErrorGetAllPredictionStore) Save(_ context.Context, _ Prediction) error { return nil }
+
+func (e *ErrorGetAllPredictionStore) GetByMatchAndUser(_ context.Context, _, _ string) (*Prediction, error) {
+	return nil, nil
+}
+
+func (e *ErrorGetAllPredictionStore) GetByMatch(_ context.Context, _ string) ([]Prediction, error) {
+	return nil, nil
+}
+
+func (e *ErrorGetAllPredictionStore) GetAll(_ context.Context) ([]Prediction, error) {
+	return nil, fmt.Errorf("simulated GetAll failure")
+}
+
 // ErrorUpsertUserStore is a test double that always fails on Upsert.
 type ErrorUpsertUserStore struct{}
 
