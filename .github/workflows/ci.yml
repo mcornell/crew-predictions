@@ -124,6 +124,22 @@ jobs:
           timeout 30 bash -c 'until curl -sf http://localhost:9099; do sleep 1; done'
           timeout 30 bash -c 'until curl -sf http://localhost:8081; do sleep 1; done'
 
+      - name: Go integration tests
+        run: gotestsum --junitfile go-integration-results.xml -- -tags integration ./...
+        env:
+          FIRESTORE_EMULATOR_HOST: localhost:8081
+          FIREBASE_PROJECT_ID: crew-predictions
+
+      - name: Go integration test report
+        uses: dorny/test-reporter@v3
+        if: always()
+        with:
+          name: Go Integration Tests
+          path: go-integration-results.xml
+          reporter: java-junit
+          fail-on-error: false
+          fail-on-empty: false
+
       - name: E2e tests
         run: npm test
         env:
