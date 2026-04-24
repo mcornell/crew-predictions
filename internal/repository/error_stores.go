@@ -26,6 +26,21 @@ func (e *ErrorPredictionStore) GetAll(_ context.Context) ([]Prediction, error) {
 	return nil, nil
 }
 
+// GetByMatchAndUserErrorPredictionStore delegates to a MemoryPredictionStore for all
+// methods except GetByMatchAndUser, which always fails. This lets tests verify that
+// the bot skips prediction saves without losing access to GetByMatch/GetAll.
+type GetByMatchAndUserErrorPredictionStore struct {
+	*MemoryPredictionStore
+}
+
+func NewGetByMatchAndUserErrorPredictionStore() *GetByMatchAndUserErrorPredictionStore {
+	return &GetByMatchAndUserErrorPredictionStore{NewMemoryPredictionStore()}
+}
+
+func (e *GetByMatchAndUserErrorPredictionStore) GetByMatchAndUser(_ context.Context, _, _ string) (*Prediction, error) {
+	return nil, fmt.Errorf("simulated GetByMatchAndUser failure")
+}
+
 // ErrorUpsertUserStore is a test double that always fails on Upsert.
 type ErrorUpsertUserStore struct{}
 
