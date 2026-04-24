@@ -55,18 +55,16 @@ jobs:
           set -o pipefail
           go test -v -coverprofile=go-coverage.out ./... | tee go-test-results.txt
 
-      - name: Go test report
-        uses: dorny/test-reporter@v1
-        if: always()
-        with:
-          name: Go Tests
-          path: go-test-results.txt
-          reporter: golang-test
-          fail-on-error: false
-
-      - name: Go coverage summary
+      - name: Go test summary
         if: always()
         run: |
+          PASS=$(grep "^--- PASS:" go-test-results.txt | wc -l)
+          FAIL=$(grep "^--- FAIL:" go-test-results.txt | wc -l)
+          SKIP=$(grep "^--- SKIP:" go-test-results.txt | wc -l)
+          echo "## Go Tests" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **$PASS** passed · ⏭️ **$SKIP** skipped · ❌ **$FAIL** failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "## Go Coverage" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           go tool cover -func=go-coverage.out >> $GITHUB_STEP_SUMMARY
@@ -130,13 +128,14 @@ jobs:
           FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
 
       - name: Playwright test report
-        uses: dorny/test-reporter@v1
+        uses: dorny/test-reporter@v3
         if: always()
         with:
           name: Playwright E2E Tests
           path: playwright-results.xml
           reporter: java-junit
           fail-on-error: false
+          fail-on-empty: false
 
       - name: Upload Playwright report
         if: failure()
