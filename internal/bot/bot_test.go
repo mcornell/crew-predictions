@@ -124,10 +124,25 @@ func TestTwoOneBot_RegistersUserInUserStore(t *testing.T) {
 	if err != nil || u == nil {
 		t.Fatal("expected bot user in UserStore, got nil")
 	}
-	if u.Handle != "TwoOneBot" {
-		t.Errorf("expected handle TwoOneBot, got %q", u.Handle)
+	if u.Handle != "Upper 90 Club's TwoOneBot" {
+		t.Errorf("expected handle %q, got %q", "Upper 90 Club's TwoOneBot", u.Handle)
 	}
 	if u.Location != "From the Upper 90 Club" {
 		t.Errorf("expected location 'From the Upper 90 Club', got %q", u.Location)
+	}
+}
+
+func TestTwoOneBot_DoesNotOverwriteExistingHandle(t *testing.T) {
+	ctx := context.Background()
+	preds := repository.NewMemoryPredictionStore()
+	users := repository.NewMemoryUserStore()
+	users.Upsert(ctx, repository.User{UserID: bot.UserID, Handle: "Custom Name", Provider: "bot"})
+	b := bot.New(preds, users, "Columbus Crew")
+
+	b.Predict(ctx, nil)
+
+	u, _ := users.GetByID(ctx, bot.UserID)
+	if u.Handle != "Custom Name" {
+		t.Errorf("expected existing handle to be preserved, got %q", u.Handle)
 	}
 }

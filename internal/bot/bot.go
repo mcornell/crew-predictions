@@ -22,13 +22,19 @@ func New(predictions repository.PredictionStore, users repository.UserStore, tar
 }
 
 func (b *TwoOneBot) Predict(ctx context.Context, matches []models.Match) {
-	if err := b.users.Upsert(ctx, repository.User{
-		UserID:   UserID,
-		Handle:   "TwoOneBot",
-		Location: "From the Upper 90 Club",
-		Provider: "bot",
-	}); err != nil {
-		slog.Error("twoonebot: failed to register user", "error", err)
+	existing, err := b.users.GetByID(ctx, UserID)
+	if err != nil {
+		slog.Error("twoonebot: failed to check existing user", "error", err)
+	}
+	if existing == nil {
+		if err := b.users.Upsert(ctx, repository.User{
+			UserID:   UserID,
+			Handle:   "Upper 90 Club's TwoOneBot",
+			Location: "From the Upper 90 Club",
+			Provider: "bot",
+		}); err != nil {
+			slog.Error("twoonebot: failed to register user", "error", err)
+		}
 	}
 
 	for _, m := range matches {
