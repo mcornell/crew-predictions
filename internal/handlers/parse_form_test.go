@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -43,7 +44,7 @@ func TestPredictionsHandler_Returns400WhenParseFails(t *testing.T) {
 }
 
 func TestResultsHandler_Returns400WhenParseFails(t *testing.T) {
-	h := NewResultsHandler(repository.NewMemoryResultStore())
+	h := NewResultsHandler(repository.NewMemoryResultStore(), func(_ context.Context) {})
 	req := bodyErrRequest(http.MethodPost, "/admin/results")
 	w := httptest.NewRecorder()
 	h.Submit(w, req)

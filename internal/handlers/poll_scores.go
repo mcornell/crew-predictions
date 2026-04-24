@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/mcornell/crew-predictions/internal/models"
@@ -12,10 +13,11 @@ type PollScoresHandler struct {
 	matchStore  repository.MatchStore
 	resultStore repository.ResultStore
 	fetcher     func() ([]models.Match, error)
+	recalcFn    func(context.Context)
 }
 
-func NewPollScoresHandler(matchStore repository.MatchStore, resultStore repository.ResultStore, fetcher func() ([]models.Match, error)) *PollScoresHandler {
-	return &PollScoresHandler{matchStore: matchStore, resultStore: resultStore, fetcher: fetcher}
+func NewPollScoresHandler(matchStore repository.MatchStore, resultStore repository.ResultStore, fetcher func() ([]models.Match, error), recalcFn func(context.Context)) *PollScoresHandler {
+	return &PollScoresHandler{matchStore: matchStore, resultStore: resultStore, fetcher: fetcher, recalcFn: recalcFn}
 }
 
 func (h *PollScoresHandler) Poll(w http.ResponseWriter, r *http.Request) {
@@ -23,5 +25,6 @@ func (h *PollScoresHandler) Poll(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	h.recalcFn(r.Context())
 	w.WriteHeader(http.StatusNoContent)
 }
