@@ -96,7 +96,7 @@ jobs:
       - name: Vue unit tests
         run: npm run test:unit -- --coverage
 
-      - name: Vitest coverage summary
+      - name: Vue coverage summary
         if: always()
         run: |
           if [ -f coverage/coverage-summary.json ]; then
@@ -111,6 +111,17 @@ jobs:
               print(f'| {k.capitalize()} | {v[\"pct\"]}% | {v[\"covered\"]}/{v[\"total\"]} |')
           " >> $GITHUB_STEP_SUMMARY
           fi
+
+      - name: Vue test report
+        uses: dorny/test-reporter@v3
+        if: always()
+        with:
+          name: Vue Tests
+          path: vitest-results.xml
+          reporter: java-junit
+          list-tests: failed
+          fail-on-error: false
+          fail-on-empty: false
 
       - name: TypeScript type check
         run: npm run typecheck
@@ -145,7 +156,9 @@ jobs:
           timeout 30 bash -c 'until curl -sf http://localhost:8081; do sleep 1; done'
 
       - name: Go integration tests
-        run: gotestsum --junitfile go-integration-results.xml -- -tags integration ./internal/repository/...
+        run: |
+          echo "## Go Integration Tests" >> $GITHUB_STEP_SUMMARY
+          gotestsum --junitfile go-integration-results.xml -- -tags integration ./internal/repository/...
         env:
           FIRESTORE_EMULATOR_HOST: localhost:8081
           FIREBASE_PROJECT_ID: crew-predictions
@@ -157,11 +170,14 @@ jobs:
           name: Go Integration Tests
           path: go-integration-results.xml
           reporter: java-junit
+          list-tests: failed
           fail-on-error: false
           fail-on-empty: false
 
       - name: E2e tests
-        run: npm test
+        run: |
+          echo "## Playwright E2E" >> $GITHUB_STEP_SUMMARY
+          npm test
         env:
           FIREBASE_PROJECT_ID: crew-predictions
           FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
@@ -173,6 +189,7 @@ jobs:
           name: Playwright E2E Tests
           path: playwright-results.xml
           reporter: java-junit
+          list-tests: failed
           fail-on-error: false
           fail-on-empty: false
 
