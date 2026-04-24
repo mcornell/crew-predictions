@@ -1,13 +1,25 @@
 package handlers
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/mcornell/crew-predictions/internal/repository"
 )
+
+var sessionSecret []byte
+
+// SetSessionSecret configures the HMAC key for session cookie signing.
+// Call at startup from main.go; in tests, call with t.Cleanup to restore nil.
+func SetSessionSecret(key []byte) {
+	sessionSecret = key
+}
 
 func Logout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
@@ -34,7 +46,24 @@ func UserFromSession(r *http.Request) *repository.User {
 	if err != nil {
 		return nil
 	}
-	data, err := base64.StdEncoding.DecodeString(cookie.Value)
+	value := cookie.Value
+	if len(sessionSecret) > 0 {
+		parts := strings.SplitN(value, ".", 2)
+		if len(parts) != 2 {
+			return nil
+		}
+		got, err := hex.DecodeString(parts[1])
+		if err != nil {
+			return nil
+		}
+		mac := hmac.New(sha256.New, sessionSecret)
+		mac.Write([]byte(parts[0]))
+		if !hmac.Equal(mac.Sum(nil), got) {
+			return nil
+		}
+		value = parts[0]
+	}
+	data, err := base64.StdEncoding.DecodeString(value)
 	if err != nil {
 		return nil
 	}

@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/mcornell/crew-predictions/internal/handlers"
+	"github.com/mcornell/crew-predictions/internal/repository"
 )
 
 func cookieWithPayload(payload map[string]string) *http.Cookie {
@@ -28,6 +30,69 @@ func TestUserFromSession_ReturnsNilForEmptyHandle(t *testing.T) {
 	req.AddCookie(cookieWithPayload(map[string]string{"userID": "google:abc", "handle": ""}))
 	if got := handlers.UserFromSession(req); got != nil {
 		t.Errorf("expected nil for empty handle, got %+v", got)
+	}
+}
+
+func TestUserFromSession_RejectsUnsignedCookieWhenSecretSet(t *testing.T) {
+	handlers.SetSessionSecret([]byte("test-secret"))
+	t.Cleanup(func() { handlers.SetSessionSecret(nil) })
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.AddCookie(cookieWithPayload(map[string]string{"userID": "u1", "handle": "fan"}))
+	if got := handlers.UserFromSession(req); got != nil {
+		t.Error("expected nil for unsigned cookie when secret is set")
+	}
+}
+
+func TestUserFromSession_AcceptsValidSignedCookie(t *testing.T) {
+	handlers.SetSessionSecret([]byte("test-secret"))
+	t.Cleanup(func() { handlers.SetSessionSecret(nil) })
+
+	tok := &handlers.FirebaseToken{UID: "uid1", DisplayName: "Fan", Provider: "google.com"}
+	h := handlers.NewSessionHandler(&mockVerifier{token: tok}, repository.NewMemoryUserStore())
+	req := httptest.NewRequest(http.MethodPost, "/auth/session", strings.NewReader("idToken=valid"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	h.Create(w, req)
+
+	req2 := httptest.NewRequest(http.MethodGet, "/", nil)
+	for _, c := range w.Result().Cookies() {
+		req2.AddCookie(c)
+	}
+	if got := handlers.UserFromSession(req2); got == nil {
+		t.Error("expected user from valid signed cookie")
+	}
+}
+
+func TestUserFromSession_RejectsTamperedPayload(t *testing.T) {
+	handlers.SetSessionSecret([]byte("test-secret"))
+	t.Cleanup(func() { handlers.SetSessionSecret(nil) })
+
+	tok := &handlers.FirebaseToken{UID: "uid1", DisplayName: "Fan", Provider: "google.com"}
+	h := handlers.NewSessionHandler(&mockVerifier{token: tok}, repository.NewMemoryUserStore())
+	req := httptest.NewRequest(http.MethodPost, "/auth/session", strings.NewReader("idToken=valid"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	h.Create(w, req)
+
+	var cookieVal string
+	for _, c := range w.Result().Cookies() {
+		if c.Name == "__session" {
+			cookieVal = c.Value
+		}
+	}
+	parts := strings.SplitN(cookieVal, ".", 2)
+	if len(parts) != 2 {
+		t.Fatal("expected signed cookie with dot separator, got: " + cookieVal)
+	}
+	payload := []byte(parts[0])
+	payload[len(payload)-1] ^= 0x01
+	tampered := string(payload) + "." + parts[1]
+
+	req2 := httptest.NewRequest(http.MethodGet, "/", nil)
+	req2.AddCookie(&http.Cookie{Name: "__session", Value: tampered})
+	if got := handlers.UserFromSession(req2); got != nil {
+		t.Error("expected nil for tampered payload")
 	}
 }
 
