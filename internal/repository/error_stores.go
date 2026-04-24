@@ -79,6 +79,39 @@ func (e *ErrorUpsertUserStore) GetAll(_ context.Context) ([]User, error) {
 	return nil, nil
 }
 
+// ErrorGetAllUserStore is a test double that always fails on GetAll.
+type ErrorGetAllUserStore struct{}
+
+func NewErrorGetAllUserStore() *ErrorGetAllUserStore { return &ErrorGetAllUserStore{} }
+
+func (e *ErrorGetAllUserStore) Upsert(_ context.Context, _ User) error { return nil }
+
+func (e *ErrorGetAllUserStore) GetByID(_ context.Context, _ string) (*User, error) {
+	return nil, nil
+}
+
+func (e *ErrorGetAllUserStore) GetAll(_ context.Context) ([]User, error) {
+	return nil, fmt.Errorf("simulated GetAll failure")
+}
+
+// ErrorUpsertWithUserStore returns one user from GetAll but always fails on Upsert.
+// Use this when testing code that iterates users and then tries to write back.
+type ErrorUpsertWithUserStore struct{}
+
+func NewErrorUpsertWithUserStore() *ErrorUpsertWithUserStore { return &ErrorUpsertWithUserStore{} }
+
+func (e *ErrorUpsertWithUserStore) Upsert(_ context.Context, _ User) error {
+	return fmt.Errorf("simulated upsert failure")
+}
+
+func (e *ErrorUpsertWithUserStore) GetByID(_ context.Context, _ string) (*User, error) {
+	return nil, nil
+}
+
+func (e *ErrorUpsertWithUserStore) GetAll(_ context.Context) ([]User, error) {
+	return []User{{UserID: "u1", Handle: "Fan"}}, nil
+}
+
 // ErrorGetByIDUserStore is a test double that always fails on GetByID.
 type ErrorGetByIDUserStore struct{}
 
