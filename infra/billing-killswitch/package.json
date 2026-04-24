@@ -1,0 +1,11 @@
+{
+  "engines": {
+    "node": "24"
+  },
+  "scripts": {
+    "deploy": "gcloud functions deploy killBilling --runtime=nodejs24 --trigger-topic=billing-alerts --entry-point=killBilling --set-env-vars=^:^PROJECT_IDS=crew-predictions,crew-predictions-staging --region=us-east5 --project=crew-predictions --source=."
+  },
+  "dependencies": {
+    "@google-cloud/billing": "^5.1.1"
+  }
+}
