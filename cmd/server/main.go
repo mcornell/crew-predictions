@@ -17,6 +17,7 @@ import (
 	"github.com/mcornell/crew-predictions/internal/handlers"
 	"github.com/mcornell/crew-predictions/internal/models"
 	"github.com/mcornell/crew-predictions/internal/poll"
+	"github.com/mcornell/crew-predictions/internal/recalculator"
 	"github.com/mcornell/crew-predictions/internal/repository"
 	"google.golang.org/api/option"
 )
@@ -213,7 +214,13 @@ func main() {
 		if err != nil {
 			log.Fatalf("failed to load ET timezone: %v", err)
 		}
-		stop := startDailyRefresh(matchStore, refreshFetcher, matchPoller, twoOneBot, etLoc)
+		recalcFn := func(ctx context.Context) {
+			if err := recalculator.Recalculate(ctx, predStore, resultStore, userStore, "Columbus Crew"); err != nil {
+				slog.Error("recalculate failed", "error", err)
+			}
+		}
+		matchPoller.SetOnResultSaved(recalcFn)
+		stop := startDailyRefresh(matchStore, refreshFetcher, matchPoller, twoOneBot, recalcFn, etLoc)
 		defer close(stop)
 
 		pollerCtx, cancelPoller := context.WithCancel(context.Background())
@@ -236,7 +243,7 @@ func next4amET(now time.Time, loc *time.Location) time.Time {
 	return candidate
 }
 
-func startDailyRefresh(store repository.MatchStore, fetcher func() ([]models.Match, error), poller *poll.MatchPoller, twoOneBot *bot.TwoOneBot, etLoc *time.Location) chan struct{} {
+func startDailyRefresh(store repository.MatchStore, fetcher func() ([]models.Match, error), poller *poll.MatchPoller, twoOneBot *bot.TwoOneBot, recalcFn func(context.Context), etLoc *time.Location) chan struct{} {
 	stop := make(chan struct{})
 	go func() {
 		refresh := func() {
@@ -252,6 +259,7 @@ func startDailyRefresh(store repository.MatchStore, fetcher func() ([]models.Mat
 			// Backfill results for matches that finished while no poller was active
 			// (e.g., after a Cloud Run recycle, or matches completed before this deploy).
 			poller.Backfill(context.Background(), matches)
+			recalcFn(context.Background())
 			twoOneBot.Predict(context.Background(), matches)
 			slog.Info("daily match refresh complete", "matchCount", len(matches))
 			poller.Reset(matches)
