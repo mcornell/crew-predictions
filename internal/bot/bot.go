@@ -24,7 +24,7 @@ func New(predictions repository.PredictionStore, users repository.UserStore, tar
 func (b *TwoOneBot) Predict(ctx context.Context, matches []models.Match) {
 	if err := b.users.Upsert(ctx, repository.User{
 		UserID:   UserID,
-		Handle:   "TwoOneBot",
+		Handle:   "Upper 90 Club's TwoOneBot",
 		Location: "From the Upper 90 Club",
 		Provider: "bot",
 	}); err != nil {

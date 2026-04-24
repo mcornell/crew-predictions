@@ -124,10 +124,11 @@ func TestTwoOneBot_RegistersUserInUserStore(t *testing.T) {
 	if err != nil || u == nil {
 		t.Fatal("expected bot user in UserStore, got nil")
 	}
-	if u.Handle != "TwoOneBot" {
-		t.Errorf("expected handle TwoOneBot, got %q", u.Handle)
+	if u.Handle != "Upper 90 Club's TwoOneBot" {
+		t.Errorf("expected handle %q, got %q", "Upper 90 Club's TwoOneBot", u.Handle)
 	}
 	if u.Location != "From the Upper 90 Club" {
 		t.Errorf("expected location 'From the Upper 90 Club', got %q", u.Location)
 	}
 }
+

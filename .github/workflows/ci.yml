@@ -10,6 +10,9 @@ jobs:
   test:
     if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      contents: read
     steps:
       - uses: actions/checkout@v6
 
@@ -46,15 +49,91 @@ jobs:
 
       - run: npm ci
       - run: go mod download
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@latest
 
       - name: Go unit tests
-        run: go test ./...
+        run: |
+          echo "## Go Tests" >> $GITHUB_STEP_SUMMARY
+          gotestsum --junitfile go-results.xml -- -coverprofile=go-coverage.out ./...
+
+      - name: Go test report
+        uses: dorny/test-reporter@v3
+        if: always()
+        with:
+          name: Go Tests
+          path: go-results.xml
+          reporter: java-junit
+          list-tests: failed
+          fail-on-error: false
+          fail-on-empty: false
+
+      - name: Go coverage summary
+        if: always()
+        run: |
+          python3 -c "
+          from collections import defaultdict
+          covered, total = defaultdict(int), defaultdict(int)
+          with open('go-coverage.out') as f:
+              for line in f:
+                  line = line.strip()
+                  if line.startswith('mode:') or not line:
+                      continue
+                  loc, stmts, count = line.split()
+                  pkg = loc.rsplit('/', 1)[0].replace('github.com/mcornell/crew-predictions/', '')
+                  n = int(stmts)
+                  total[pkg] += n
+                  if int(count) > 0:
+                      covered[pkg] += n
+          ac, at = sum(covered.values()), sum(total.values())
+          print('## Go Coverage')
+          print('| Package | % | Covered / Total |')
+          print('|---|---|---|')
+          for pkg in sorted(total):
+              c, t = covered[pkg], total[pkg]
+              print(f'| \`{pkg}\` | {100*c/t:.1f}% | {c}/{t} |')
+          print(f'| **total** | **{100*ac/at:.1f}%** | **{ac}/{at}** |')
+          " >> $GITHUB_STEP_SUMMARY
 
       - name: Vue unit tests
-        run: npm run test:unit
+        run: |
+          echo "## Vue Tests" >> $GITHUB_STEP_SUMMARY
+          npm run test:unit -- --coverage
+
+      - name: Vue test report
+        uses: dorny/test-reporter@v3
+        if: always()
+        with:
+          name: Vue Tests
+          path: vitest-results.xml
+          reporter: java-junit
+          list-tests: failed
+          fail-on-error: false
+          fail-on-empty: false
+
+      - name: Vue coverage summary
+        if: always()
+        run: |
+          if [ -f coverage/coverage-summary.json ]; then
+            python3 -c "
+          import json, sys
+          d = json.load(open('coverage/coverage-summary.json'))['total']
+          print('## Vue Coverage')
+          print('| Metric | % | Covered / Total |')
+          print('|---|---|---|')
+          for k in ['statements', 'branches', 'functions', 'lines']:
+              v = d[k]
+              print(f'| {k.capitalize()} | {v[\"pct\"]}% | {v[\"covered\"]}/{v[\"total\"]} |')
+          " >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: TypeScript type check
         run: npm run typecheck
+
+      - name: Start Firebase emulators
+        run: npx firebase-tools@latest emulators:start --only auth,firestore --project crew-predictions &
+        env:
+          FIREBASE_PROJECT_ID: crew-predictions
 
       # Cache Playwright browsers (Chromium bundle is ~170MB)
       - name: Get Playwright version
@@ -75,25 +154,52 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
 
-      - name: Start Firebase emulators
-        run: npx firebase-tools@latest emulators:start --only auth,firestore --project crew-predictions &
-        env:
-          FIREBASE_PROJECT_ID: crew-predictions
-
       - name: Wait for Firebase emulators
         run: |
           timeout 30 bash -c 'until curl -sf http://localhost:9099; do sleep 1; done'
           timeout 30 bash -c 'until curl -sf http://localhost:8081; do sleep 1; done'
 
+      - name: Go integration tests
+        run: |
+          echo "## Go Integration Tests" >> $GITHUB_STEP_SUMMARY
+          gotestsum --junitfile go-integration-results.xml -- -tags integration ./internal/repository/...
+        env:
+          FIRESTORE_EMULATOR_HOST: localhost:8081
+          FIREBASE_PROJECT_ID: crew-predictions
+
+      - name: Go integration test report
+        uses: dorny/test-reporter@v3
+        if: always()
+        with:
+          name: Go Integration Tests
+          path: go-integration-results.xml
+          reporter: java-junit
+          list-tests: failed
+          fail-on-error: false
+          fail-on-empty: false
+
       - name: E2e tests
-        run: npm test
+        run: |
+          echo "## Playwright E2E" >> $GITHUB_STEP_SUMMARY
+          npm test
         env:
           FIREBASE_PROJECT_ID: crew-predictions
           FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
 
+      - name: Playwright test report
+        uses: dorny/test-reporter@v3
+        if: always()
+        with:
+          name: Playwright E2E Tests
+          path: playwright-results.xml
+          reporter: java-junit
+          list-tests: failed
+          fail-on-error: false
+          fail-on-empty: false
+
       - name: Upload Playwright report
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: |
@@ -161,7 +267,7 @@ jobs:
       - name: Deploy staging to Firebase Hosting
         run: npx firebase-tools@latest deploy --only hosting --project crew-predictions-staging --config firebase.staging.json
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: frontend-${{ github.sha }}
           path: dist/
@@ -209,7 +315,7 @@ jobs:
 
       - name: Upload smoke report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: smoke-report
           path: smoke-report/
@@ -252,7 +358,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: frontend-${{ env.DEVELOP_SHA }}
           run-id: ${{ env.STAGING_RUN_ID }}

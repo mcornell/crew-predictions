@@ -6,5 +6,14 @@ export default defineConfig({
   test: {
     include: ['src/**/*.test.ts'],
     environment: 'jsdom',
+    reporters: process.env.CI
+      ? [['junit', { outputFile: 'vitest-results.xml' }], 'verbose']
+      : ['verbose'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json-summary'],
+      include: ['src/**/*.{ts,vue}'],
+      exclude: ['src/main.ts'],
+    },
   },
 })

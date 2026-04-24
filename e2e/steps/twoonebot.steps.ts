@@ -8,7 +8,7 @@ Then('the predictions for match {string} should include TwoOneBot with {int}-{in
   expect(resp.status()).toBe(200);
   const body = await resp.json();
   const predictions: any[] = body.predictions ?? [];
-  const bot = predictions.find((p: any) => p.handle === 'TwoOneBot');
+  const bot = predictions.find((p: any) => p.handle === "Upper 90 Club's TwoOneBot");
   expect(bot, 'TwoOneBot prediction not found').toBeTruthy();
   expect(bot.homeGoals).toBe(home);
   expect(bot.awayGoals).toBe(away);
@@ -19,7 +19,7 @@ Then('the predictions for match {string} should not include TwoOneBot', async ({
   expect(resp.status()).toBe(200);
   const body = await resp.json();
   const predictions: any[] = body.predictions ?? [];
-  const bot = predictions.find((p: any) => p.handle === 'TwoOneBot');
+  const bot = predictions.find((p: any) => p.handle === "Upper 90 Club's TwoOneBot");
   expect(bot).toBeUndefined();
 });
 

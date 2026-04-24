@@ -66,6 +66,8 @@ func TestStartDailyRefresh_PopulatesStoreImmediately(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("fetcher was not called within 1 second of startup")
 	}
+	// fetcher() signals before SaveAll completes; yield briefly so the goroutine can finish.
+	time.Sleep(10 * time.Millisecond)
 
 	matches, _ := store.GetAll()
 	if len(matches) != 1 || matches[0].ID != "bg-match" {
