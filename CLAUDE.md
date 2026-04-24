@@ -47,3 +47,4 @@ npm run test:smoke     # post-deploy smoke suite against staging
 
 - [`e2e/CLAUDE.md`](e2e/CLAUDE.md) — BDD dual-loop TDD detail, feature file conventions, @reset isolation, environment notes
 - [`src/CLAUDE.md`](src/CLAUDE.md) — Vue test patterns, design language
+- [`internal/CLAUDE.md`](internal/CLAUDE.md) — Go backend patterns, Firestore integration test requirements
