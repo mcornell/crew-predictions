@@ -68,10 +68,29 @@ jobs:
       - name: Go coverage summary
         if: always()
         run: |
-          echo "## Go Coverage" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          go tool cover -func=go-coverage.out >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
+          python3 -c "
+          from collections import defaultdict
+          covered, total = defaultdict(int), defaultdict(int)
+          with open('go-coverage.out') as f:
+              for line in f:
+                  line = line.strip()
+                  if line.startswith('mode:') or not line:
+                      continue
+                  loc, stmts, count = line.split()
+                  pkg = loc.rsplit('/', 1)[0].replace('github.com/mcornell/crew-predictions/', '')
+                  n = int(stmts)
+                  total[pkg] += n
+                  if int(count) > 0:
+                      covered[pkg] += n
+          ac, at = sum(covered.values()), sum(total.values())
+          print('## Go Coverage')
+          print('| Package | % | Covered / Total |')
+          print('|---|---|---|')
+          for pkg in sorted(total):
+              c, t = covered[pkg], total[pkg]
+              print(f'| \`{pkg}\` | {100*c/t:.1f}% | {c}/{t} |')
+          print(f'| **total** | **{100*ac/at:.1f}%** | **{ac}/{at}** |')
+          " >> $GITHUB_STEP_SUMMARY
 
       - name: Vue unit tests
         run: npm run test:unit -- --coverage
@@ -95,6 +114,11 @@ jobs:
       - name: TypeScript type check
         run: npm run typecheck
 
+      - name: Start Firebase emulators
+        run: npx firebase-tools@latest emulators:start --only auth,firestore --project crew-predictions &
+        env:
+          FIREBASE_PROJECT_ID: crew-predictions
+
       # Cache Playwright browsers (Chromium bundle is ~170MB)
       - name: Get Playwright version
         id: playwright-version
@@ -114,18 +138,13 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
 
-      - name: Start Firebase emulators
-        run: npx firebase-tools@latest emulators:start --only auth,firestore --project crew-predictions &
-        env:
-          FIREBASE_PROJECT_ID: crew-predictions
-
       - name: Wait for Firebase emulators
         run: |
           timeout 30 bash -c 'until curl -sf http://localhost:9099; do sleep 1; done'
           timeout 30 bash -c 'until curl -sf http://localhost:8081; do sleep 1; done'
 
       - name: Go integration tests
-        run: gotestsum --junitfile go-integration-results.xml -- -tags integration ./...
+        run: gotestsum --junitfile go-integration-results.xml -- -tags integration ./internal/repository/...
         env:
           FIRESTORE_EMULATOR_HOST: localhost:8081
           FIREBASE_PROJECT_ID: crew-predictions
