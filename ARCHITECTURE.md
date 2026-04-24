@@ -169,7 +169,10 @@ All deploys flow through GitHub Actions (`.github/workflows/ci.yml`).
 ```
 push to develop
     │
-    ├── test job ──────── Go unit tests + Vue unit tests + e2e BDD suite (Firebase emulators)
+    ├── test job ──────── Go unit tests (coverage report + pass/skip/fail summary → step summary)
+    │                    Vue unit tests (v8 coverage table → step summary)
+    │                    TypeScript type check
+    │                    e2e BDD suite — Playwright, Firebase emulators (JUnit → step summary via dorny/test-reporter@v3)
     │
     └── deploy-staging ── Docker build → Artifact Registry
                           Cloud Run deploy (crew-predictions-staging, us-east5)
