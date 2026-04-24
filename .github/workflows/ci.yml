@@ -10,6 +10,9 @@ jobs:
   test:
     if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      contents: read
     steps:
       - uses: actions/checkout@v6
 
@@ -48,10 +51,45 @@ jobs:
       - run: go mod download
 
       - name: Go unit tests
-        run: go test ./...
+        run: |
+          set -o pipefail
+          go test -v -coverprofile=go-coverage.out ./... | tee go-test-results.txt
+
+      - name: Go test report
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Go Tests
+          path: go-test-results.txt
+          reporter: golang-test
+          fail-on-error: false
+
+      - name: Go coverage summary
+        if: always()
+        run: |
+          echo "## Go Coverage" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          go tool cover -func=go-coverage.out >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Vue unit tests
-        run: npm run test:unit
+        run: npm run test:unit -- --coverage
+
+      - name: Vitest coverage summary
+        if: always()
+        run: |
+          if [ -f coverage/coverage-summary.json ]; then
+            python3 -c "
+          import json, sys
+          d = json.load(open('coverage/coverage-summary.json'))['total']
+          print('## Vue Coverage')
+          print('| Metric | % | Covered / Total |')
+          print('|---|---|---|')
+          for k in ['statements', 'branches', 'functions', 'lines']:
+              v = d[k]
+              print(f'| {k.capitalize()} | {v[\"pct\"]}% | {v[\"covered\"]}/{v[\"total\"]} |')
+          " >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: TypeScript type check
         run: npm run typecheck
@@ -90,6 +128,15 @@ jobs:
         env:
           FIREBASE_PROJECT_ID: crew-predictions
           FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
+
+      - name: Playwright test report
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Playwright E2E Tests
+          path: playwright-results.xml
+          reporter: java-junit
+          fail-on-error: false
 
       - name: Upload Playwright report
         if: failure()
