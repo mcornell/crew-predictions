@@ -70,12 +70,25 @@ func (s *FirestoreUserStore) GetAll(ctx context.Context) ([]User, error) {
 
 func toUser(userID string, snap *firestore.DocumentSnapshot) (*User, error) {
 	var doc struct {
-		Handle   string `firestore:"handle"`
-		Provider string `firestore:"provider"`
-		Location string `firestore:"location"`
+		Handle          string `firestore:"handle"`
+		Provider        string `firestore:"provider"`
+		Location        string `firestore:"location"`
+		AcesRadioPoints int    `firestore:"acesRadioPoints"`
+		Upper90Points   int    `firestore:"upper90Points"`
+		GrouchyPoints   int    `firestore:"grouchyPoints"`
+		PredictionCount int    `firestore:"predictionCount"`
 	}
 	if err := snap.DataTo(&doc); err != nil {
 		return nil, err
 	}
-	return &User{UserID: userID, Handle: doc.Handle, Provider: doc.Provider, Location: doc.Location}, nil
+	return &User{
+		UserID:          userID,
+		Handle:          doc.Handle,
+		Provider:        doc.Provider,
+		Location:        doc.Location,
+		AcesRadioPoints: doc.AcesRadioPoints,
+		Upper90Points:   doc.Upper90Points,
+		GrouchyPoints:   doc.GrouchyPoints,
+		PredictionCount: doc.PredictionCount,
+	}, nil
 }
