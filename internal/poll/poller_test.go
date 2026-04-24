@@ -135,6 +135,17 @@ func (e *errMatchStore) GetAll() ([]models.Match, error)    { return nil, nil }
 func (e *errMatchStore) SaveAll(_ []models.Match) error     { return fmt.Errorf("store failed") }
 func (e *errMatchStore) Reset()                             {}
 
+func TestPollOnce_ReturnsErrorWhenFetcherFails(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	resultStore := repository.NewMemoryResultStore()
+	fetcher := func() ([]models.Match, error) { return nil, fmt.Errorf("espn down") }
+
+	err := poll.PollOnce(context.Background(), matchStore, resultStore, fetcher)
+	if err == nil {
+		t.Error("expected error when fetcher fails, got nil")
+	}
+}
+
 func TestPollOnce_IsIdempotent(t *testing.T) {
 	matchStore := repository.NewMemoryMatchStore()
 	resultStore := repository.NewMemoryResultStore()
