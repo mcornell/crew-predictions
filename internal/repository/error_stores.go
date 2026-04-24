@@ -26,6 +26,23 @@ func (e *ErrorPredictionStore) GetAll(_ context.Context) ([]Prediction, error) {
 	return nil, nil
 }
 
+// ErrorUpsertUserStore is a test double that always fails on Upsert.
+type ErrorUpsertUserStore struct{}
+
+func NewErrorUpsertUserStore() *ErrorUpsertUserStore { return &ErrorUpsertUserStore{} }
+
+func (e *ErrorUpsertUserStore) Upsert(_ context.Context, _ User) error {
+	return fmt.Errorf("simulated upsert failure")
+}
+
+func (e *ErrorUpsertUserStore) GetByID(_ context.Context, _ string) (*User, error) {
+	return nil, nil
+}
+
+func (e *ErrorUpsertUserStore) GetAll(_ context.Context) ([]User, error) {
+	return nil, nil
+}
+
 // ErrorResultStore is a test double that always fails on SaveResult.
 type ErrorResultStore struct{}
 

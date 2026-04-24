@@ -112,6 +112,15 @@ func TestTwoOneBot_SkipsNonScheduledMatch(t *testing.T) {
 	}
 }
 
+func TestTwoOneBot_LogsErrorOnUpsertFailure(t *testing.T) {
+	ctx := context.Background()
+	preds := repository.NewMemoryPredictionStore()
+	b := bot.New(preds, repository.NewErrorUpsertUserStore(), "Columbus Crew")
+
+	// Should not panic — error is logged
+	b.Predict(ctx, nil)
+}
+
 func TestTwoOneBot_RegistersUserInUserStore(t *testing.T) {
 	ctx := context.Background()
 	preds := repository.NewMemoryPredictionStore()
