@@ -144,13 +144,20 @@ func main() {
 	ph := handlers.NewPredictionsHandler(predStore, matchFetcher)
 	mux.HandleFunc("POST /api/predictions", ph.Submit)
 	lh := handlers.NewLeaderboardHandler(predStore, resultStore, userStore, "Columbus Crew")
-	mux.HandleFunc("GET /api/leaderboard", lh.APIList)
 	prh := handlers.NewProfileHandler(predStore, resultStore, userStore, "Columbus Crew")
-	mux.HandleFunc("GET /api/profile/{userID}", prh.Get)
+	rl := handlers.NewRateLimiter(60, 60)
+	mux.Handle("GET /api/leaderboard", rl.Middleware(http.HandlerFunc(lh.APIList)))
+	mux.Handle("GET /api/profile/{userID}", rl.Middleware(http.HandlerFunc(prh.Get)))
 	mdh := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew")
 	mux.HandleFunc("GET /api/matches/{matchId}", mdh.Get)
 	if os.Getenv("TEST_MODE") != "1" && os.Getenv("ADMIN_KEY") == "" {
 		log.Fatal("ADMIN_KEY env var must be set in production")
+	}
+	if os.Getenv("TEST_MODE") != "1" && os.Getenv("SESSION_SECRET") == "" {
+		log.Fatal("SESSION_SECRET env var must be set in production")
+	}
+	if secret := os.Getenv("SESSION_SECRET"); secret != "" {
+		handlers.SetSessionSecret([]byte(secret))
 	}
 
 	recalcFn := func(ctx context.Context) {

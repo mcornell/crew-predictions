@@ -6,7 +6,7 @@
 
 - [ ] **HMAC-sign session cookies** — the session cookie is currently base64-encoded JSON with no integrity check; any client-side modification is accepted as valid. Sign with HMAC-SHA256 using a secret loaded from Secret Manager (`SESSION_SECRET`). Verify signature in `UserFromSession`; reject unsigned/tampered cookies with 401.
 
-- [ ] **Rate limit expensive endpoints** — `/api/leaderboard` and `/api/profile/:userID` hit Firestore on every request with no throttle. Add per-IP rate limiting (e.g. 60 req/min) using an in-memory token bucket. Cloud Run's single-instance concurrency makes in-process state viable; revisit if multi-instance needed.
+- [ ] **Rate limit expensive endpoints** — `/api/leaderboard` and `/api/profile/:userID` hit Firestore on every request with no throttle. Add per-IP rate limiting (e.g. 60 req/min) using an in-memory token bucket. Cloud Run's single-instance concurrency makes in-process state viable; revisit if multi-instance needed. **Known risk:** staging smoke suite hits the leaderboard from a GitHub Actions runner IP — if it breaches 60 req/min the smoke tests will get 429s. If this happens, add `RATE_LIMIT_ENABLED=true` env var and only enable in prod.
 
 ### Low
 
@@ -47,6 +47,12 @@
 ---
 
 ## Done
+
+- [x] **Artifact Registry cleanup policy** — `infra/artifact-policy.json` keeps `prod`-tagged and `latest`-tagged images; deletes everything else after 4 hours. `prod` tag applied in CI after staging smoke test passes. Separate `gcf-artifact-policy.json` for Cloud Functions repo: keep 3 most recent, delete after 4 hours.
+
+- [x] **Firestore scoring fields read back correctly** — `toUser()` now deserialises all scoring fields (`acesRadioPoints`, `upper90Points`, `grouchyPoints`, `predictionCount`) from Firestore documents. Bug: fields were written correctly but never read back, so staging leaderboard showed zero scores for all users. Rule added to `internal/CLAUDE.md`: every new `FirestoreUserStore` method requires an integration test that round-trips through the emulator.
+
+- [x] **UserStore interface split** — `Upsert` (profile fields: handle, provider, location) and `UpdateScores` (scoring fields: points + count) are separate methods. Auth handlers calling `Upsert` can never accidentally zero out computed scores. `MemoryUserStore.Upsert` preserves existing scoring fields; `Recalculate()` calls `UpdateScores` exclusively for score writes.
 
 - [x] **Billing killswitch** — Cloud Function (`infra/billing-killswitch/`, nodejs24, gen2) subscribes to `billing-alerts` Pub/Sub topic; disables billing on both GCP projects when `costAmount > budgetAmount`. Deployed to `us-east5`. Manual step: create a $10 budget in GCP Console and wire to `billing-alerts` topic.
 

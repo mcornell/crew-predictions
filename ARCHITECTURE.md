@@ -152,10 +152,10 @@ users/{userID}
   handle:          string   // current display name (source of truth)
   provider:        string   // "google.com", "password", etc.
   location:        string   // optional, user-supplied (e.g. "Columbus, OH")
-  AcesRadioPoints: int      // precomputed by Recalculate()
-  Upper90Points:   int      // precomputed by Recalculate()
-  GrouchyPoints:   int      // precomputed by Recalculate()
-  PredictionCount: int      // precomputed by Recalculate(); 0 = excluded from leaderboard
+  acesRadioPoints: int      // precomputed by Recalculate()
+  upper90Points:   int      // precomputed by Recalculate()
+  grouchyPoints:   int      // precomputed by Recalculate()
+  predictionCount: int      // precomputed by Recalculate(); 0 = excluded from leaderboard
 
 matches/{matchID}
   homeTeam:   string
@@ -211,6 +211,8 @@ push to main (merge from develop)
 
 **Artifact promotion:** prod deploys reuse the Docker image built for staging — no rebuild on merge. The frontend dist is downloaded from the staging workflow artifact and deployed directly.
 
+**Artifact Registry cleanup:** `infra/artifact-policy.json` keeps `prod`-tagged and `latest`-tagged images indefinitely; everything else is deleted after 4 hours. The `prod` tag is applied in CI only after the staging smoke test passes — it always points to the last known-good image and moving it to a new image automatically removes it from the old one. A separate policy (`infra/gcf-artifact-policy.json`) covers the `gcf-artifacts` repo: keep 3 most recent versions, delete everything older than 4 hours.
+
 **GCP auth:** Workload Identity Federation (no stored service account keys).
 
 ---
@@ -230,6 +232,16 @@ push to main (merge from develop)
 ## Environment Variables (Cloud Run)
 
 Set via `gcloud run services update <service> --region us-east5 --update-env-vars KEY=VALUE`.
+
+**Adding a new secret from Secret Manager:** After creating the secret, grant `roles/secretmanager.secretAccessor` to both compute service accounts before deploying — otherwise Cloud Run revision creation fails:
+```bash
+gcloud secrets add-iam-policy-binding <secret-name> --project=crew-predictions \
+  --member="serviceAccount:937208344837-compute@developer.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor"
+gcloud secrets add-iam-policy-binding <secret-name> --project=crew-predictions-staging \
+  --member="serviceAccount:99152086201-compute@developer.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor"
+```
 
 | Variable | Purpose |
 |---|---|

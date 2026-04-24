@@ -1,7 +1,10 @@
 package handlers
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"os"
@@ -52,9 +55,16 @@ func (h *HandleHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 func writeSessionCookie(w http.ResponseWriter, payload sessionPayload) {
 	data, _ := json.Marshal(payload)
+	encoded := base64.StdEncoding.EncodeToString(data)
+	value := encoded
+	if len(sessionSecret) > 0 {
+		mac := hmac.New(sha256.New, sessionSecret)
+		mac.Write([]byte(encoded))
+		value = encoded + "." + hex.EncodeToString(mac.Sum(nil))
+	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     "__session",
-		Value:    base64.StdEncoding.EncodeToString(data),
+		Value:    value,
 		Path:     "/",
 		MaxAge:   86400 * 7,
 		HttpOnly: true,
