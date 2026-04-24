@@ -38,7 +38,25 @@ func Recalculate(ctx context.Context, predictions repository.PredictionStore, re
 		resultCache[p.MatchID] = r
 	}
 
+	// Build a set of known userIDs for fast lookup.
+	knownUsers := make(map[string]repository.User, len(allUsers))
 	for _, u := range allUsers {
+		knownUsers[u.UserID] = u
+	}
+
+	// Also include users who have predictions but no UserStore entry yet.
+	// Upsert their profile so handle is available for leaderboard/match detail display.
+	for userID, preds := range predsByUser {
+		if _, exists := knownUsers[userID]; !exists {
+			u := repository.User{UserID: userID, Handle: preds[0].Handle}
+			knownUsers[userID] = u
+			if err := users.Upsert(ctx, u); err != nil {
+				return fmt.Errorf("recalculate: upsert new user %s: %w", userID, err)
+			}
+		}
+	}
+
+	for _, u := range knownUsers {
 		var acesTotal, u90Total, grouchyTotal, predCount int
 		for _, p := range predsByUser[u.UserID] {
 			predCount++
@@ -53,12 +71,8 @@ func Recalculate(ctx context.Context, predictions repository.PredictionStore, re
 			u90Total += scoring.Upper90Club(res, pred, targetIsHome)
 			grouchyTotal += scoring.Grouchy(res, pred, targetIsHome)
 		}
-		u.AcesRadioPoints = acesTotal
-		u.Upper90Points = u90Total
-		u.GrouchyPoints = grouchyTotal
-		u.PredictionCount = predCount
-		if err := users.Upsert(ctx, u); err != nil {
-			return fmt.Errorf("recalculate: upsert user %s: %w", u.UserID, err)
+		if err := users.UpdateScores(ctx, u.UserID, predCount, acesTotal, u90Total, grouchyTotal); err != nil {
+			return fmt.Errorf("recalculate: update scores %s: %w", u.UserID, err)
 		}
 	}
 

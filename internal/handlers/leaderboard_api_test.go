@@ -38,7 +38,8 @@ func decodeLeaderboard(t *testing.T, w *httptest.ResponseRecorder) leaderboardBo
 func TestLeaderboardAPIHandler_UsesPrecomputedPointsFromUserDoc(t *testing.T) {
 	users := repository.NewMemoryUserStore()
 	ctx := context.Background()
-	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "CrewFan", AcesRadioPoints: 42, Upper90Points: 15, GrouchyPoints: 3, PredictionCount: 5})
+	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "CrewFan"})
+	users.UpdateScores(ctx, "u1", 5, 42, 15, 3)
 
 	lh := newLeaderboard(users)
 	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
@@ -54,7 +55,8 @@ func TestLeaderboardAPIHandler_UsesPrecomputedPointsFromUserDoc(t *testing.T) {
 func TestLeaderboardAPIHandler_ReturnsJSON(t *testing.T) {
 	users := repository.NewMemoryUserStore()
 	ctx := context.Background()
-	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "BlackAndGold@bsky.mock", AcesRadioPoints: 15, PredictionCount: 1})
+	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "BlackAndGold@bsky.mock"})
+	users.UpdateScores(ctx, "u1", 1, 15, 0, 0)
 
 	lh := newLeaderboard(users)
 	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
@@ -85,7 +87,8 @@ func TestLeaderboardAPIHandler_Returns500WhenGetAllFails(t *testing.T) {
 func TestLeaderboardAPIHandler_IncludesUpper90Club(t *testing.T) {
 	users := repository.NewMemoryUserStore()
 	ctx := context.Background()
-	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "ColumbusNordecke@bsky.mock", Upper90Points: 2, PredictionCount: 1})
+	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "ColumbusNordecke@bsky.mock"})
+	users.UpdateScores(ctx, "u1", 1, 0, 2, 0)
 
 	lh := newLeaderboard(users)
 	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
@@ -101,7 +104,8 @@ func TestLeaderboardAPIHandler_IncludesUpper90Club(t *testing.T) {
 func TestLeaderboardAPIHandler_UsesHandleFromUserDoc(t *testing.T) {
 	users := repository.NewMemoryUserStore()
 	ctx := context.Background()
-	users.Upsert(ctx, repository.User{UserID: "firebase:abc", Handle: "CrewForever", AcesRadioPoints: 15, PredictionCount: 1})
+	users.Upsert(ctx, repository.User{UserID: "firebase:abc", Handle: "CrewForever"})
+	users.UpdateScores(ctx, "firebase:abc", 1, 15, 0, 0)
 
 	lh := newLeaderboard(users)
 	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
@@ -117,7 +121,8 @@ func TestLeaderboardAPIHandler_UsesHandleFromUserDoc(t *testing.T) {
 func TestLeaderboardAPIHandler_IncludesUserID(t *testing.T) {
 	users := repository.NewMemoryUserStore()
 	ctx := context.Background()
-	users.Upsert(ctx, repository.User{UserID: "firebase:abc", Handle: "crewfan", AcesRadioPoints: 15, PredictionCount: 1})
+	users.Upsert(ctx, repository.User{UserID: "firebase:abc", Handle: "crewfan"})
+	users.UpdateScores(ctx, "firebase:abc", 1, 15, 0, 0)
 
 	lh := newLeaderboard(users)
 	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
@@ -133,8 +138,10 @@ func TestLeaderboardAPIHandler_IncludesUserID(t *testing.T) {
 func TestLeaderboardAPIHandler_ShowsUsersWithUnscoredPredictionsAtZero(t *testing.T) {
 	users := repository.NewMemoryUserStore()
 	ctx := context.Background()
-	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "EarlyFan", AcesRadioPoints: 0, PredictionCount: 1})
-	users.Upsert(ctx, repository.User{UserID: "u2", Handle: "ScoredFan", AcesRadioPoints: 10, PredictionCount: 1})
+	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "EarlyFan"})
+	users.UpdateScores(ctx, "u1", 1, 0, 0, 0)
+	users.Upsert(ctx, repository.User{UserID: "u2", Handle: "ScoredFan"})
+	users.UpdateScores(ctx, "u2", 1, 10, 0, 0)
 
 	lh := newLeaderboard(users)
 	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
@@ -161,7 +168,8 @@ func TestLeaderboardAPIHandler_ShowsUsersWithUnscoredPredictionsAtZero(t *testin
 func TestLeaderboardAPIHandler_HasProfileTrue(t *testing.T) {
 	users := repository.NewMemoryUserStore()
 	ctx := context.Background()
-	users.Upsert(ctx, repository.User{UserID: "firebase:abc", Handle: "known", PredictionCount: 1})
+	users.Upsert(ctx, repository.User{UserID: "firebase:abc", Handle: "known"})
+	users.UpdateScores(ctx, "firebase:abc", 1, 0, 0, 0)
 
 	lh := newLeaderboard(users)
 	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
@@ -193,7 +201,8 @@ func TestLeaderboardAPIHandler_ExcludesUsersWithNoPredictions(t *testing.T) {
 func TestLeaderboardAPIHandler_IncludesGrouchyPoints(t *testing.T) {
 	users := repository.NewMemoryUserStore()
 	ctx := context.Background()
-	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "GrouchyFan", GrouchyPoints: 1, PredictionCount: 1})
+	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "GrouchyFan"})
+	users.UpdateScores(ctx, "u1", 1, 0, 0, 1)
 
 	lh := newLeaderboard(users)
 	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)

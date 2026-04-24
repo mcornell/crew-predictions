@@ -79,6 +79,10 @@ func (e *ErrorUpsertUserStore) GetAll(_ context.Context) ([]User, error) {
 	return nil, nil
 }
 
+func (e *ErrorUpsertUserStore) UpdateScores(_ context.Context, _ string, _, _, _, _ int) error {
+	return fmt.Errorf("simulated UpdateScores failure")
+}
+
 // ErrorGetAllUserStore is a test double that always fails on GetAll.
 type ErrorGetAllUserStore struct{}
 
@@ -92,6 +96,10 @@ func (e *ErrorGetAllUserStore) GetByID(_ context.Context, _ string) (*User, erro
 
 func (e *ErrorGetAllUserStore) GetAll(_ context.Context) ([]User, error) {
 	return nil, fmt.Errorf("simulated GetAll failure")
+}
+
+func (e *ErrorGetAllUserStore) UpdateScores(_ context.Context, _ string, _, _, _, _ int) error {
+	return nil
 }
 
 // ErrorUpsertWithUserStore returns one user from GetAll but always fails on Upsert.
@@ -110,6 +118,10 @@ func (e *ErrorUpsertWithUserStore) GetByID(_ context.Context, _ string) (*User, 
 
 func (e *ErrorUpsertWithUserStore) GetAll(_ context.Context) ([]User, error) {
 	return []User{{UserID: "u1", Handle: "Fan"}}, nil
+}
+
+func (e *ErrorUpsertWithUserStore) UpdateScores(_ context.Context, _ string, _, _, _, _ int) error {
+	return fmt.Errorf("simulated UpdateScores failure")
 }
 
 // ErrorGetAllWithExistingUserStore returns a fixed user from GetByID but fails on GetAll.
@@ -131,6 +143,10 @@ func (e *ErrorGetAllWithExistingUserStore) GetAll(_ context.Context) ([]User, er
 	return nil, fmt.Errorf("simulated GetAll failure")
 }
 
+func (e *ErrorGetAllWithExistingUserStore) UpdateScores(_ context.Context, _ string, _, _, _, _ int) error {
+	return nil
+}
+
 // ErrorGetByIDUserStore is a test double that always fails on GetByID.
 type ErrorGetByIDUserStore struct{}
 
@@ -143,6 +159,10 @@ func (e *ErrorGetByIDUserStore) GetByID(_ context.Context, _ string) (*User, err
 }
 
 func (e *ErrorGetByIDUserStore) GetAll(_ context.Context) ([]User, error) { return nil, nil }
+
+func (e *ErrorGetByIDUserStore) UpdateScores(_ context.Context, _ string, _, _, _, _ int) error {
+	return nil
+}
 
 // ErrorResultStore is a test double that always fails on SaveResult.
 type ErrorResultStore struct{}

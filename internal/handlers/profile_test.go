@@ -13,7 +13,8 @@ import (
 func TestProfileHandler_UsesPrecomputedAcesRadioPoints(t *testing.T) {
 	users := repository.NewMemoryUserStore()
 	ctx := context.Background()
-	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "CrewFan", AcesRadioPoints: 42, PredictionCount: 3})
+	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "CrewFan"})
+	users.UpdateScores(ctx, "u1", 3, 42, 0, 0)
 
 	h := NewProfileHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), users, "Columbus Crew")
 	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", nil)
@@ -62,7 +63,8 @@ func TestProfileHandler_ReturnsHandleAndLocation(t *testing.T) {
 func TestProfileHandler_ReturnsPredictionCount(t *testing.T) {
 	users := repository.NewMemoryUserStore()
 	ctx := context.Background()
-	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "CrewFan", PredictionCount: 2})
+	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "CrewFan"})
+	users.UpdateScores(ctx, "u1", 2, 0, 0, 0)
 
 	h := NewProfileHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), users, "Columbus Crew")
 	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", nil)
@@ -82,8 +84,10 @@ func TestProfileHandler_ReturnsPredictionCount(t *testing.T) {
 func TestProfileHandler_ReturnsLeaderboardStanding(t *testing.T) {
 	users := repository.NewMemoryUserStore()
 	ctx := context.Background()
-	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "TopFan", AcesRadioPoints: 15, PredictionCount: 1})
-	users.Upsert(ctx, repository.User{UserID: "u2", Handle: "OtherFan", AcesRadioPoints: 0, PredictionCount: 1})
+	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "TopFan"})
+	users.UpdateScores(ctx, "u1", 1, 15, 0, 0)
+	users.Upsert(ctx, repository.User{UserID: "u2", Handle: "OtherFan"})
+	users.UpdateScores(ctx, "u2", 1, 0, 0, 0)
 
 	h := NewProfileHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), users, "Columbus Crew")
 	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", nil)
@@ -109,8 +113,10 @@ func TestProfileHandler_ReturnsLeaderboardStanding(t *testing.T) {
 func TestProfileHandler_ReturnsGrouchyStanding(t *testing.T) {
 	users := repository.NewMemoryUserStore()
 	ctx := context.Background()
-	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "GrouchyFan", GrouchyPoints: 1, PredictionCount: 1})
-	users.Upsert(ctx, repository.User{UserID: "u2", Handle: "OtherFan", GrouchyPoints: 0, PredictionCount: 1})
+	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "GrouchyFan"})
+	users.UpdateScores(ctx, "u1", 1, 0, 0, 1)
+	users.Upsert(ctx, repository.User{UserID: "u2", Handle: "OtherFan"})
+	users.UpdateScores(ctx, "u2", 1, 0, 0, 0)
 
 	h := NewProfileHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), users, "Columbus Crew")
 	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", nil)

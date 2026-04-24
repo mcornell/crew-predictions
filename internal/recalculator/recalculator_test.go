@@ -80,14 +80,60 @@ func TestRecalculate_ReturnsErrorWhenUserStoreFails(t *testing.T) {
 	}
 }
 
-func TestRecalculate_ReturnsErrorWhenUpsertFails(t *testing.T) {
+func TestRecalculate_ReturnsErrorWhenUpdateScoresFails(t *testing.T) {
 	ctx := context.Background()
-	users := repository.NewErrorUpsertUserStore()
-	// Seed one prediction so the upsert path is reached — but ErrorUpsertUserStore.GetAll returns empty,
-	// so there are no users to upsert. Use a store that has a user but fails on Upsert.
+	// ErrorUpsertWithUserStore returns one user from GetAll but fails on UpdateScores.
 	err := recalculator.Recalculate(ctx, repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), repository.NewErrorUpsertWithUserStore(), "Columbus Crew")
 	if err == nil {
-		t.Errorf("expected error when upsert fails, got nil (users=%v)", users)
+		t.Error("expected error when UpdateScores fails, got nil")
+	}
+}
+
+func TestRecalculate_CreatesUserStoreEntryForPredictionOnlyUser(t *testing.T) {
+	ctx := context.Background()
+	users := repository.NewMemoryUserStore()
+	preds := repository.NewMemoryPredictionStore()
+	results := repository.NewMemoryResultStore()
+
+	// User has a prediction but was never upserted to UserStore (e.g. seeded via admin endpoint)
+	preds.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "google:BlackAndGold", Handle: "BlackAndGold", HomeGoals: 2, AwayGoals: 1})
+	results.SaveResult(ctx, repository.Result{MatchID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", HomeGoals: 2, AwayGoals: 1})
+
+	if err := recalculator.Recalculate(ctx, preds, results, users, "Columbus Crew"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	u, err := users.GetByID(ctx, "google:BlackAndGold")
+	if err != nil {
+		t.Fatalf("expected user to be created in UserStore, got error: %v", err)
+	}
+	if u.PredictionCount != 1 {
+		t.Errorf("expected PredictionCount 1, got %d", u.PredictionCount)
+	}
+	if u.AcesRadioPoints != 15 {
+		t.Errorf("expected 15 AcesRadio points, got %d", u.AcesRadioPoints)
+	}
+}
+
+func TestRecalculate_SetsHandleForPredictionOnlyUser(t *testing.T) {
+	ctx := context.Background()
+	users := repository.NewMemoryUserStore()
+	preds := repository.NewMemoryPredictionStore()
+	results := repository.NewMemoryResultStore()
+
+	preds.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "google:SomeFan", Handle: "SomeFan", HomeGoals: 1, AwayGoals: 0})
+	results.SaveResult(ctx, repository.Result{MatchID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", HomeGoals: 1, AwayGoals: 0})
+
+	if err := recalculator.Recalculate(ctx, preds, results, users, "Columbus Crew"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	u, err := users.GetByID(ctx, "google:SomeFan")
+	if err != nil {
+		t.Fatalf("expected user to be created: %v", err)
+	}
+	if u == nil || u.Handle != "SomeFan" {
+		t.Errorf("expected Handle SomeFan for prediction-only user, got %+v", u)
 	}
 }
 

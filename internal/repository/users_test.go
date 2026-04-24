@@ -80,6 +80,62 @@ func TestMemoryUserStore_UpsertPreservesProviderWhenEmpty(t *testing.T) {
 	}
 }
 
+func TestMemoryUserStore_UpsertPreservesScoringFields(t *testing.T) {
+	s := repository.NewMemoryUserStore()
+	ctx := context.Background()
+
+	s.Upsert(ctx, repository.User{UserID: "u1", Handle: "fan"})
+	s.UpdateScores(ctx, "u1", 2, 15, 3, 1) // recalculator sets scores
+	s.Upsert(ctx, repository.User{UserID: "u1", Handle: "fan"}) // auth handler upsert — no scoring fields
+
+	got, _ := s.GetByID(ctx, "u1")
+	if got == nil || got.AcesRadioPoints != 15 {
+		t.Errorf("expected AcesRadioPoints 15 preserved after Upsert, got %+v", got)
+	}
+	if got.PredictionCount != 2 {
+		t.Errorf("expected PredictionCount 2 preserved after Upsert, got %d", got.PredictionCount)
+	}
+}
+
+func TestMemoryUserStore_UpdateScoresSetsFields(t *testing.T) {
+	s := repository.NewMemoryUserStore()
+	ctx := context.Background()
+
+	s.Upsert(ctx, repository.User{UserID: "u1", Handle: "fan"})
+	if err := s.UpdateScores(ctx, "u1", 3, 15, 6, 2); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got, _ := s.GetByID(ctx, "u1")
+	if got == nil || got.AcesRadioPoints != 15 {
+		t.Errorf("expected AcesRadioPoints 15, got %+v", got)
+	}
+	if got.Upper90Points != 6 {
+		t.Errorf("expected Upper90Points 6, got %d", got.Upper90Points)
+	}
+	if got.GrouchyPoints != 2 {
+		t.Errorf("expected GrouchyPoints 2, got %d", got.GrouchyPoints)
+	}
+	if got.PredictionCount != 3 {
+		t.Errorf("expected PredictionCount 3, got %d", got.PredictionCount)
+	}
+}
+
+func TestMemoryUserStore_UpdateScoresCreatesEntryForNewUser(t *testing.T) {
+	s := repository.NewMemoryUserStore()
+	ctx := context.Background()
+
+	// User not yet in store (prediction-only user)
+	if err := s.UpdateScores(ctx, "google:NewFan", 1, 10, 0, 0); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got, _ := s.GetByID(ctx, "google:NewFan")
+	if got == nil || got.AcesRadioPoints != 10 {
+		t.Errorf("expected AcesRadioPoints 10 for new user, got %+v", got)
+	}
+}
+
 func TestMemoryUserStore_GetByID_NotFound(t *testing.T) {
 	s := repository.NewMemoryUserStore()
 	got, err := repository.NewMemoryUserStore().GetByID(context.Background(), "nope")
