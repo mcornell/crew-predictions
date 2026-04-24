@@ -25,3 +25,16 @@ func (e *ErrorPredictionStore) GetByMatch(_ context.Context, _ string) ([]Predic
 func (e *ErrorPredictionStore) GetAll(_ context.Context) ([]Prediction, error) {
 	return nil, nil
 }
+
+// ErrorResultStore is a test double that always fails on SaveResult.
+type ErrorResultStore struct{}
+
+func NewErrorResultStore() *ErrorResultStore { return &ErrorResultStore{} }
+
+func (e *ErrorResultStore) SaveResult(_ context.Context, _ Result) error {
+	return fmt.Errorf("simulated result store failure")
+}
+
+func (e *ErrorResultStore) GetResult(_ context.Context, _ string) (*Result, error) {
+	return nil, nil
+}

@@ -180,6 +180,19 @@ func TestPollOnce_ReturnsErrorWhenFetcherFails(t *testing.T) {
 	}
 }
 
+func TestPollOnce_ReturnsErrorWhenSaveResultFails(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	matches := []models.Match{
+		{ID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", Status: "STATUS_FULL_TIME", HomeScore: "2", AwayScore: "1"},
+	}
+	fetcher := func() ([]models.Match, error) { return matches, nil }
+
+	err := poll.PollOnce(context.Background(), matchStore, repository.NewErrorResultStore(), fetcher)
+	if err == nil {
+		t.Error("expected error when SaveResult fails, got nil")
+	}
+}
+
 func TestPollOnce_IsIdempotent(t *testing.T) {
 	matchStore := repository.NewMemoryMatchStore()
 	resultStore := repository.NewMemoryResultStore()
