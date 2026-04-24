@@ -233,6 +233,16 @@ push to main (merge from develop)
 
 Set via `gcloud run services update <service> --region us-east5 --update-env-vars KEY=VALUE`.
 
+**Adding a new secret from Secret Manager:** After creating the secret, grant `roles/secretmanager.secretAccessor` to both compute service accounts before deploying — otherwise Cloud Run revision creation fails:
+```bash
+gcloud secrets add-iam-policy-binding <secret-name> --project=crew-predictions \
+  --member="serviceAccount:937208344837-compute@developer.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor"
+gcloud secrets add-iam-policy-binding <secret-name> --project=crew-predictions-staging \
+  --member="serviceAccount:99152086201-compute@developer.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor"
+```
+
 | Variable | Purpose |
 |---|---|
 | `GOOGLE_CLOUD_PROJECT` | Activates Firestore (predictions + results) |
