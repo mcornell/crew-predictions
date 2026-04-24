@@ -6,7 +6,7 @@
 
 - [ ] **HMAC-sign session cookies** — the session cookie is currently base64-encoded JSON with no integrity check; any client-side modification is accepted as valid. Sign with HMAC-SHA256 using a secret loaded from Secret Manager (`SESSION_SECRET`). Verify signature in `UserFromSession`; reject unsigned/tampered cookies with 401.
 
-- [ ] **Rate limit expensive endpoints** — `/api/leaderboard` and `/api/profile/:userID` hit Firestore on every request with no throttle. Add per-IP rate limiting (e.g. 60 req/min) using an in-memory token bucket. Cloud Run's single-instance concurrency makes in-process state viable; revisit if multi-instance needed.
+- [ ] **Rate limit expensive endpoints** — `/api/leaderboard` and `/api/profile/:userID` hit Firestore on every request with no throttle. Add per-IP rate limiting (e.g. 60 req/min) using an in-memory token bucket. Cloud Run's single-instance concurrency makes in-process state viable; revisit if multi-instance needed. **Known risk:** staging smoke suite hits the leaderboard from a GitHub Actions runner IP — if it breaches 60 req/min the smoke tests will get 429s. If this happens, add `RATE_LIMIT_ENABLED=true` env var and only enable in prod.
 
 ### Low
 
