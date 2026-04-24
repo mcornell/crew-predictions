@@ -58,6 +58,19 @@ func (e *ErrorUpsertUserStore) GetAll(_ context.Context) ([]User, error) {
 	return nil, nil
 }
 
+// ErrorGetByIDUserStore is a test double that always fails on GetByID.
+type ErrorGetByIDUserStore struct{}
+
+func NewErrorGetByIDUserStore() *ErrorGetByIDUserStore { return &ErrorGetByIDUserStore{} }
+
+func (e *ErrorGetByIDUserStore) Upsert(_ context.Context, _ User) error { return nil }
+
+func (e *ErrorGetByIDUserStore) GetByID(_ context.Context, _ string) (*User, error) {
+	return nil, fmt.Errorf("simulated GetByID failure")
+}
+
+func (e *ErrorGetByIDUserStore) GetAll(_ context.Context) ([]User, error) { return nil, nil }
+
 // ErrorResultStore is a test double that always fails on SaveResult.
 type ErrorResultStore struct{}
 

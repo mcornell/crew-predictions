@@ -128,6 +128,18 @@ func TestProfileHandler_ReturnsGrouchyStanding(t *testing.T) {
 	}
 }
 
+func TestProfileHandler_Returns500WhenUserStoreFails(t *testing.T) {
+	h := NewProfileHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), repository.NewErrorGetByIDUserStore(), "Columbus Crew")
+	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", nil)
+	req.SetPathValue("userID", "u1")
+	w := httptest.NewRecorder()
+	h.Get(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("expected 500, got %d", w.Code)
+	}
+}
+
 func TestProfileHandler_Returns404ForUnknownUser(t *testing.T) {
 	h := NewProfileHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), repository.NewMemoryUserStore(), "Columbus Crew")
 	req := httptest.NewRequest(http.MethodGet, "/api/profile/nobody", nil)
