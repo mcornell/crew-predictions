@@ -10,6 +10,28 @@ import (
 	"github.com/mcornell/crew-predictions/internal/repository"
 )
 
+func TestProfileHandler_UsesPrecomputedAcesRadioPoints(t *testing.T) {
+	users := repository.NewMemoryUserStore()
+	ctx := context.Background()
+	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "CrewFan", AcesRadioPoints: 42, PredictionCount: 3})
+
+	h := NewProfileHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), users, "Columbus Crew")
+	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", nil)
+	req.SetPathValue("userID", "u1")
+	w := httptest.NewRecorder()
+	h.Get(w, req)
+
+	var body struct {
+		AcesRadio struct {
+			Points int `json:"points"`
+		} `json:"acesRadio"`
+	}
+	json.NewDecoder(w.Body).Decode(&body)
+	if body.AcesRadio.Points != 42 {
+		t.Errorf("expected 42 from precomputed user doc, got %d", body.AcesRadio.Points)
+	}
+}
+
 func TestProfileHandler_ReturnsHandleAndLocation(t *testing.T) {
 	users := repository.NewMemoryUserStore()
 	ctx := context.Background()
@@ -39,14 +61,10 @@ func TestProfileHandler_ReturnsHandleAndLocation(t *testing.T) {
 
 func TestProfileHandler_ReturnsPredictionCount(t *testing.T) {
 	users := repository.NewMemoryUserStore()
-	preds := repository.NewMemoryPredictionStore()
 	ctx := context.Background()
-	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "CrewFan"})
-	preds.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "u1", Handle: "CrewFan", HomeGoals: 2, AwayGoals: 0})
-	preds.Save(ctx, repository.Prediction{MatchID: "m2", UserID: "u1", Handle: "CrewFan", HomeGoals: 1, AwayGoals: 1})
-	preds.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "u2", Handle: "Other", HomeGoals: 0, AwayGoals: 0})
+	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "CrewFan", PredictionCount: 2})
 
-	h := NewProfileHandler(preds, repository.NewMemoryResultStore(), users, "Columbus Crew")
+	h := NewProfileHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), users, "Columbus Crew")
 	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", nil)
 	req.SetPathValue("userID", "u1")
 	w := httptest.NewRecorder()
@@ -63,17 +81,11 @@ func TestProfileHandler_ReturnsPredictionCount(t *testing.T) {
 
 func TestProfileHandler_ReturnsLeaderboardStanding(t *testing.T) {
 	users := repository.NewMemoryUserStore()
-	preds := repository.NewMemoryPredictionStore()
-	results := repository.NewMemoryResultStore()
 	ctx := context.Background()
+	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "TopFan", AcesRadioPoints: 15, PredictionCount: 1})
+	users.Upsert(ctx, repository.User{UserID: "u2", Handle: "OtherFan", AcesRadioPoints: 0, PredictionCount: 1})
 
-	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "TopFan"})
-	users.Upsert(ctx, repository.User{UserID: "u2", Handle: "OtherFan"})
-	preds.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "u1", Handle: "TopFan", HomeGoals: 2, AwayGoals: 1})
-	preds.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "u2", Handle: "OtherFan", HomeGoals: 0, AwayGoals: 0})
-	results.SaveResult(ctx, repository.Result{MatchID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", HomeGoals: 2, AwayGoals: 1})
-
-	h := NewProfileHandler(preds, results, users, "Columbus Crew")
+	h := NewProfileHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), users, "Columbus Crew")
 	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", nil)
 	req.SetPathValue("userID", "u1")
 	w := httptest.NewRecorder()
@@ -96,18 +108,11 @@ func TestProfileHandler_ReturnsLeaderboardStanding(t *testing.T) {
 
 func TestProfileHandler_ReturnsGrouchyStanding(t *testing.T) {
 	users := repository.NewMemoryUserStore()
-	preds := repository.NewMemoryPredictionStore()
-	results := repository.NewMemoryResultStore()
 	ctx := context.Background()
+	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "GrouchyFan", GrouchyPoints: 1, PredictionCount: 1})
+	users.Upsert(ctx, repository.User{UserID: "u2", Handle: "OtherFan", GrouchyPoints: 0, PredictionCount: 1})
 
-	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "GrouchyFan"})
-	users.Upsert(ctx, repository.User{UserID: "u2", Handle: "OtherFan"})
-	// Columbus home, 2-0 win (Win by 2+). u1 predicts 3-0 (Win by 2+) → 1 pt. u2 predicts 0-1 (Lose by 1) → 0 pt.
-	preds.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "u1", HomeGoals: 3, AwayGoals: 0})
-	preds.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "u2", HomeGoals: 0, AwayGoals: 1})
-	results.SaveResult(ctx, repository.Result{MatchID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", HomeGoals: 2, AwayGoals: 0})
-
-	h := NewProfileHandler(preds, results, users, "Columbus Crew")
+	h := NewProfileHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), users, "Columbus Crew")
 	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", nil)
 	req.SetPathValue("userID", "u1")
 	w := httptest.NewRecorder()
@@ -128,11 +133,8 @@ func TestProfileHandler_ReturnsGrouchyStanding(t *testing.T) {
 	}
 }
 
-func TestProfileHandler_Returns500WhenPredictionStoreFails(t *testing.T) {
-	users := repository.NewMemoryUserStore()
-	users.Upsert(context.Background(), repository.User{UserID: "u1", Handle: "Fan"})
-
-	h := NewProfileHandler(repository.NewErrorGetAllPredictionStore(), repository.NewMemoryResultStore(), users, "Columbus Crew")
+func TestProfileHandler_Returns500WhenGetAllFails(t *testing.T) {
+	h := NewProfileHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), repository.NewErrorGetAllWithExistingUserStore(), "Columbus Crew")
 	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", nil)
 	req.SetPathValue("userID", "u1")
 	w := httptest.NewRecorder()
@@ -170,7 +172,7 @@ func TestProfileHandler_Returns404ForUnknownUser(t *testing.T) {
 func TestProfileHandler_ReturnsZeroRankWhenNoScoredPredictions(t *testing.T) {
 	users := repository.NewMemoryUserStore()
 	ctx := context.Background()
-	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "NewFan"})
+	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "NewFan", PredictionCount: 0})
 
 	h := NewProfileHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), users, "Columbus Crew")
 	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", nil)
@@ -189,4 +191,3 @@ func TestProfileHandler_ReturnsZeroRankWhenNoScoredPredictions(t *testing.T) {
 		t.Errorf("expected rank 0 when no scored predictions, got %d", body.AcesRadio.Rank)
 	}
 }
-

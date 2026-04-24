@@ -7,18 +7,14 @@ import (
 	"sort"
 
 	"github.com/mcornell/crew-predictions/internal/repository"
-	"github.com/mcornell/crew-predictions/internal/scoring"
 )
 
 type ProfileHandler struct {
-	predictions repository.PredictionStore
-	results     repository.ResultStore
-	users       repository.UserStore
-	targetTeam  string
+	users repository.UserStore
 }
 
-func NewProfileHandler(predictions repository.PredictionStore, results repository.ResultStore, users repository.UserStore, targetTeam string) *ProfileHandler {
-	return &ProfileHandler{predictions: predictions, results: results, users: users, targetTeam: targetTeam}
+func NewProfileHandler(_ repository.PredictionStore, _ repository.ResultStore, users repository.UserStore, _ string) *ProfileHandler {
+	return &ProfileHandler{users: users}
 }
 
 type standingEntry struct {
@@ -40,36 +36,21 @@ func (h *ProfileHandler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	allPredictions, err := h.predictions.GetAll(ctx)
+	allUsers, err := h.users.GetAll(ctx)
 	if err != nil {
-		http.Error(w, "could not load predictions", http.StatusInternalServerError)
+		http.Error(w, "could not load leaderboard", http.StatusInternalServerError)
 		return
 	}
 
-	// Count this user's predictions and compute full leaderboard for rank.
-	predictionCount := 0
-	acesTotals := map[string]int{}
-	u90Totals := map[string]int{}
-	grouchyTotals := map[string]int{}
-
-	for _, p := range allPredictions {
-		if p.UserID == userID {
-			predictionCount++
+	acesTotals := make(map[string]int, len(allUsers))
+	u90Totals := make(map[string]int, len(allUsers))
+	grouchyTotals := make(map[string]int, len(allUsers))
+	for _, u := range allUsers {
+		if u.PredictionCount > 0 {
+			acesTotals[u.UserID] = u.AcesRadioPoints
+			u90Totals[u.UserID] = u.Upper90Points
+			grouchyTotals[u.UserID] = u.GrouchyPoints
 		}
-		result, err := h.results.GetResult(ctx, p.MatchID)
-		if err != nil || result == nil {
-			continue
-		}
-		key := p.UserID
-		if key == "" {
-			key = p.Handle
-		}
-		pred := scoring.Prediction{Home: p.HomeGoals, Away: p.AwayGoals}
-		res := scoring.Result{Home: result.HomeGoals, Away: result.AwayGoals}
-		targetIsHome := result.HomeTeam == h.targetTeam
-		acesTotals[key] += scoring.AcesRadio(res, pred)
-		u90Totals[key] += scoring.Upper90Club(res, pred, targetIsHome)
-		grouchyTotals[key] += scoring.Grouchy(res, pred, targetIsHome)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -77,7 +58,7 @@ func (h *ProfileHandler) Get(w http.ResponseWriter, r *http.Request) {
 		"userID":          user.UserID,
 		"handle":          user.Handle,
 		"location":        user.Location,
-		"predictionCount": predictionCount,
+		"predictionCount": user.PredictionCount,
 		"acesRadio":       rankFor(userID, acesTotals),
 		"upper90Club":     rankFor(userID, u90Totals),
 		"grouchy":         rankFor(userID, grouchyTotals),

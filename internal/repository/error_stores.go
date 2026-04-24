@@ -112,6 +112,25 @@ func (e *ErrorUpsertWithUserStore) GetAll(_ context.Context) ([]User, error) {
 	return []User{{UserID: "u1", Handle: "Fan"}}, nil
 }
 
+// ErrorGetAllWithExistingUserStore returns a fixed user from GetByID but fails on GetAll.
+// Use this to test handlers that call GetByID (succeeds) then GetAll (fails → 500).
+type ErrorGetAllWithExistingUserStore struct{}
+
+func NewErrorGetAllWithExistingUserStore() *ErrorGetAllWithExistingUserStore {
+	return &ErrorGetAllWithExistingUserStore{}
+}
+
+func (e *ErrorGetAllWithExistingUserStore) Upsert(_ context.Context, _ User) error { return nil }
+
+func (e *ErrorGetAllWithExistingUserStore) GetByID(_ context.Context, _ string) (*User, error) {
+	u := User{UserID: "u1", Handle: "Fan"}
+	return &u, nil
+}
+
+func (e *ErrorGetAllWithExistingUserStore) GetAll(_ context.Context) ([]User, error) {
+	return nil, fmt.Errorf("simulated GetAll failure")
+}
+
 // ErrorGetByIDUserStore is a test double that always fails on GetByID.
 type ErrorGetByIDUserStore struct{}
 

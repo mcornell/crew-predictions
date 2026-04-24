@@ -3,7 +3,6 @@ package handlers_test
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -12,14 +11,8 @@ import (
 	"github.com/mcornell/crew-predictions/internal/repository"
 )
 
-type errGetAllPredictionStore struct{ repository.PredictionStore }
-
-func (e *errGetAllPredictionStore) GetAll(_ context.Context) ([]repository.Prediction, error) {
-	return nil, fmt.Errorf("store down")
-}
-
-func newLeaderboard(predictions repository.PredictionStore, results repository.ResultStore) *handlers.LeaderboardHandler {
-	return handlers.NewLeaderboardHandler(predictions, results, repository.NewMemoryUserStore(), "Columbus Crew")
+func newLeaderboard(users repository.UserStore) *handlers.LeaderboardHandler {
+	return handlers.NewLeaderboardHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), users, "Columbus Crew")
 }
 
 type leaderboardBody struct {
@@ -42,18 +35,30 @@ func decodeLeaderboard(t *testing.T, w *httptest.ResponseRecorder) leaderboardBo
 	return body
 }
 
-func TestLeaderboardAPIHandler_ReturnsJSON(t *testing.T) {
-	predictions := repository.NewMemoryPredictionStore()
-	results := repository.NewMemoryResultStore()
+func TestLeaderboardAPIHandler_UsesPrecomputedPointsFromUserDoc(t *testing.T) {
+	users := repository.NewMemoryUserStore()
 	ctx := context.Background()
+	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "CrewFan", AcesRadioPoints: 42, Upper90Points: 15, GrouchyPoints: 3, PredictionCount: 5})
 
-	predictions.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "u1", Handle: "BlackAndGold@bsky.mock", HomeGoals: 2, AwayGoals: 0})
-	results.SaveResult(ctx, repository.Result{MatchID: "m1", HomeTeam: "Portland Timbers", AwayTeam: "Columbus Crew", HomeGoals: 2, AwayGoals: 0})
-
-	lh := newLeaderboard(predictions, results)
+	lh := newLeaderboard(users)
 	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
 	w := httptest.NewRecorder()
+	lh.APIList(w, req)
 
+	body := decodeLeaderboard(t, w)
+	if len(body.Entries) != 1 || body.Entries[0].AcesRadioPoints != 42 {
+		t.Errorf("expected precomputed 42 AcesRadio points from user doc, got %+v", body.Entries)
+	}
+}
+
+func TestLeaderboardAPIHandler_ReturnsJSON(t *testing.T) {
+	users := repository.NewMemoryUserStore()
+	ctx := context.Background()
+	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "BlackAndGold@bsky.mock", AcesRadioPoints: 15, PredictionCount: 1})
+
+	lh := newLeaderboard(users)
+	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
+	w := httptest.NewRecorder()
 	lh.APIList(w, req)
 
 	if w.Code != http.StatusOK {
@@ -66,8 +71,7 @@ func TestLeaderboardAPIHandler_ReturnsJSON(t *testing.T) {
 }
 
 func TestLeaderboardAPIHandler_Returns500WhenGetAllFails(t *testing.T) {
-	store := &errGetAllPredictionStore{PredictionStore: repository.NewMemoryPredictionStore()}
-	lh := handlers.NewLeaderboardHandler(store, repository.NewMemoryResultStore(), repository.NewMemoryUserStore(), "Columbus Crew")
+	lh := handlers.NewLeaderboardHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), repository.NewErrorGetAllUserStore(), "Columbus Crew")
 	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
 	w := httptest.NewRecorder()
 
@@ -79,17 +83,13 @@ func TestLeaderboardAPIHandler_Returns500WhenGetAllFails(t *testing.T) {
 }
 
 func TestLeaderboardAPIHandler_IncludesUpper90Club(t *testing.T) {
-	predictions := repository.NewMemoryPredictionStore()
-	results := repository.NewMemoryResultStore()
+	users := repository.NewMemoryUserStore()
 	ctx := context.Background()
+	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "ColumbusNordecke@bsky.mock", Upper90Points: 2, PredictionCount: 1})
 
-	predictions.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "u1", Handle: "ColumbusNordecke@bsky.mock", HomeGoals: 1, AwayGoals: 0})
-	results.SaveResult(ctx, repository.Result{MatchID: "m1", HomeTeam: "Portland Timbers", AwayTeam: "Columbus Crew", HomeGoals: 3, AwayGoals: 0})
-
-	lh := newLeaderboard(predictions, results)
+	lh := newLeaderboard(users)
 	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
 	w := httptest.NewRecorder()
-
 	lh.APIList(w, req)
 
 	body := decodeLeaderboard(t, w)
@@ -98,17 +98,12 @@ func TestLeaderboardAPIHandler_IncludesUpper90Club(t *testing.T) {
 	}
 }
 
-func TestLeaderboardAPIHandler_UsesUserStoreHandleOverPredictionHandle(t *testing.T) {
-	predictions := repository.NewMemoryPredictionStore()
-	results := repository.NewMemoryResultStore()
+func TestLeaderboardAPIHandler_UsesHandleFromUserDoc(t *testing.T) {
 	users := repository.NewMemoryUserStore()
 	ctx := context.Background()
+	users.Upsert(ctx, repository.User{UserID: "firebase:abc", Handle: "CrewForever", AcesRadioPoints: 15, PredictionCount: 1})
 
-	predictions.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "firebase:abc", Handle: "oldfan", HomeGoals: 2, AwayGoals: 0})
-	results.SaveResult(ctx, repository.Result{MatchID: "m1", HomeTeam: "Portland Timbers", AwayTeam: "Columbus Crew", HomeGoals: 2, AwayGoals: 0})
-	users.Upsert(ctx, repository.User{UserID: "firebase:abc", Handle: "CrewForever"})
-
-	lh := handlers.NewLeaderboardHandler(predictions, results, users, "Columbus Crew")
+	lh := newLeaderboard(users)
 	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
 	w := httptest.NewRecorder()
 	lh.APIList(w, req)
@@ -120,16 +115,11 @@ func TestLeaderboardAPIHandler_UsesUserStoreHandleOverPredictionHandle(t *testin
 }
 
 func TestLeaderboardAPIHandler_IncludesUserID(t *testing.T) {
-	predictions := repository.NewMemoryPredictionStore()
-	results := repository.NewMemoryResultStore()
 	users := repository.NewMemoryUserStore()
 	ctx := context.Background()
+	users.Upsert(ctx, repository.User{UserID: "firebase:abc", Handle: "crewfan", AcesRadioPoints: 15, PredictionCount: 1})
 
-	predictions.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "firebase:abc", Handle: "crewfan", HomeGoals: 1, AwayGoals: 0})
-	results.SaveResult(ctx, repository.Result{MatchID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", HomeGoals: 1, AwayGoals: 0})
-	users.Upsert(ctx, repository.User{UserID: "firebase:abc", Handle: "crewfan"})
-
-	lh := handlers.NewLeaderboardHandler(predictions, results, users, "Columbus Crew")
+	lh := newLeaderboard(users)
 	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
 	w := httptest.NewRecorder()
 	lh.APIList(w, req)
@@ -141,18 +131,12 @@ func TestLeaderboardAPIHandler_IncludesUserID(t *testing.T) {
 }
 
 func TestLeaderboardAPIHandler_ShowsUsersWithUnscoredPredictionsAtZero(t *testing.T) {
-	predictions := repository.NewMemoryPredictionStore()
-	results := repository.NewMemoryResultStore()
 	users := repository.NewMemoryUserStore()
 	ctx := context.Background()
+	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "EarlyFan", AcesRadioPoints: 0, PredictionCount: 1})
+	users.Upsert(ctx, repository.User{UserID: "u2", Handle: "ScoredFan", AcesRadioPoints: 10, PredictionCount: 1})
 
-	predictions.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "u1", Handle: "EarlyFan", HomeGoals: 2, AwayGoals: 0})
-	predictions.Save(ctx, repository.Prediction{MatchID: "m2", UserID: "u2", Handle: "ScoredFan", HomeGoals: 2, AwayGoals: 0})
-	results.SaveResult(ctx, repository.Result{MatchID: "m2", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", HomeGoals: 1, AwayGoals: 0})
-	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "EarlyFan"})
-	users.Upsert(ctx, repository.User{UserID: "u2", Handle: "ScoredFan"})
-
-	lh := handlers.NewLeaderboardHandler(predictions, results, users, "Columbus Crew")
+	lh := newLeaderboard(users)
 	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
 	w := httptest.NewRecorder()
 	lh.APIList(w, req)
@@ -170,49 +154,48 @@ func TestLeaderboardAPIHandler_ShowsUsersWithUnscoredPredictionsAtZero(t *testin
 		t.Errorf("expected u1 points=0, got %d", found["u1"])
 	}
 	if found["u2"] != 10 {
-		t.Errorf("expected u2 acesRadioPoints=10 (correct winner), got %d", found["u2"])
+		t.Errorf("expected u2 acesRadioPoints=10, got %d", found["u2"])
 	}
 }
 
-func TestLeaderboardAPIHandler_HasProfileTrueWhenUserInStore(t *testing.T) {
-	predictions := repository.NewMemoryPredictionStore()
-	results := repository.NewMemoryResultStore()
+func TestLeaderboardAPIHandler_HasProfileTrue(t *testing.T) {
 	users := repository.NewMemoryUserStore()
 	ctx := context.Background()
+	users.Upsert(ctx, repository.User{UserID: "firebase:abc", Handle: "known", PredictionCount: 1})
 
-	predictions.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "firebase:abc", Handle: "known", HomeGoals: 1, AwayGoals: 0})
-	users.Upsert(ctx, repository.User{UserID: "firebase:abc", Handle: "known"})
-	predictions.Save(ctx, repository.Prediction{MatchID: "m2", UserID: "", Handle: "legacyfan", HomeGoals: 1, AwayGoals: 0})
-
-	lh := handlers.NewLeaderboardHandler(predictions, results, users, "Columbus Crew")
+	lh := newLeaderboard(users)
 	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
 	w := httptest.NewRecorder()
 	lh.APIList(w, req)
 
 	body := decodeLeaderboard(t, w)
-
-	byHandle := map[string]bool{}
-	for _, e := range body.Entries {
-		byHandle[e.Handle] = e.HasProfile
-	}
-	if !byHandle["known"] {
+	if len(body.Entries) == 0 || !body.Entries[0].HasProfile {
 		t.Errorf("expected hasProfile=true for user in UserStore, got %+v", body.Entries)
 	}
-	if byHandle["legacyfan"] {
-		t.Errorf("expected hasProfile=false for legacy handle-only user, got %+v", body.Entries)
+}
+
+func TestLeaderboardAPIHandler_ExcludesUsersWithNoPredictions(t *testing.T) {
+	users := repository.NewMemoryUserStore()
+	ctx := context.Background()
+	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "NoPredsFan", PredictionCount: 0})
+
+	lh := newLeaderboard(users)
+	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
+	w := httptest.NewRecorder()
+	lh.APIList(w, req)
+
+	body := decodeLeaderboard(t, w)
+	if len(body.Entries) != 0 {
+		t.Errorf("expected no entries for user with PredictionCount=0, got %+v", body.Entries)
 	}
 }
 
 func TestLeaderboardAPIHandler_IncludesGrouchyPoints(t *testing.T) {
-	predictions := repository.NewMemoryPredictionStore()
-	results := repository.NewMemoryResultStore()
+	users := repository.NewMemoryUserStore()
 	ctx := context.Background()
+	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "GrouchyFan", GrouchyPoints: 1, PredictionCount: 1})
 
-	// Columbus home, predicted 3-0 (Win by 2+), actual 2-0 (Win by 2+) → 1 Grouchy pt
-	predictions.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "u1", Handle: "GrouchyFan", HomeGoals: 3, AwayGoals: 0})
-	results.SaveResult(ctx, repository.Result{MatchID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", HomeGoals: 2, AwayGoals: 0})
-
-	lh := newLeaderboard(predictions, results)
+	lh := newLeaderboard(users)
 	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
 	w := httptest.NewRecorder()
 	lh.APIList(w, req)
@@ -220,24 +203,5 @@ func TestLeaderboardAPIHandler_IncludesGrouchyPoints(t *testing.T) {
 	body := decodeLeaderboard(t, w)
 	if len(body.Entries) == 0 || body.Entries[0].GrouchyPoints != 1 {
 		t.Errorf("expected grouchyPoints=1, got %+v", body.Entries)
-	}
-}
-
-func TestLeaderboardAPIHandler_FallsBackToPredictionHandleWhenNoUserRecord(t *testing.T) {
-	predictions := repository.NewMemoryPredictionStore()
-	results := repository.NewMemoryResultStore()
-	ctx := context.Background()
-
-	predictions.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "firebase:abc", Handle: "legacyfan", HomeGoals: 2, AwayGoals: 0})
-	results.SaveResult(ctx, repository.Result{MatchID: "m1", HomeTeam: "Portland Timbers", AwayTeam: "Columbus Crew", HomeGoals: 2, AwayGoals: 0})
-
-	lh := newLeaderboard(predictions, results)
-	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
-	w := httptest.NewRecorder()
-	lh.APIList(w, req)
-
-	body := decodeLeaderboard(t, w)
-	if len(body.Entries) == 0 || body.Entries[0].Handle != "legacyfan" {
-		t.Errorf("expected fallback to prediction handle legacyfan, got %+v", body.Entries)
 	}
 }
