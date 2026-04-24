@@ -48,6 +48,12 @@
 
 ## Done
 
+- [x] **Artifact Registry cleanup policy** — `infra/artifact-policy.json` keeps `prod`-tagged and `latest`-tagged images; deletes everything else after 4 hours. `prod` tag applied in CI after staging smoke test passes. Separate `gcf-artifact-policy.json` for Cloud Functions repo: keep 3 most recent, delete after 4 hours.
+
+- [x] **Firestore scoring fields read back correctly** — `toUser()` now deserialises all scoring fields (`acesRadioPoints`, `upper90Points`, `grouchyPoints`, `predictionCount`) from Firestore documents. Bug: fields were written correctly but never read back, so staging leaderboard showed zero scores for all users. Rule added to `internal/CLAUDE.md`: every new `FirestoreUserStore` method requires an integration test that round-trips through the emulator.
+
+- [x] **UserStore interface split** — `Upsert` (profile fields: handle, provider, location) and `UpdateScores` (scoring fields: points + count) are separate methods. Auth handlers calling `Upsert` can never accidentally zero out computed scores. `MemoryUserStore.Upsert` preserves existing scoring fields; `Recalculate()` calls `UpdateScores` exclusively for score writes.
+
 - [x] **Billing killswitch** — Cloud Function (`infra/billing-killswitch/`, nodejs24, gen2) subscribes to `billing-alerts` Pub/Sub topic; disables billing on both GCP projects when `costAmount > budgetAmount`. Deployed to `us-east5`. Manual step: create a $10 budget in GCP Console and wire to `billing-alerts` topic.
 
 - [x] **Precomputed user scores (leaderboard O(U) reads)** — `internal/recalculator.Recalculate()` computes AcesRadio, Upper90Club, Grouchy points and PredictionCount for every user from scratch and upserts to `UserStore`; triggered after every match final (`MatchPoller.SetOnResultSaved`) and on daily refresh startup (`startDailyRefresh` backfill). Leaderboard and profile handlers now read precomputed values from user docs — O(U) reads instead of O(P×R) per request.
