@@ -2,13 +2,17 @@
 
 ## Up Next
 
+### Security
+
+- [ ] **HMAC-sign session cookies** — the session cookie is currently base64-encoded JSON with no integrity check; any client-side modification is accepted as valid. Sign with HMAC-SHA256 using a secret loaded from Secret Manager (`SESSION_SECRET`). Verify signature in `UserFromSession`; reject unsigned/tampered cookies with 401.
+
+- [ ] **Rate limit expensive endpoints** — `/api/leaderboard` and `/api/profile/:userID` hit Firestore on every request with no throttle. Add per-IP rate limiting (e.g. 60 req/min) using an in-memory token bucket. Cloud Run's single-instance concurrency makes in-process state viable; revisit if multi-instance needed.
+
 ### Low
 
 14. [ ] **Prod smoke suite** — unauthenticated-only scenarios (app loads, leaderboard/matches API responds, Vue hydrates); replaces current `curl` liveness check in `deploy-prod`.
 
-16. [ ] **Cache leaderboard scoring** — currently recalculated on every request; fine now but will need in-memory caching or pre-computation at scale.
-
-17. [ ] **Remove stale `handle` from predictions** — `handle` on prediction documents is legacy; leaderboard now sources display names from `UserStore` by `userID`. Stop writing it on new predictions and remove the `p.Handle` fallback in the leaderboard once confirmed no UID-less predictions exist in prod.
+17. [ ] **Remove stale `handle` from predictions** — `handle` on prediction documents is legacy; leaderboard and profile now source display names from `UserStore` by `userID`. Stop writing it on new predictions and drop the field once confirmed no UID-less predictions exist in prod.
 
 ---
 
@@ -43,6 +47,10 @@
 ---
 
 ## Done
+
+- [x] **Billing killswitch** — Cloud Function (`infra/billing-killswitch/`, nodejs24, gen2) subscribes to `billing-alerts` Pub/Sub topic; disables billing on both GCP projects when `costAmount > budgetAmount`. Deployed to `us-east5`. Manual step: create a $10 budget in GCP Console and wire to `billing-alerts` topic.
+
+- [x] **Precomputed user scores (leaderboard O(U) reads)** — `internal/recalculator.Recalculate()` computes AcesRadio, Upper90Club, Grouchy points and PredictionCount for every user from scratch and upserts to `UserStore`; triggered after every match final (`MatchPoller.SetOnResultSaved`) and on daily refresh startup (`startDailyRefresh` backfill). Leaderboard and profile handlers now read precomputed values from user docs — O(U) reads instead of O(P×R) per request.
 
 - [x] **Frontend UX fixes (soft launch batch)** — Grouchy™ added to profile page (4-stat grid: Predictions · Aces Radio · Upper 90 Club · Grouchy™, each with rank); guest localStorage predictions auto-submitted on login via `flushGuestPredictions()` in shared `src/guestPredictions.ts` utility — users no longer need to manually resubmit after signing up; auth link styling added (`.auth-alt` was falling back to browser defaults); mobile breakpoints unified at 600px (hamburger was 480px, table cards 600px — now both 600px).
 - [x] **Grouchy™ scoring format** — third scoring format based on Columbus margin-of-victory bucket (Win 2+, Win 1, Draw, Lose 1, Lose 2+); +1 for matching bucket, 0 otherwise. `internal/scoring.Grouchy()`; leaderboard and match detail APIs include `grouchyPoints`; all three tables show GROUCHY™ column with mobile sort button; Rules page updated; prediction displayed below handle in match detail (removed separate PICK column). 64 e2e scenarios green.

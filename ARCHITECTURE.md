@@ -44,8 +44,9 @@ Entry point: `cmd/server/main.go`
 | `internal/handlers` | HTTP handlers — matches, predictions, leaderboard, profile, auth, session, handle update, match detail |
 | `internal/repository` | Data access — Firestore and in-memory stores; `WriteThroughMatchStore` |
 | `internal/scoring` | Scoring engines — AcesRadio, Upper90Club, and Grouchy |
+| `internal/recalculator` | Score recalculation — `Recalculate()` reads all predictions + results, computes totals for every user, upserts precomputed points to `UserStore` |
 | `internal/espn` | ESPN API client — fetches upcoming Crew matches |
-| `internal/poll` | Score polling — `MatchPoller` schedules per-match kickoff timers; `PollOnce` for manual/test triggers |
+| `internal/poll` | Score polling — `MatchPoller` schedules per-match kickoff timers; fires `SetOnResultSaved` callback on terminal result |
 | `internal/bot` | TwoOneBot — predicts Columbus 2-1 (home) / 1-2 (away) on every upcoming match at each refresh and daily tick |
 | `internal/models` | Domain types |
 
@@ -58,9 +59,9 @@ Entry point: `cmd/server/main.go`
 | `GET` | `/api/matches` | optional | Upcoming matches + caller's predictions |
 | `GET` | `/api/matches/:matchId` | none | Match detail: match info + all predictions with per-format scores + `scoringFormats` array |
 | `POST` | `/api/predictions` | required | Submit a score prediction (form data) |
-| `GET` | `/api/leaderboard` | none | `{entries: [{userID, handle, acesRadioPoints, upper90ClubPoints, grouchyPoints, hasProfile}]}` sorted by Aces Radio desc; all users with ≥1 prediction appear (0 pts until results land); `hasProfile: bool` false for legacy handle-only users |
+| `GET` | `/api/leaderboard` | none | `{entries: [{userID, handle, acesRadioPoints, upper90ClubPoints, grouchyPoints, hasProfile}]}` sorted by Aces Radio desc; reads precomputed points from `UserStore` — O(U) reads; only users with `PredictionCount > 0` appear |
 | `GET` | `/api/me` | optional | Current session user `{userID, handle}` or 401; lazily upserts user to `UserStore` |
-| `GET` | `/api/profile/:userID` | required | Public profile: handle, location, predictionCount, Aces Radio + Upper 90 Club + Grouchy™ standing |
+| `GET` | `/api/profile/:userID` | required | Public profile: handle, location, predictionCount, Aces Radio + Upper 90 Club + Grouchy™ standing (points + rank); reads precomputed points from `UserStore` |
 | `POST` | `/auth/handle` | required | Update display name + location; upserts to `UserStore`, rewrites session cookie |
 | `POST` | `/auth/session` | — | Exchange Firebase ID token for session cookie (form data) |
 | `GET` | `/auth/logout` | — | Clear session cookie, redirect to /matches |
@@ -83,9 +84,11 @@ The server holds a `MatchStore` backed by `WriteThroughMatchStore` — an in-mem
 
 ESPN data is fetched via `internal/espn.FetchCrewMatches`, which hits four league endpoints (MLS, US Open Cup, Leagues Cup, CONCACAF Champions). The HTTP base URL is injectable for testing — `fetchCrewMatchesFrom(base)` is covered by `httptest.Server` + captured fixture JSON.
 
-**Daily refresh:** `startDailyRefresh` fires at 4am ET on startup and every subsequent 24h. It fetches ESPN, updates `MatchStore` (writing through to Firestore), and calls `poller.Reset(matches)` to reschedule all match pollers from fresh data.
+**Daily refresh:** `startDailyRefresh` fires at 4am ET on startup and every subsequent 24h. It fetches ESPN, updates `MatchStore` (writing through to Firestore), calls `poller.Backfill(matches)` to catch results that finalised while no poller was active (e.g. after a Cloud Run recycle), runs `Recalculate()`, and calls `poller.Reset(matches)` to reschedule all match pollers from fresh data.
 
-**Score polling:** `internal/poll.MatchPoller` schedules a `time.AfterFunc` at each match's kickoff time. When the timer fires, the match enters the active set and `Tick()` polls ESPN every 2 minutes. On a terminal status (`STATUS_FULL_TIME` / `STATUS_FINAL_AET` / `STATUS_FINAL_PEN`), the result is written to `ResultStore` and the match is deactivated. Matches with unknown/postponed status stay active until the next 4am reset clears them. Matches loaded from Firestore with a past kickoff are scheduled at zero delay (immediate catch-up polling).
+**Score polling:** `internal/poll.MatchPoller` schedules a `time.AfterFunc` at each match's kickoff time. When the timer fires, the match enters the active set and `Tick()` polls ESPN every 2 minutes. On a terminal status (`STATUS_FULL_TIME` / `STATUS_FINAL_AET` / `STATUS_FINAL_PEN`), the result is written to `ResultStore`, the match is deactivated, and the `SetOnResultSaved` callback fires — which triggers `Recalculate()`. Matches with unknown/postponed status stay active until the next 4am reset clears them. Matches loaded from Firestore with a past kickoff are scheduled at zero delay (immediate catch-up polling).
+
+**Score recalculation:** `internal/recalculator.Recalculate()` is a from-scratch recompute: fetches all predictions, fetches all results (one read per unique match), computes AcesRadio + Upper90Club + Grouchy totals and prediction count per user, and upserts all user docs in `UserStore`. Triggered after every match final (via `MatchPoller.SetOnResultSaved`) and on startup (after `Backfill`). Leaderboard and profile handlers read these precomputed values directly — O(U) reads instead of O(P×R) per request.
 
 ---
 
@@ -146,9 +149,13 @@ results/{matchID}
   awayScore:  int
 
 users/{userID}
-  handle:     string   // current display name (source of truth)
-  provider:   string   // "google.com", "password", etc.
-  location:   string   // optional, user-supplied (e.g. "Columbus, OH")
+  handle:          string   // current display name (source of truth)
+  provider:        string   // "google.com", "password", etc.
+  location:        string   // optional, user-supplied (e.g. "Columbus, OH")
+  AcesRadioPoints: int      // precomputed by Recalculate()
+  Upper90Points:   int      // precomputed by Recalculate()
+  GrouchyPoints:   int      // precomputed by Recalculate()
+  PredictionCount: int      // precomputed by Recalculate(); 0 = excluded from leaderboard
 
 matches/{matchID}
   homeTeam:   string
@@ -159,6 +166,20 @@ matches/{matchID}
   awayScore:  string
   state:      string   // "pre" / "in" / "post"
 ```
+
+---
+
+## Billing Killswitch
+
+`infra/billing-killswitch/` — Cloud Function (nodejs24, gen2, `us-east5`) that disables billing on both GCP projects when a budget alert fires.
+
+**Trigger:** Pub/Sub topic `billing-alerts` (configured in GCP Console budget alerts for both `crew-predictions` and `crew-predictions-staging`).
+
+**What it does:** Parses the budget alert payload; if `costAmount > budgetAmount`, calls the Cloud Billing API to remove the billing account from both projects. The service account needs `billing.projectManager` on both projects.
+
+**Deploy:** `npm run deploy` from `infra/billing-killswitch/`. Configuration is baked into `package.json`'s deploy script (project IDs in `PROJECT_IDS` env var).
+
+**Manual setup required (one-time):** Create a `$10` budget in GCP Console → Billing → Budgets & Alerts and wire it to the `billing-alerts` Pub/Sub topic. Google manages the Pub/Sub publisher IAM automatically when you configure the budget in the Console.
 
 ---
 
