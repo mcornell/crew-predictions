@@ -24,6 +24,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { signUp, signInWithGoogle } from '../firebase'
+import { flushGuestPredictions } from '../guestPredictions'
 
 onMounted(() => { document.title = 'Sign Up — Crew Predictions' })
 
@@ -54,6 +55,7 @@ async function handleSubmit() {
       error.value = 'Could not create session. Please try again.'
       return
     }
+    await flushGuestPredictions()
     router.push('/matches')
   } catch (e: any) {
     error.value = signUpErrorMessages[e?.code] ?? 'Could not create account.'

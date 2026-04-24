@@ -26,6 +26,11 @@
           <span class="profile-stat-label">Upper 90 Club</span>
           <span v-if="profile.upper90Club.rank > 0" class="profile-stat-rank">#{{ profile.upper90Club.rank }}</span>
         </div>
+        <div class="profile-stat">
+          <span class="profile-stat-value" data-testid="grouchy-points">{{ profile.grouchy.rank > 0 ? profile.grouchy.points : '—' }}</span>
+          <span class="profile-stat-label">Grouchy™</span>
+          <span v-if="profile.grouchy.rank > 0" class="profile-stat-rank" data-testid="grouchy-rank">#{{ profile.grouchy.rank }}</span>
+        </div>
       </div>
 
       <div v-if="isOwnProfile" class="profile-edit">
@@ -69,6 +74,7 @@ interface Profile {
   predictionCount: number
   acesRadio: Standing
   upper90Club: Standing
+  grouchy: Standing
 }
 
 const currentUser = inject<Ref<{ userID: string; handle: string; emailVerified: boolean } | null>>('currentUser', ref(null))

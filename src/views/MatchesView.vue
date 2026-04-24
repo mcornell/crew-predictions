@@ -115,6 +115,7 @@
 import { ref, reactive, computed, inject, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { formatCountdown } from '../utils/countdown'
+import { readGuestPredictions, writeGuestPredictions } from '../guestPredictions'
 import type { Ref } from 'vue'
 
 const currentUser = inject<Ref<{ handle: string; emailVerified: boolean } | null>>('currentUser', ref(null))
@@ -135,8 +136,6 @@ interface Prediction {
   homeGoals: number
   awayGoals: number
 }
-
-const GUEST_KEY = 'guestPredictions'
 
 const matches = ref<Match[]>([])
 const savedPredictions = reactive<Record<string, Prediction | null>>({})
@@ -184,22 +183,6 @@ function formatKickoff(iso: string): string {
   const d = new Date(iso)
   if (isNaN(d.getTime())) return ''
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
-}
-
-function readGuestPredictions(): Record<string, Prediction> {
-  try {
-    return JSON.parse(localStorage.getItem(GUEST_KEY) ?? '{}')
-  } catch {
-    return {}
-  }
-}
-
-function writeGuestPredictions(data: Record<string, Prediction>) {
-  try {
-    localStorage.setItem(GUEST_KEY, JSON.stringify(data))
-  } catch {
-    // Safari Private Browsing blocks localStorage writes; degrade silently
-  }
 }
 
 async function fetchMatches() {
