@@ -2,15 +2,17 @@
 
 ## Up Next
 
-### Security
-
-- [ ] **HMAC-sign session cookies** — the session cookie is currently base64-encoded JSON with no integrity check; any client-side modification is accepted as valid. Sign with HMAC-SHA256 using a secret loaded from Secret Manager (`SESSION_SECRET`). Verify signature in `UserFromSession`; reject unsigned/tampered cookies with 401.
-
-- [ ] **Rate limit expensive endpoints** — `/api/leaderboard` and `/api/profile/:userID` hit Firestore on every request with no throttle. Add per-IP rate limiting (e.g. 60 req/min) using an in-memory token bucket. Cloud Run's single-instance concurrency makes in-process state viable; revisit if multi-instance needed. **Known risk:** staging smoke suite hits the leaderboard from a GitHub Actions runner IP — if it breaches 60 req/min the smoke tests will get 429s. If this happens, add `RATE_LIMIT_ENABLED=true` env var and only enable in prod.
-
-### Low
+### Infrastructure
 
 - [ ] **Decouple frontend from Docker image** — Go server currently embeds `dist/` and serves the SPA directly from Cloud Run as a fallback. Since Firebase Hosting is the real frontend entry point (and rewrites API paths to Cloud Run), the frontend doesn't need to be in the image. Refactor: remove `spaHandler`/`assetsHandler` from `main.go`, strip the Node/Vite build stage from the Dockerfile, build the Vue app as a separate CI step, and upload the artifact directly to GCS — no `docker cp` extraction needed. Smaller image, cleaner separation of concerns.
+
+### Security
+
+- [x] **HMAC-sign session cookies** — the session cookie is currently base64-encoded JSON with no integrity check; any client-side modification is accepted as valid. Sign with HMAC-SHA256 using a secret loaded from Secret Manager (`SESSION_SECRET`). Verify signature in `UserFromSession`; reject unsigned/tampered cookies with 401.
+
+- [x] **Rate limit expensive endpoints** — `/api/leaderboard` and `/api/profile/:userID` hit Firestore on every request with no throttle. Add per-IP rate limiting (e.g. 60 req/min) using an in-memory token bucket. Cloud Run's single-instance concurrency makes in-process state viable; revisit if multi-instance needed. **Known risk:** staging smoke suite hits the leaderboard from a GitHub Actions runner IP — if it breaches 60 req/min the smoke tests will get 429s. If this happens, add `RATE_LIMIT_ENABLED=true` env var and only enable in prod.
+
+### Low
 
 14. [ ] **Prod smoke suite** — unauthenticated-only scenarios (app loads, leaderboard/matches API responds, Vue hydrates); replaces current `curl` liveness check in `deploy-prod`.
 
