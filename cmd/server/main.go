@@ -294,6 +294,7 @@ func serveFirebaseConfig(w http.ResponseWriter, r *http.Request) {
 		"apiKey":           os.Getenv("FIREBASE_API_KEY"),
 		"authDomain":       os.Getenv("FIREBASE_AUTH_DOMAIN"),
 		"projectId":        os.Getenv("FIREBASE_PROJECT_ID"),
+		"measurementId":    os.Getenv("FIREBASE_MEASUREMENT_ID"),
 		"authEmulatorHost": os.Getenv("FIREBASE_AUTH_EMULATOR_HOST"),
 	})
 	w.Header().Set("Content-Type", "application/javascript")

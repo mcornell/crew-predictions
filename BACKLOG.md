@@ -33,6 +33,18 @@
 
 ---
 
+## Security (Low Priority)
+
+- [ ] **App Check** — register Crew Predictions web app with reCAPTCHA v3 attestation provider; enforce on Cloud Firestore and Authentication. Note: does not cover Go/Cloud Run endpoints (those are protected by session cookies). Wire `initializeAppCheck()` into `src/firebase.ts` before enforcing.
+
+---
+
+## Future / Exploratory
+
+- [ ] **Migrate from Firestore to Firebase SQL Connect (PostgreSQL)** — relational model would be a better fit; SQL Connect wasn't available/mature when the project started. Consider when user base grows or query complexity increases.
+
+---
+
 ## Decisions Made / Won't Do
 
 - **Custom domain migration** — Firebase Hosting custom domain + Cloud Run domain mapping. Low priority — may never be needed.
