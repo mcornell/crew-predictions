@@ -24,10 +24,12 @@ function pastKickoff(hoursAgo: number): string {
 }
 
 const mockMatches = [
-  { id: 'match-past', homeTeam: 'New England Revolution', awayTeam: 'Columbus Crew', kickoff: pastKickoff(96), status: 'STATUS_FULL_TIME', homeScore: '2', awayScore: '1' },
-  { id: 'match-1', homeTeam: 'Columbus Crew', awayTeam: 'LA Galaxy', kickoff: futureKickoff(24), status: 'STATUS_SCHEDULED', homeScore: '', awayScore: '' },
-  { id: 'match-2', homeTeam: 'Columbus Crew', awayTeam: 'Philadelphia Union', kickoff: futureKickoff(72), status: 'STATUS_SCHEDULED', homeScore: '', awayScore: '' },
+  { id: 'match-past', homeTeam: 'New England Revolution', awayTeam: 'Columbus Crew', kickoff: pastKickoff(96), status: 'STATUS_FULL_TIME', state: 'post', homeScore: '2', awayScore: '1' },
+  { id: 'match-1', homeTeam: 'Columbus Crew', awayTeam: 'LA Galaxy', kickoff: futureKickoff(24), status: 'STATUS_SCHEDULED', state: 'pre', homeScore: '', awayScore: '' },
+  { id: 'match-2', homeTeam: 'Columbus Crew', awayTeam: 'Philadelphia Union', kickoff: futureKickoff(72), status: 'STATUS_SCHEDULED', state: 'pre', homeScore: '', awayScore: '' },
 ]
+
+const liveMatch = { id: 'match-live', homeTeam: 'Columbus Crew', awayTeam: 'Philadelphia Union', kickoff: pastKickoff(1), status: 'STATUS_FIRST_HALF', state: 'in', homeScore: '', awayScore: '' }
 
 beforeEach(() => {
   localStorage.clear()
@@ -116,8 +118,8 @@ describe('MatchesView', () => {
       ok: true,
       json: () => Promise.resolve({
         matches: [
-          { id: 'older', homeTeam: 'CF Montréal', awayTeam: 'Columbus Crew', kickoff: '2026-04-10T23:30:00Z', status: 'STATUS_FULL_TIME', homeScore: '0', awayScore: '2' },
-          { id: 'newer', homeTeam: 'Columbus Crew', awayTeam: 'Atlanta United', kickoff: '2026-04-17T23:30:00Z', status: 'STATUS_FULL_TIME', homeScore: '3', awayScore: '1' },
+          { id: 'older', homeTeam: 'CF Montréal', awayTeam: 'Columbus Crew', kickoff: '2026-04-10T23:30:00Z', status: 'STATUS_FULL_TIME', state: 'post', homeScore: '0', awayScore: '2' },
+          { id: 'newer', homeTeam: 'Columbus Crew', awayTeam: 'Atlanta United', kickoff: '2026-04-17T23:30:00Z', status: 'STATUS_FULL_TIME', state: 'post', homeScore: '3', awayScore: '1' },
         ],
         predictions: {},
       }),
@@ -243,7 +245,7 @@ describe('MatchesView', () => {
   it('match more than 8 days away is not shown in upcoming', async () => {
     const farFuture = new Date()
     farFuture.setDate(farFuture.getDate() + 10)
-    const farMatch = { id: 'far', homeTeam: 'Columbus Crew', awayTeam: 'Inter Miami', kickoff: farFuture.toISOString(), status: 'STATUS_SCHEDULED' }
+    const farMatch = { id: 'far', homeTeam: 'Columbus Crew', awayTeam: 'Inter Miami', kickoff: farFuture.toISOString(), status: 'STATUS_SCHEDULED', state: 'pre' }
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ matches: [farMatch], predictions: {} }),
@@ -256,7 +258,7 @@ describe('MatchesView', () => {
   it('match exactly 8 days away is shown in upcoming', async () => {
     const eightDays = new Date()
     eightDays.setDate(eightDays.getDate() + 8)
-    const match = { id: 'm8', homeTeam: 'Columbus Crew', awayTeam: 'Inter Miami', kickoff: eightDays.toISOString(), status: 'STATUS_SCHEDULED' }
+    const match = { id: 'm8', homeTeam: 'Columbus Crew', awayTeam: 'Inter Miami', kickoff: eightDays.toISOString(), status: 'STATUS_SCHEDULED', state: 'pre' }
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ matches: [match], predictions: {} }),
@@ -264,6 +266,27 @@ describe('MatchesView', () => {
     const wrapper = mountMatches()
     await flushPromises()
     expect(wrapper.findAll('[data-testid="match-card"]')).toHaveLength(1)
+  })
+
+  it('live match shows 0-0 score, not dashes', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ matches: [liveMatch], predictions: {} }),
+    }))
+    const wrapper = mountMatches()
+    await flushPromises()
+    const matchup = wrapper.find('[data-testid="now-playing-card"] [data-testid="matchup"]')
+    expect(matchup.text()).toMatch(/Columbus Crew\s*0\s*vs\s*0\s*Philadelphia Union/i)
+  })
+
+  it('live match does not appear in results', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ matches: [liveMatch], predictions: {} }),
+    }))
+    const wrapper = mountMatches()
+    await flushPromises()
+    expect(wrapper.findAll('[data-testid="result-card"]')).toHaveLength(0)
   })
 
   it('shows countdown on upcoming match card', async () => {

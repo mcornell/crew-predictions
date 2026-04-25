@@ -18,9 +18,9 @@
             <span v-else class="live-indicator" data-testid="live-indicator">● LIVE</span>
             <div class="matchup matchup--input" data-testid="matchup">
               <span class="team-name team-home">{{ match.homeTeam }}</span>
-              <span class="inline-score">{{ match.homeScore || '–' }}</span>
+              <span class="inline-score">{{ match.homeScore || '0' }}</span>
               <span class="vs">vs</span>
-              <span class="inline-score">{{ match.awayScore || '–' }}</span>
+              <span class="inline-score">{{ match.awayScore || '0' }}</span>
               <span class="team-name team-away">{{ match.awayTeam }}</span>
             </div>
             <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
@@ -153,15 +153,12 @@ const nowPlayingMatches = computed(() =>
 const upcomingMatches = computed(() => {
   const cutoff = new Date()
   cutoff.setDate(cutoff.getDate() + 8)
-  return matches.value.filter(m => {
-    if (m.status !== 'STATUS_SCHEDULED' || m.state === 'in') return false
-    return new Date(m.kickoff) <= cutoff
-  })
+  return matches.value.filter(m => m.state === 'pre' && new Date(m.kickoff) <= cutoff)
 })
 
 const completedMatches = computed(() =>
   matches.value
-    .filter(m => m.status !== 'STATUS_SCHEDULED' && m.status !== 'STATUS_IN_PROGRESS' && m.status !== 'STATUS_DELAYED')
+    .filter(m => m.state === 'post')
     .sort((a, b) => new Date(b.kickoff).getTime() - new Date(a.kickoff).getTime())
 )
 

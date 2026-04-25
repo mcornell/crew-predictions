@@ -71,6 +71,23 @@ type matchRecord struct {
 	state     string
 }
 
+func deriveState(espnState, statusName string) string {
+	if espnState != "" {
+		return espnState
+	}
+	switch statusName {
+	case "STATUS_FIRST_HALF", "STATUS_SECOND_HALF", "STATUS_HALFTIME",
+		"STATUS_IN_PROGRESS", "STATUS_END_PERIOD", "STATUS_OVERTIME",
+		"STATUS_EXTRA_TIME", "STATUS_SHOOTOUT":
+		return "in"
+	case "STATUS_FULL_TIME", "STATUS_FINAL", "STATUS_FT",
+		"STATUS_FULL_PEN", "STATUS_ABANDONED":
+		return "post"
+	default:
+		return "pre"
+	}
+}
+
 func parseKickoff(s string) (time.Time, error) {
 	if t, err := time.Parse(time.RFC3339, s); err == nil {
 		return t, nil
@@ -133,7 +150,7 @@ func parseEvents(data espnResponse) []matchRecord {
 			homeScore: homeScore,
 			awayScore: awayScore,
 			status:    comp.Status.Type.Name,
-			state:     comp.Status.State,
+			state:     deriveState(comp.Status.State, comp.Status.Type.Name),
 		})
 	}
 	return records
