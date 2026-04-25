@@ -2,14 +2,16 @@ FROM node:24-slim AS frontend
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
-COPY . .
-RUN npm run build
+COPY src/ ./src/
+COPY index.html vite.config.ts tsconfig.json ./
+RUN ./node_modules/.bin/vite build
 
 FROM golang:1.26 AS backend
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
-COPY . .
+COPY cmd/ ./cmd/
+COPY internal/ ./internal/
 RUN go build -o server ./cmd/server
 
 FROM debian:bookworm-slim
