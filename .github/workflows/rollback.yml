@@ -40,16 +40,21 @@ jobs:
 
       - name: Redeploy prod-previous to Firebase Hosting
         run: |
-          gcloud storage cp gs://crew-predictions-frontend/prod-previous.zip rollback.zip
-          unzip -q rollback.zip -d dist/
-          npx firebase-tools@latest deploy --only hosting --project crew-predictions
-          echo "Firebase Hosting redeployed from prod-previous.zip"
+          if gcloud storage ls gs://crew-predictions-frontend/prod-previous.zip 2>/dev/null; then
+            gcloud storage cp gs://crew-predictions-frontend/prod-previous.zip rollback.zip
+            unzip -q rollback.zip -d dist/
+            npx firebase-tools@latest deploy --only hosting --project crew-predictions
+            echo "Firebase Hosting redeployed from prod-previous.zip"
+          else
+            echo "::warning::No prod-previous.zip found — Firebase Hosting not rolled back (no prior prod deploy exists)"
+          fi
 
       - name: Swap prod and prod-previous tags
         run: |
           IMAGE=us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions
-          # prod-previous becomes the new prod; old prod becomes prod-previous
           gcloud artifacts docker tags add ${IMAGE}:prod-previous ${IMAGE}:prod --quiet
-          gcloud storage cp gs://crew-predictions-frontend/prod-previous.zip \
-            gs://crew-predictions-frontend/prod.zip
+          if gcloud storage ls gs://crew-predictions-frontend/prod-previous.zip 2>/dev/null; then
+            gcloud storage cp gs://crew-predictions-frontend/prod-previous.zip \
+              gs://crew-predictions-frontend/prod.zip
+          fi
           echo "Tags swapped — prod now points to what was prod-previous"
