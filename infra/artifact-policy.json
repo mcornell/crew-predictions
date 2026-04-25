@@ -1,5 +1,17 @@
 [
     {
+        "name": "keep-prod-previous",
+        "action": {
+            "type": "Keep"
+        },
+        "condition": {
+            "tagState": "tagged",
+            "tagPrefixes": [
+                "prod-previous"
+            ]
+        }
+    },
+    {
         "name": "keep-prod",
         "action": {
             "type": "Keep"
@@ -30,7 +42,7 @@
         },
         "condition": {
             "tagState": "any",
-            "olderThan": "14400s"
+            "olderThan": "86400s"
         }
     }
 ]
