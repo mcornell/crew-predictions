@@ -112,6 +112,7 @@
 - [x] **Results reverse chronological order** — completed matches sorted most recent first on matches page
 - [x] **Remove email verification banner** — banner removed; users go straight to predictions after sign-up
 - [x] **Staging smoke suite** — post-deploy Playwright suite hits real staging URL; covers email sign-in/sign-up on desktop + mobile viewports; Google redirect initiation; two permanent test accounts with setup/teardown
+- [x] **CI/CD pipeline redesign** — GCS frontend artifacts (`sha-{SHA}.zip` / `latest.zip` / `prod.zip` / `prod-previous.zip`); automatic prod rollback on failure; manual rollback workflow dispatch; concurrency cancel on develop; `prod`/`prod-previous` Docker + GCS tags; fallback to `latest` when exact SHA not found. Tested: fallback path exercised on first prod deploy (md-only commit had no artifacts); manual rollback tested — Cloud Run rollback succeeded, Firebase guard for missing `prod-previous.zip` added after first-deploy edge case discovered
 - [x] **GitHub Actions CI/CD** — Go + Vitest + Playwright on push; Workload Identity Federation for GCP auth
 - [x] **BDD e2e suite** — Playwright scenarios covering auth, predictions, leaderboard, mobile layout
 - [x] **Server-side prediction locking** — 403 after kickoff; ESPN fetcher injected into handler
