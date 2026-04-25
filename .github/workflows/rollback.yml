@@ -18,6 +18,13 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+
       - uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
@@ -43,7 +50,7 @@ jobs:
           if gcloud storage ls gs://crew-predictions-frontend/prod-previous.zip 2>/dev/null; then
             gcloud storage cp gs://crew-predictions-frontend/prod-previous.zip rollback.zip
             unzip -q rollback.zip -d dist/
-            npx firebase-tools@latest deploy --only hosting --project crew-predictions
+            ./node_modules/.bin/firebase deploy --only hosting --project crew-predictions
             echo "Firebase Hosting redeployed from prod-previous.zip"
           else
             echo "::warning::No prod-previous.zip found — Firebase Hosting not rolled back (no prior prod deploy exists)"
