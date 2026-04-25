@@ -15,7 +15,10 @@
     "test:report": "playwright show-report",
     "test:gen": "bddgen",
     "test:smoke": "bddgen --config playwright.smoke.ts && playwright test --config playwright.smoke.ts",
-    "test:smoke:debug": "SMOKE_DEBUG=1 bddgen --config playwright.smoke.ts && SMOKE_DEBUG=1 playwright test --config playwright.smoke.ts"
+    "test:smoke:debug": "SMOKE_DEBUG=1 bddgen --config playwright.smoke.ts && SMOKE_DEBUG=1 playwright test --config playwright.smoke.ts",
+    "firebase:emulators": "firebase emulators:start --only auth,firestore --project crew-predictions",
+    "firebase:deploy:staging": "firebase deploy --only hosting --project crew-predictions-staging --config firebase.staging.json",
+    "firebase:deploy:prod": "firebase deploy --only hosting --project crew-predictions"
   },
   "repository": {
     "type": "git",
