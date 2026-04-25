@@ -10,6 +10,8 @@
 
 ### Low
 
+- [ ] **Decouple frontend from Docker image** — Go server currently embeds `dist/` and serves the SPA directly from Cloud Run as a fallback. Since Firebase Hosting is the real frontend entry point (and rewrites API paths to Cloud Run), the frontend doesn't need to be in the image. Refactor: remove `spaHandler`/`assetsHandler` from `main.go`, strip the Node/Vite build stage from the Dockerfile, build the Vue app as a separate CI step, and upload the artifact directly to GCS — no `docker cp` extraction needed. Smaller image, cleaner separation of concerns.
+
 14. [ ] **Prod smoke suite** — unauthenticated-only scenarios (app loads, leaderboard/matches API responds, Vue hydrates); replaces current `curl` liveness check in `deploy-prod`.
 
 17. [ ] **Remove stale `handle` from predictions** — `handle` on prediction documents is legacy; leaderboard and profile now source display names from `UserStore` by `userID`. Stop writing it on new predictions and drop the field once confirmed no UID-less predictions exist in prod.
