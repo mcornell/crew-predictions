@@ -6,6 +6,10 @@ on:
     paths-ignore:
       - '**.md'
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref == 'refs/heads/develop' }}
+
 jobs:
   test:
     if: github.ref == 'refs/heads/develop'
@@ -239,11 +243,6 @@ jobs:
           docker push us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions:sha-${{ github.sha }}
           docker push us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions:latest
 
-      - name: Tag staging image
-        run: |
-          IMAGE=us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions
-          gcloud artifacts docker tags add ${IMAGE}:sha-${{ github.sha }} ${IMAGE}:staging-${{ github.sha }} --quiet
-
       - name: Deploy to staging Cloud Run
         run: |
           gcloud run deploy crew-predictions-staging \
@@ -257,13 +256,7 @@ jobs:
         env:
           STAGING_API_KEY: ${{ secrets.STAGING_FIREBASE_API_KEY }}
 
-      - name: Smoke test staging
-        run: |
-          STAGING_URL=$(gcloud run services describe crew-predictions-staging --region=us-east5 --project=crew-predictions-staging --format='value(status.url)')
-          curl -f "$STAGING_URL/"
-          curl -f "$STAGING_URL/api/matches"
-
-      - name: Extract frontend artifact from Docker image
+      - name: Extract frontend from Docker image
         run: |
           docker create --name tmp us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions:sha-${{ github.sha }}
           docker cp tmp:/app/dist ./dist
@@ -272,11 +265,12 @@ jobs:
       - name: Deploy staging to Firebase Hosting
         run: npx firebase-tools@latest deploy --only hosting --project crew-predictions-staging --config firebase.staging.json
 
-      - uses: actions/upload-artifact@v7
-        with:
-          name: frontend-${{ github.sha }}
-          path: dist/
-          retention-days: 90
+      - name: Upload frontend to GCS
+        run: |
+          cd dist && zip -r ../frontend.zip .
+          gcloud storage cp ../frontend.zip gs://crew-predictions-frontend/sha-${{ github.sha }}.zip
+          gcloud storage cp ../frontend.zip gs://crew-predictions-frontend/latest.zip
+          echo "Uploaded sha-${{ github.sha }}.zip and latest.zip to GCS"
 
   smoke-staging:
     if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
@@ -332,14 +326,17 @@ jobs:
     permissions:
       contents: read
       id-token: write
-      actions: read
 
     steps:
       - uses: actions/checkout@v6
 
-      # parents[1] is the develop tip on a standard merge commit
+      # parents[1] is the develop tip on a standard merge commit.
+      # Falls back to empty string on squash/rebase merges — image and zip resolution
+      # will fall back to latest in that case.
       - name: Get develop SHA
-        run: echo "DEVELOP_SHA=$(gh api repos/${{ github.repository }}/commits/${{ github.sha }} --jq '.parents[1].sha')" >> $GITHUB_ENV
+        run: |
+          SHA=$(gh api repos/${{ github.repository }}/commits/${{ github.sha }} --jq '.parents[1].sha // ""')
+          echo "DEVELOP_SHA=$SHA" >> $GITHUB_ENV
         env:
           GH_TOKEN: ${{ github.token }}
 
@@ -350,25 +347,49 @@ jobs:
 
       - uses: google-github-actions/setup-gcloud@v3
 
-      - name: Deploy image to prod Cloud Run
+      - name: Save prod-previous (rollback targets)
+        run: |
+          IMAGE=us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions
+          gcloud artifacts docker tags add ${IMAGE}:prod ${IMAGE}:prod-previous --quiet || true
+          gcloud storage cp gs://crew-predictions-frontend/prod.zip \
+            gs://crew-predictions-frontend/prod-previous.zip || true
+
+      - name: Resolve Docker image
+        run: |
+          IMAGE=us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions
+          SHA="${{ env.DEVELOP_SHA }}"
+          if [ -n "$SHA" ] && gcloud artifacts docker images describe ${IMAGE}:sha-${SHA} --quiet 2>/dev/null; then
+            echo "DEPLOY_IMAGE=${IMAGE}:sha-${SHA}" >> $GITHUB_ENV
+            echo "Deploying image sha-${SHA}"
+          else
+            echo "DEPLOY_IMAGE=${IMAGE}:latest" >> $GITHUB_ENV
+            echo "::warning::sha-${SHA} not found in Artifact Registry — falling back to latest"
+          fi
+
+      - name: Resolve frontend zip
+        run: |
+          SHA="${{ env.DEVELOP_SHA }}"
+          if [ -n "$SHA" ] && gcloud storage ls gs://crew-predictions-frontend/sha-${SHA}.zip 2>/dev/null; then
+            gcloud storage cp gs://crew-predictions-frontend/sha-${SHA}.zip frontend.zip
+            echo "FRONTEND_SOURCE=sha-${SHA}.zip" >> $GITHUB_ENV
+            echo "Downloaded sha-${SHA}.zip"
+          else
+            gcloud storage cp gs://crew-predictions-frontend/latest.zip frontend.zip
+            echo "FRONTEND_SOURCE=latest.zip" >> $GITHUB_ENV
+            echo "::warning::sha-${SHA}.zip not found in GCS — falling back to latest.zip"
+          fi
+          unzip -q frontend.zip -d dist/
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker us-east5-docker.pkg.dev --quiet
+
+      - name: Deploy to prod Cloud Run
         run: |
           gcloud run deploy crew-predictions \
-            --image=us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions:sha-${{ env.DEVELOP_SHA }} \
+            --image=${{ env.DEPLOY_IMAGE }} \
             --region=us-east5 \
             --update-secrets=ADMIN_KEY=admin-key:latest,SESSION_SECRET=session-secret:latest \
             --quiet
-
-      - name: Find staging run ID
-        run: echo "STAGING_RUN_ID=$(gh run list --workflow=ci.yml --branch=develop --event=push --commit=${{ env.DEVELOP_SHA }} --json=databaseId --jq='.[0].databaseId')" >> $GITHUB_ENV
-        env:
-          GH_TOKEN: ${{ github.token }}
-
-      - uses: actions/download-artifact@v8
-        with:
-          name: frontend-${{ env.DEVELOP_SHA }}
-          run-id: ${{ env.STAGING_RUN_ID }}
-          github-token: ${{ github.token }}
-          path: dist/
 
       - name: Deploy to Firebase Hosting
         run: npx firebase-tools@latest deploy --only hosting --project crew-predictions
@@ -379,7 +400,33 @@ jobs:
           curl -f "$PROD_URL/"
           curl -f "$PROD_URL/api/matches"
 
-      - name: Tag validated prod image
+      - name: Promote prod tags
         run: |
           IMAGE=us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions
-          gcloud artifacts docker tags add ${IMAGE}:sha-${{ env.DEVELOP_SHA }} ${IMAGE}:prod --quiet
+          gcloud artifacts docker tags add ${{ env.DEPLOY_IMAGE }} ${IMAGE}:prod --quiet
+          gcloud storage cp frontend.zip gs://crew-predictions-frontend/prod.zip
+          echo "prod promoted — image: ${{ env.DEPLOY_IMAGE }}, frontend: ${{ env.FRONTEND_SOURCE }}"
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "::error::Deploy failed — rolling back to previous prod"
+          IMAGE=us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions
+
+          gcloud run deploy crew-predictions \
+            --image=${IMAGE}:prod \
+            --region=us-east5 \
+            --update-secrets=ADMIN_KEY=admin-key:latest,SESSION_SECRET=session-secret:latest \
+            --quiet \
+            && echo "Cloud Run rolled back to prod image" \
+            || echo "::error::Cloud Run rollback failed — manual intervention required"
+
+          if gcloud storage ls gs://crew-predictions-frontend/prod-previous.zip 2>/dev/null; then
+            gcloud storage cp gs://crew-predictions-frontend/prod-previous.zip rollback.zip
+            rm -rf dist/ && unzip -q rollback.zip -d dist/
+            npx firebase-tools@latest deploy --only hosting --project crew-predictions \
+              && echo "Firebase Hosting rolled back to prod-previous" \
+              || echo "::error::Firebase rollback failed — manual intervention required"
+          else
+            echo "::warning::No prod-previous.zip found — Firebase Hosting not rolled back (first deploy?)"
+          fi
