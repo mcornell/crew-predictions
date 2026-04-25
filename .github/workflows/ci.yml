@@ -135,7 +135,7 @@ jobs:
         run: npm run typecheck
 
       - name: Start Firebase emulators
-        run: npm run firebase:emulators &
+        run: npx firebase emulators:start --only auth,firestore --project crew-predictions &
         env:
           FIREBASE_PROJECT_ID: crew-predictions
 
@@ -276,7 +276,7 @@ jobs:
           docker rm tmp
 
       - name: Deploy staging to Firebase Hosting
-        run: npm run firebase:deploy:staging
+        run: npx firebase deploy --only hosting --project crew-predictions-staging --config firebase.staging.json
 
       - name: Upload frontend to GCS
         run: |
@@ -412,7 +412,7 @@ jobs:
             --quiet
 
       - name: Deploy to Firebase Hosting
-        run: npm run firebase:deploy:prod
+        run: npx firebase deploy --only hosting --project crew-predictions
 
       - name: Smoke test prod
         run: |
@@ -444,7 +444,7 @@ jobs:
           if gcloud storage ls gs://crew-predictions-frontend/prod-previous.zip 2>/dev/null; then
             gcloud storage cp gs://crew-predictions-frontend/prod-previous.zip rollback.zip
             rm -rf dist/ && unzip -q rollback.zip -d dist/
-            npm run firebase:deploy:prod \
+            npx firebase deploy --only hosting --project crew-predictions \
               && echo "Firebase Hosting rolled back to prod-previous" \
               || echo "::error::Firebase rollback failed — manual intervention required"
           else
