@@ -217,6 +217,9 @@ func main() {
 			seedH := handlers.NewSeedPredictionHandler(predStore)
 			mux.HandleFunc("POST /admin/seed-prediction", seedH.Submit)
 			log.Printf("test seed endpoint registered at POST /admin/seed-prediction")
+			seedUH := handlers.NewSeedUserHandler(userStore)
+			mux.HandleFunc("POST /admin/seed-user", seedUH.Submit)
+			log.Printf("test seed endpoint registered at POST /admin/seed-user")
 		}
 		seedMH := handlers.NewSeedMatchHandler(memMatchStore)
 		mux.HandleFunc("POST /admin/seed-match", seedMH.Submit)
