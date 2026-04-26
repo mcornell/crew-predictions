@@ -6,16 +6,18 @@
     <section v-if="nowPlayingMatches.length > 0" data-testid="now-playing-section" class="now-playing-section">
       <h1 class="page-title">Now Playing</h1>
       <div class="match-list">
-        <div
+        <RouterLink
           v-for="match in nowPlayingMatches"
           :key="match.id"
-          class="match-card match-card--live"
+          :to="`/matches/${match.id}`"
+          class="match-card match-card--live match-card--link"
           :data-match-id="match.id"
           data-testid="now-playing-card"
         >
           <div class="match-info">
             <span v-if="match.status === 'STATUS_DELAYED'" class="delayed-indicator" data-testid="delayed-indicator">▊ DELAYED</span>
-            <span v-else class="live-indicator" data-testid="live-indicator">● LIVE</span>
+            <span v-else-if="match.status === 'STATUS_HALFTIME'" class="live-indicator" data-testid="live-indicator">● HT</span>
+            <span v-else class="live-indicator" data-testid="live-indicator">● {{ match.displayClock || 'LIVE' }}</span>
             <div class="matchup matchup--input" data-testid="matchup">
               <span class="team-name team-home">{{ match.homeTeam }}</span>
               <span class="inline-score">{{ match.homeScore || '0' }}</span>
@@ -26,7 +28,7 @@
             <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
           </div>
           <div class="btn-spacer"></div>
-        </div>
+        </RouterLink>
       </div>
     </section>
 
@@ -131,6 +133,7 @@ interface Match {
   homeScore: string
   awayScore: string
   state?: string
+  displayClock?: string
 }
 
 interface Prediction {

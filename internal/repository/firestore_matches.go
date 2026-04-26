@@ -26,13 +26,14 @@ func (s *FirestoreMatchStore) SaveAll(matches []models.Match) error {
 	for _, m := range matches {
 		ref := s.client.Collection("matches").Doc(m.ID)
 		batch.Set(ref, map[string]any{
-			"homeTeam":  m.HomeTeam,
-			"awayTeam":  m.AwayTeam,
-			"kickoff":   m.Kickoff,
-			"status":    m.Status,
-			"homeScore": m.HomeScore,
-			"awayScore": m.AwayScore,
-			"state":     m.State,
+			"homeTeam":     m.HomeTeam,
+			"awayTeam":     m.AwayTeam,
+			"kickoff":      m.Kickoff,
+			"status":       m.Status,
+			"homeScore":    m.HomeScore,
+			"awayScore":    m.AwayScore,
+			"state":        m.State,
+			"displayClock": m.DisplayClock,
 		})
 	}
 	batch.Flush()
@@ -60,25 +61,27 @@ func (s *FirestoreMatchStore) Reset() {}
 
 func toMatch(snap *firestore.DocumentSnapshot) (models.Match, error) {
 	var doc struct {
-		HomeTeam  string    `firestore:"homeTeam"`
-		AwayTeam  string    `firestore:"awayTeam"`
-		Kickoff   time.Time `firestore:"kickoff"`
-		Status    string    `firestore:"status"`
-		HomeScore string    `firestore:"homeScore"`
-		AwayScore string    `firestore:"awayScore"`
-		State     string    `firestore:"state"`
+		HomeTeam     string    `firestore:"homeTeam"`
+		AwayTeam     string    `firestore:"awayTeam"`
+		Kickoff      time.Time `firestore:"kickoff"`
+		Status       string    `firestore:"status"`
+		HomeScore    string    `firestore:"homeScore"`
+		AwayScore    string    `firestore:"awayScore"`
+		State        string    `firestore:"state"`
+		DisplayClock string    `firestore:"displayClock"`
 	}
 	if err := snap.DataTo(&doc); err != nil {
 		return models.Match{}, err
 	}
 	return models.Match{
-		ID:        snap.Ref.ID,
-		HomeTeam:  doc.HomeTeam,
-		AwayTeam:  doc.AwayTeam,
-		Kickoff:   doc.Kickoff,
-		Status:    doc.Status,
-		HomeScore: doc.HomeScore,
-		AwayScore: doc.AwayScore,
-		State:     doc.State,
+		ID:           snap.Ref.ID,
+		HomeTeam:     doc.HomeTeam,
+		AwayTeam:     doc.AwayTeam,
+		Kickoff:      doc.Kickoff,
+		Status:       doc.Status,
+		HomeScore:    doc.HomeScore,
+		AwayScore:    doc.AwayScore,
+		State:        doc.State,
+		DisplayClock: doc.DisplayClock,
 	}, nil
 }

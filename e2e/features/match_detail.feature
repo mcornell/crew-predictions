@@ -53,3 +53,24 @@ Feature: Match detail page
     And the final score for match "m-done-3" was 1-0 with Columbus home
     When I visit the match detail page for "m-done-3"
     Then I should see "No predictions were made for this match"
+
+  Scenario: Live match detail shows LIVE indicator and projected scores
+    Given I am logged in as "CrewFan@bsky.mock"
+    And the following matches are seeded:
+      | id      | homeTeam      | awayTeam          | status             | state | homeScore | awayScore |
+      | m-live  | Columbus Crew | Philadelphia Union | STATUS_IN_PROGRESS | in    | 2         | 0         |
+    And "CrewFan@bsky.mock" predicted 2-0 for match "m-live"
+    And "OtherFan@bsky.mock" predicted 1-1 for match "m-live"
+    When I visit the match detail page for "m-live"
+    Then I should see the LIVE indicator on the match detail page
+    And the match detail header should show score "2" to "0"
+    And the projected points label should be visible
+    And "CrewFan@bsky.mock" should have projected points greater than "OtherFan@bsky.mock"
+
+  Scenario: Live match card on main page links to match detail
+    Given I am not logged in
+    And the following matches are seeded:
+      | id      | homeTeam      | awayTeam          | status             | state |
+      | m-live2 | Columbus Crew | Philadelphia Union | STATUS_IN_PROGRESS | in    |
+    When I visit the matches page
+    Then the now playing card for match "m-live2" should link to "/matches/m-live2"

@@ -1158,6 +1158,22 @@ body::after {
   border-bottom: 1px solid var(--border);
 }
 
+.match-detail-live-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.projected-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--gold);
+  letter-spacing: 0.04em;
+  margin-bottom: 0.75rem;
+  opacity: 0.85;
+}
+
 .sort-controls {
   display: flex;
   gap: 0.5rem;

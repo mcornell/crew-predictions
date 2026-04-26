@@ -16,7 +16,7 @@ async function bootstrap() {
   } catch {
     // no config served (tests / local dev without server)
   }
-  initAnalytics()
+  try { initAnalytics() } catch { /* analytics must never block app mount */ }
   createApp(App).use(router).mount('#app')
 }
 

@@ -208,6 +208,82 @@ func TestMatchDetailHandler_FallsBackToStoredHandleWhenNoUserStoreEntry(t *testi
 	}
 }
 
+func TestMatchDetailHandler_LiveMatchProjectsScores(t *testing.T) {
+	predStore := repository.NewMemoryPredictionStore()
+	resultStore := repository.NewMemoryResultStore()
+	matchStore := repository.NewMemoryMatchStore()
+	ctx := context.Background()
+
+	matchStore.Seed([]models.Match{{
+		ID: "m-live", HomeTeam: "Columbus Crew", AwayTeam: "Philadelphia Union",
+		Kickoff: time.Now().Add(-45 * time.Minute), Status: "STATUS_IN_PROGRESS",
+		State: "in", HomeScore: "2", AwayScore: "0",
+	}})
+	predStore.Save(ctx, repository.Prediction{MatchID: "m-live", UserID: "u1", Handle: "exact@bsky.mock", HomeGoals: 2, AwayGoals: 0})
+	predStore.Save(ctx, repository.Prediction{MatchID: "m-live", UserID: "u2", Handle: "wrong@bsky.mock", HomeGoals: 1, AwayGoals: 1})
+
+	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, repository.NewMemoryUserStore(), "Columbus Crew")
+	req := httptest.NewRequest("GET", "/api/matches/m-live", nil)
+	req.SetPathValue("matchId", "m-live")
+	w := httptest.NewRecorder()
+	h.Get(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+	var resp map[string]any
+	json.NewDecoder(w.Body).Decode(&resp)
+
+	match := resp["match"].(map[string]any)
+	if match["state"] != "in" {
+		t.Errorf("expected state=in, got %v", match["state"])
+	}
+	if resp["isProjected"] != true {
+		t.Errorf("expected isProjected=true for live match, got %v", resp["isProjected"])
+	}
+
+	predictions := resp["predictions"].([]any)
+	var exactPts, wrongPts float64
+	for _, p := range predictions {
+		entry := p.(map[string]any)
+		if entry["handle"] == "exact@bsky.mock" {
+			exactPts = entry["acesRadioPoints"].(float64)
+		}
+		if entry["handle"] == "wrong@bsky.mock" {
+			wrongPts = entry["acesRadioPoints"].(float64)
+		}
+	}
+	if exactPts <= wrongPts {
+		t.Errorf("exact predictor should outscore wrong predictor, got %v vs %v", exactPts, wrongPts)
+	}
+}
+
+func TestMatchDetailHandler_LiveMatchWithNoScoreDoesNotProject(t *testing.T) {
+	predStore := repository.NewMemoryPredictionStore()
+	resultStore := repository.NewMemoryResultStore()
+	matchStore := repository.NewMemoryMatchStore()
+	ctx := context.Background()
+
+	matchStore.Seed([]models.Match{{
+		ID: "m-live-noscore", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",
+		Kickoff: time.Now().Add(-5 * time.Minute), Status: "STATUS_IN_PROGRESS",
+		State: "in", HomeScore: "", AwayScore: "",
+	}})
+	predStore.Save(ctx, repository.Prediction{MatchID: "m-live-noscore", UserID: "u1", Handle: "fan@bsky.mock", HomeGoals: 1, AwayGoals: 0})
+
+	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, repository.NewMemoryUserStore(), "Columbus Crew")
+	req := httptest.NewRequest("GET", "/api/matches/m-live-noscore", nil)
+	req.SetPathValue("matchId", "m-live-noscore")
+	w := httptest.NewRecorder()
+	h.Get(w, req)
+
+	var resp map[string]any
+	json.NewDecoder(w.Body).Decode(&resp)
+	if resp["isProjected"] == true {
+		t.Error("expected isProjected=false when no live score available")
+	}
+}
+
 func TestMatchDetailHandler_Returns404ForUnknownMatch(t *testing.T) {
 	predStore := repository.NewMemoryPredictionStore()
 	resultStore := repository.NewMemoryResultStore()
