@@ -383,7 +383,27 @@ describe('MatchesView', () => {
     expect(wrapper.findAll('[data-testid="match-card"]')).toHaveLength(0)
   })
 
-  it('re-fetches match data every 30 seconds', async () => {
+  it('polls every 60 seconds when a live match is present', async () => {
+    vi.useFakeTimers()
+    const liveMatches = [...mockMatches, liveMatch]
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ matches: liveMatches, predictions: {} }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    mountMatches()
+    await flushPromises()
+    const callsAfterMount = fetchMock.mock.calls.length
+
+    vi.advanceTimersByTime(60_000)
+    await flushPromises()
+
+    expect(fetchMock.mock.calls.length).toBeGreaterThan(callsAfterMount)
+    vi.useRealTimers()
+  })
+
+  it('does not poll when no match is in active window', async () => {
     vi.useFakeTimers()
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
@@ -395,10 +415,10 @@ describe('MatchesView', () => {
     await flushPromises()
     const callsAfterMount = fetchMock.mock.calls.length
 
-    vi.advanceTimersByTime(30_000)
+    vi.advanceTimersByTime(60_000)
     await flushPromises()
 
-    expect(fetchMock.mock.calls.length).toBeGreaterThan(callsAfterMount)
+    expect(fetchMock.mock.calls.length).toBe(callsAfterMount)
     vi.useRealTimers()
   })
 

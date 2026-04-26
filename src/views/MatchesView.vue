@@ -115,6 +115,7 @@
 import { ref, reactive, computed, inject, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { formatCountdown } from '../utils/countdown'
+import { isInActiveWindow, msUntilActiveWindow, POLL_INTERVAL_MS } from '../utils/pollScheduler'
 import { readGuestPredictions, writeGuestPredictions } from '../guestPredictions'
 import type { Ref } from 'vue'
 
@@ -174,7 +175,24 @@ function updateCountdowns() {
 }
 
 let countdownTimer: ReturnType<typeof setInterval> | null = null
-let pollTimer: ReturnType<typeof setInterval> | null = null
+let pollTimer: ReturnType<typeof setTimeout> | null = null
+
+function schedulePoll() {
+  if (pollTimer !== null) clearTimeout(pollTimer)
+  if (isInActiveWindow(matches.value, Date.now())) {
+    pollTimer = setTimeout(async () => {
+      await fetchMatches()
+      schedulePoll()
+    }, POLL_INTERVAL_MS)
+  } else {
+    const ms = msUntilActiveWindow(matches.value, Date.now())
+    if (ms !== null) {
+      pollTimer = setTimeout(() => {
+        fetchMatches().then(() => schedulePoll())
+      }, ms)
+    }
+  }
+}
 
 function formatKickoff(iso: string): string {
   const d = new Date(iso)
@@ -213,12 +231,12 @@ onMounted(async () => {
     error.value = 'Could not load matches. Try again later.'
   }
   loading.value = false
-  pollTimer = setInterval(fetchMatches, 30_000)
+  schedulePoll()
 })
 
 onUnmounted(() => {
   if (countdownTimer !== null) clearInterval(countdownTimer)
-  if (pollTimer !== null) clearInterval(pollTimer)
+  if (pollTimer !== null) clearTimeout(pollTimer)
 })
 
 function unlock(matchId: string) {
