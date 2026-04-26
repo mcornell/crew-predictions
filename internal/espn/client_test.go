@@ -1,7 +1,6 @@
 package espn
 
 import (
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -9,82 +8,19 @@ import (
 	"testing"
 )
 
-func serveESPN(t *testing.T, payload espnResponse) *httptest.Server {
+func serveJSON(t *testing.T, payload string) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(payload)
+		w.Write([]byte(payload))
 	}))
 }
 
-func crewEvent(id, date, status string) espnResponse {
-	return espnResponse{Events: []struct {
-		ID           string `json:"id"`
-		Date         string `json:"date"`
-		Competitions []struct {
-			Competitors []struct {
-				HomeAway string     `json:"homeAway"`
-				Score    scoreField `json:"score"`
-				Team     struct {
-					DisplayName string `json:"displayName"`
-				} `json:"team"`
-			} `json:"competitors"`
-			Status struct {
-				State string `json:"state"`
-				Type  struct {
-					Name string `json:"name"`
-				} `json:"type"`
-			} `json:"status"`
-		} `json:"competitions"`
-	}{
-		{
-			ID:   id,
-			Date: date,
-			Competitions: []struct {
-				Competitors []struct {
-					HomeAway string     `json:"homeAway"`
-					Score    scoreField `json:"score"`
-					Team     struct {
-						DisplayName string `json:"displayName"`
-					} `json:"team"`
-				} `json:"competitors"`
-				Status struct {
-					State string `json:"state"`
-					Type  struct {
-						Name string `json:"name"`
-					} `json:"type"`
-				} `json:"status"`
-			}{
-				{
-					Competitors: []struct {
-						HomeAway string     `json:"homeAway"`
-						Score    scoreField `json:"score"`
-						Team     struct {
-							DisplayName string `json:"displayName"`
-						} `json:"team"`
-					}{
-						{HomeAway: "home", Team: struct {
-							DisplayName string `json:"displayName"`
-						}{DisplayName: "Columbus Crew"}},
-						{HomeAway: "away", Team: struct {
-							DisplayName string `json:"displayName"`
-						}{DisplayName: "Portland Timbers"}},
-					},
-					Status: struct {
-						State string `json:"state"`
-						Type  struct {
-							Name string `json:"name"`
-						} `json:"type"`
-					}{Type: struct {
-						Name string `json:"name"`
-					}{Name: status}},
-				},
-			},
-		},
-	}}
+func crewEventJSON(id, date, status string) string {
+	return `{"events":[{"id":"` + id + `","date":"` + date + `","competitions":[{"competitors":[{"homeAway":"home","score":{},"team":{"displayName":"Columbus Crew"}},{"homeAway":"away","score":{},"team":{"displayName":"Portland Timbers"}}],"status":{"displayClock":"","state":"","type":{"name":"` + status + `"}}}]}]}`
 }
 
 func TestFetchAndParse_ReturnsMatchFromESPN(t *testing.T) {
-	srv := serveESPN(t, crewEvent("evt-1", "2026-05-01T23:00Z", "STATUS_SCHEDULED"))
+	srv := serveJSON(t, crewEventJSON("evt-1", "2026-05-01T23:00Z", "STATUS_SCHEDULED"))
 	defer srv.Close()
 
 	records, err := fetchAndParse(srv.URL)
@@ -103,7 +39,7 @@ func TestFetchAndParse_ReturnsMatchFromESPN(t *testing.T) {
 }
 
 func TestFetchAndParse_ReturnsEmptyOnEmptyEvents(t *testing.T) {
-	srv := serveESPN(t, espnResponse{})
+	srv := serveJSON(t, `{"events":[]}`)
 	defer srv.Close()
 
 	records, err := fetchAndParse(srv.URL)
@@ -175,7 +111,8 @@ func TestFetchCrewMatchesFrom_ReturnsErrorWhenScheduleFetchFails(t *testing.T) {
 		if strings.Contains(r.URL.Path, "schedule") {
 			w.Write([]byte("not json"))
 		} else {
-			json.NewEncoder(w).Encode(espnResponse{})
+			w.Write([]byte(`{"events":[]}`))
+
 		}
 	}))
 	defer srv.Close()
@@ -191,7 +128,8 @@ func TestFetchCrewMatchesFrom_ReturnsErrorWhenScoreboardFetchFails(t *testing.T)
 		if strings.Contains(r.URL.Path, "scoreboard") {
 			w.Write([]byte("not json"))
 		} else {
-			json.NewEncoder(w).Encode(espnResponse{})
+			w.Write([]byte(`{"events":[]}`))
+
 		}
 	}))
 	defer srv.Close()
@@ -251,6 +189,44 @@ func TestFetchCrewMatchesFrom_PopulatesMatchState(t *testing.T) {
 	}
 }
 
+func TestFetchCrewMatchesFrom_CapturesDisplayClock(t *testing.T) {
+	liveJSON := `{"events":[{"id":"c1","date":"2026-05-01T23:00Z","competitions":[{"competitors":[{"homeAway":"home","score":"2","team":{"displayName":"Columbus Crew"}},{"homeAway":"away","score":"0","team":{"displayName":"Portland Timbers"}}],"status":{"displayClock":"48'","state":"in","type":{"name":"STATUS_SECOND_HALF"}}}]}]}`
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(liveJSON))
+	}))
+	defer srv.Close()
+
+	matches, err := fetchCrewMatchesFrom(srv.URL)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(matches) == 0 {
+		t.Fatal("expected at least one match")
+	}
+	if matches[0].DisplayClock != "48'" {
+		t.Errorf("expected DisplayClock '48\\'', got %q", matches[0].DisplayClock)
+	}
+}
+
+func TestFetchCrewMatchesFrom_HalftimeDisplayClock(t *testing.T) {
+	htJSON := `{"events":[{"id":"ht1","date":"2026-05-01T23:00Z","competitions":[{"competitors":[{"homeAway":"home","score":"1","team":{"displayName":"Columbus Crew"}},{"homeAway":"away","score":"0","team":{"displayName":"Portland Timbers"}}],"status":{"displayClock":"HT","state":"in","type":{"name":"STATUS_HALFTIME"}}}]}]}`
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(htJSON))
+	}))
+	defer srv.Close()
+
+	matches, err := fetchCrewMatchesFrom(srv.URL)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(matches) == 0 {
+		t.Fatal("expected at least one match")
+	}
+	if matches[0].DisplayClock != "HT" {
+		t.Errorf("expected DisplayClock 'HT', got %q", matches[0].DisplayClock)
+	}
+}
+
 func TestFetchCrewMatchesFrom_ReturnsCrewMatchesFromFixtures(t *testing.T) {
 	schedule, err := os.ReadFile("testdata/mls_schedule.json")
 	if err != nil {
@@ -268,7 +244,8 @@ func TestFetchCrewMatchesFrom_ReturnsCrewMatchesFromFixtures(t *testing.T) {
 		case strings.Contains(r.URL.Path, "scoreboard"):
 			w.Write(scoreboard)
 		default:
-			json.NewEncoder(w).Encode(espnResponse{})
+			w.Write([]byte(`{"events":[]}`))
+
 		}
 	}))
 	defer srv.Close()

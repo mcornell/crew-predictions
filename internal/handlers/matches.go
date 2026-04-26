@@ -19,14 +19,15 @@ func NewMatchesHandler(store repository.PredictionStore, matchStore repository.M
 }
 
 type apiMatch struct {
-	ID        string `json:"id"`
-	HomeTeam  string `json:"homeTeam"`
-	AwayTeam  string `json:"awayTeam"`
-	Kickoff   string `json:"kickoff"`
-	Status    string `json:"status"`
-	HomeScore string `json:"homeScore"`
-	AwayScore string `json:"awayScore"`
-	State     string `json:"state"`
+	ID           string `json:"id"`
+	HomeTeam     string `json:"homeTeam"`
+	AwayTeam     string `json:"awayTeam"`
+	Kickoff      string `json:"kickoff"`
+	Status       string `json:"status"`
+	HomeScore    string `json:"homeScore"`
+	AwayScore    string `json:"awayScore"`
+	State        string `json:"state"`
+	DisplayClock string `json:"displayClock,omitempty"`
 }
 
 type apiPrediction struct {
@@ -46,14 +47,15 @@ func (h *MatchesHandler) APIList(w http.ResponseWriter, r *http.Request) {
 	out := make([]apiMatch, len(matches))
 	for i, m := range matches {
 		out[i] = apiMatch{
-			ID:        m.ID,
-			HomeTeam:  m.HomeTeam,
-			AwayTeam:  m.AwayTeam,
-			Kickoff:   m.Kickoff.Format("2006-01-02T15:04:05Z"),
-			Status:    m.Status,
-			HomeScore: m.HomeScore,
-			AwayScore: m.AwayScore,
-			State:     m.State,
+			ID:           m.ID,
+			HomeTeam:     m.HomeTeam,
+			AwayTeam:     m.AwayTeam,
+			Kickoff:      m.Kickoff.Format("2006-01-02T15:04:05Z"),
+			Status:       m.Status,
+			HomeScore:    m.HomeScore,
+			AwayScore:    m.AwayScore,
+			State:        m.State,
+			DisplayClock: m.DisplayClock,
 		}
 	}
 

@@ -58,8 +58,9 @@ type espnResponse struct {
 				} `json:"team"`
 			} `json:"competitors"`
 			Status struct {
-				State string `json:"state"`
-				Type  struct {
+				DisplayClock string `json:"displayClock"`
+				State        string `json:"state"`
+				Type         struct {
 					Name string `json:"name"`
 				} `json:"type"`
 			} `json:"status"`
@@ -68,14 +69,15 @@ type espnResponse struct {
 }
 
 type matchRecord struct {
-	id        string
-	kickoff   time.Time
-	home      string
-	away      string
-	homeScore string
-	awayScore string
-	status    string
-	state     string
+	id           string
+	kickoff      time.Time
+	home         string
+	away         string
+	homeScore    string
+	awayScore    string
+	status       string
+	state        string
+	displayClock string
 }
 
 func deriveState(espnState, statusName string) string {
@@ -150,14 +152,15 @@ func parseEvents(data espnResponse) []matchRecord {
 		}
 		kickoff, _ := parseKickoff(event.Date)
 		records = append(records, matchRecord{
-			id:        event.ID,
-			kickoff:   kickoff,
-			home:      home,
-			away:      away,
-			homeScore: homeScore,
-			awayScore: awayScore,
-			status:    comp.Status.Type.Name,
-			state:     deriveState(comp.Status.State, comp.Status.Type.Name),
+			id:           event.ID,
+			kickoff:      kickoff,
+			home:         home,
+			away:         away,
+			homeScore:    homeScore,
+			awayScore:    awayScore,
+			status:       comp.Status.Type.Name,
+			state:        deriveState(comp.Status.State, comp.Status.Type.Name),
+			displayClock: comp.Status.DisplayClock,
 		})
 	}
 	return records
@@ -217,14 +220,15 @@ func fetchCrewMatchesFrom(base string) ([]models.Match, error) {
 	matches := make([]models.Match, len(all))
 	for i, r := range all {
 		matches[i] = models.Match{
-			ID:        r.id,
-			HomeTeam:  r.home,
-			AwayTeam:  r.away,
-			Kickoff:   r.kickoff,
-			Status:    r.status,
-			HomeScore: r.homeScore,
-			AwayScore: r.awayScore,
-			State:     r.state,
+			ID:           r.id,
+			HomeTeam:     r.home,
+			AwayTeam:     r.away,
+			Kickoff:      r.kickoff,
+			Status:       r.status,
+			HomeScore:    r.homeScore,
+			AwayScore:    r.awayScore,
+			State:        r.state,
+			DisplayClock: r.displayClock,
 		}
 	}
 	return matches, nil

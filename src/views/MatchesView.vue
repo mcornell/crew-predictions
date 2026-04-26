@@ -16,7 +16,8 @@
         >
           <div class="match-info">
             <span v-if="match.status === 'STATUS_DELAYED'" class="delayed-indicator" data-testid="delayed-indicator">▊ DELAYED</span>
-            <span v-else class="live-indicator" data-testid="live-indicator">● LIVE</span>
+            <span v-else-if="match.status === 'STATUS_HALFTIME'" class="live-indicator" data-testid="live-indicator">● HT</span>
+            <span v-else class="live-indicator" data-testid="live-indicator">● {{ match.displayClock || 'LIVE' }}</span>
             <div class="matchup matchup--input" data-testid="matchup">
               <span class="team-name team-home">{{ match.homeTeam }}</span>
               <span class="inline-score">{{ match.homeScore || '0' }}</span>
@@ -132,6 +133,7 @@ interface Match {
   homeScore: string
   awayScore: string
   state?: string
+  displayClock?: string
 }
 
 interface Prediction {

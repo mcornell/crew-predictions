@@ -7,7 +7,8 @@
 
     <div v-if="match" class="match-detail-header">
       <div v-if="isLive" class="match-detail-live-bar" data-testid="live-indicator-detail">
-        <span class="live-indicator">● LIVE</span>
+        <span v-if="match.status === 'STATUS_HALFTIME'" class="live-indicator">● HT</span>
+        <span v-else class="live-indicator">● {{ match.displayClock || 'LIVE' }}</span>
       </div>
       <div class="matchup matchup--input" data-testid="match-score">
         <span class="team-name team-home">{{ match.homeTeam }}</span>
@@ -115,6 +116,8 @@ interface MatchInfo {
   homeScore: string
   awayScore: string
   state?: string
+  displayClock?: string
+  status?: string
 }
 
 interface PredictionEntry {

@@ -33,13 +33,15 @@ type matchDetailPrediction struct {
 }
 
 type matchDetailMatch struct {
-	ID        string `json:"id"`
-	HomeTeam  string `json:"homeTeam"`
-	AwayTeam  string `json:"awayTeam"`
-	Kickoff   string `json:"kickoff"`
-	HomeScore string `json:"homeScore"`
-	AwayScore string `json:"awayScore"`
-	State     string `json:"state"`
+	ID           string `json:"id"`
+	HomeTeam     string `json:"homeTeam"`
+	AwayTeam     string `json:"awayTeam"`
+	Kickoff      string `json:"kickoff"`
+	HomeScore    string `json:"homeScore"`
+	AwayScore    string `json:"awayScore"`
+	State        string `json:"state"`
+	Status       string `json:"status"`
+	DisplayClock string `json:"displayClock,omitempty"`
 }
 
 func (h *MatchDetailHandler) Get(w http.ResponseWriter, r *http.Request) {
@@ -55,13 +57,15 @@ func (h *MatchDetailHandler) Get(w http.ResponseWriter, r *http.Request) {
 	for _, m := range allMatches {
 		if m.ID == matchID {
 			found = &matchDetailMatch{
-				ID:        m.ID,
-				HomeTeam:  m.HomeTeam,
-				AwayTeam:  m.AwayTeam,
-				Kickoff:   m.Kickoff.Format("2006-01-02T15:04:05Z07:00"),
-				HomeScore: m.HomeScore,
-				AwayScore: m.AwayScore,
-				State:     m.State,
+				ID:           m.ID,
+				HomeTeam:     m.HomeTeam,
+				AwayTeam:     m.AwayTeam,
+				Kickoff:      m.Kickoff.Format("2006-01-02T15:04:05Z07:00"),
+				HomeScore:    m.HomeScore,
+				AwayScore:    m.AwayScore,
+				State:        m.State,
+				Status:       m.Status,
+				DisplayClock: m.DisplayClock,
 			}
 			break
 		}

@@ -134,27 +134,10 @@ func TestScoreField_ParsesIntegerForm(t *testing.T) {
 }
 
 func TestParseEvents_SkipsEventWithNoCompetitions(t *testing.T) {
-	data := espnResponse{}
-	data.Events = append(data.Events, struct {
-		ID           string `json:"id"`
-		Date         string `json:"date"`
-		Competitions []struct {
-			Competitors []struct {
-				HomeAway string     `json:"homeAway"`
-				Score    scoreField `json:"score"`
-				Team     struct {
-					DisplayName string `json:"displayName"`
-				} `json:"team"`
-			} `json:"competitors"`
-			Status struct {
-				State string `json:"state"`
-				Type  struct {
-					Name string `json:"name"`
-				} `json:"type"`
-			} `json:"status"`
-		} `json:"competitions"`
-	}{ID: "e1", Date: "2026-05-01T20:00Z"})
-
+	var data espnResponse
+	if err := json.Unmarshal([]byte(`{"events":[{"id":"e1","date":"2026-05-01T20:00Z","competitions":[]}]}`), &data); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
 	records := parseEvents(data)
 	if len(records) != 0 {
 		t.Errorf("expected 0 records for event with no competitions, got %d", len(records))
