@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/mcornell/crew-predictions/internal/repository"
 	"github.com/mcornell/crew-predictions/internal/scoring"
@@ -38,6 +39,7 @@ type matchDetailMatch struct {
 	Kickoff   string `json:"kickoff"`
 	HomeScore string `json:"homeScore"`
 	AwayScore string `json:"awayScore"`
+	State     string `json:"state"`
 }
 
 func (h *MatchDetailHandler) Get(w http.ResponseWriter, r *http.Request) {
@@ -59,6 +61,7 @@ func (h *MatchDetailHandler) Get(w http.ResponseWriter, r *http.Request) {
 				Kickoff:   m.Kickoff.Format("2006-01-02T15:04:05Z07:00"),
 				HomeScore: m.HomeScore,
 				AwayScore: m.AwayScore,
+				State:     m.State,
 			}
 			break
 		}
@@ -81,6 +84,23 @@ func (h *MatchDetailHandler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result, _ := h.results.GetResult(ctx, matchID)
+
+	// For live matches with a current score but no final result yet, project points.
+	isProjected := false
+	if result == nil && found.State == "in" && found.HomeScore != "" && found.AwayScore != "" {
+		homeGoals, errH := strconv.Atoi(found.HomeScore)
+		awayGoals, errA := strconv.Atoi(found.AwayScore)
+		if errH == nil && errA == nil {
+			result = &repository.Result{
+				MatchID:   matchID,
+				HomeTeam:  found.HomeTeam,
+				AwayTeam:  found.AwayTeam,
+				HomeGoals: homeGoals,
+				AwayGoals: awayGoals,
+			}
+			isProjected = true
+		}
+	}
 
 	entries := make([]matchDetailPrediction, 0, len(preds))
 	for _, p := range preds {
@@ -108,6 +128,7 @@ func (h *MatchDetailHandler) Get(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(map[string]any{
 		"match": found,
+		"isProjected": isProjected,
 		"scoringFormats": []map[string]string{
 			{"key": "acesRadio", "label": "Aces Radio"},
 			{"key": "upper90Club", "label": "Upper 90 Club"},

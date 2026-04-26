@@ -6,10 +6,11 @@
     <section v-if="nowPlayingMatches.length > 0" data-testid="now-playing-section" class="now-playing-section">
       <h1 class="page-title">Now Playing</h1>
       <div class="match-list">
-        <div
+        <RouterLink
           v-for="match in nowPlayingMatches"
           :key="match.id"
-          class="match-card match-card--live"
+          :to="`/matches/${match.id}`"
+          class="match-card match-card--live match-card--link"
           :data-match-id="match.id"
           data-testid="now-playing-card"
         >
@@ -26,7 +27,7 @@
             <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
           </div>
           <div class="btn-spacer"></div>
-        </div>
+        </RouterLink>
       </div>
     </section>
 

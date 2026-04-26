@@ -6,17 +6,21 @@
     <p v-else-if="error" data-testid="error" class="status-msg status-msg--error">{{ error }}</p>
 
     <div v-if="match" class="match-detail-header">
+      <div v-if="isLive" class="match-detail-live-bar" data-testid="live-indicator-detail">
+        <span class="live-indicator">● LIVE</span>
+      </div>
       <div class="matchup matchup--input" data-testid="match-score">
         <span class="team-name team-home">{{ match.homeTeam }}</span>
-        <span class="inline-score">{{ match.homeScore }}</span>
+        <span class="inline-score">{{ match.homeScore || '–' }}</span>
         <span class="vs">vs</span>
-        <span class="inline-score">{{ match.awayScore }}</span>
+        <span class="inline-score">{{ match.awayScore || '–' }}</span>
         <span class="team-name team-away">{{ match.awayTeam }}</span>
       </div>
       <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
     </div>
 
     <template v-if="sortedPredictions.length > 0">
+      <p v-if="isProjected" class="projected-label" data-testid="projected-label">Projected scores based on current live result</p>
       <div class="lb-mobile-sort">
         <button
           class="lb-sort-btn"
@@ -99,8 +103,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { isInActiveWindow, msUntilActiveWindow, POLL_INTERVAL_MS } from '../utils/pollScheduler'
 
 interface MatchInfo {
   id: string
@@ -109,6 +114,7 @@ interface MatchInfo {
   kickoff: string
   homeScore: string
   awayScore: string
+  state?: string
 }
 
 interface PredictionEntry {
@@ -124,10 +130,13 @@ interface PredictionEntry {
 const route = useRoute()
 const match = ref<MatchInfo | null>(null)
 const predictions = ref<PredictionEntry[]>([])
+const isProjected = ref(false)
 const activeFormat = ref<'acesRadio' | 'upper90Club' | 'grouchy'>('acesRadio')
 const loaded = ref(false)
 const loading = ref(true)
 const error = ref<string | null>(null)
+
+const isLive = computed(() => match.value?.state === 'in')
 
 const sortedPredictions = computed(() => {
   const key = activeFormat.value === 'acesRadio' ? 'acesRadioPoints' : activeFormat.value === 'upper90Club' ? 'upper90ClubPoints' : 'grouchyPoints'
@@ -147,13 +156,46 @@ function formatKickoff(iso: string): string {
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
 }
 
+const matchId = route.params.matchId as string
+let pollTimer: ReturnType<typeof setTimeout> | null = null
+
+async function fetchDetail() {
+  const res = await fetch(`/api/matches/${matchId}`)
+  if (!res.ok) return
+  const data = await res.json()
+  match.value = data.match
+  predictions.value = data.predictions ?? []
+  isProjected.value = data.isProjected ?? false
+}
+
+function schedulePoll() {
+  if (pollTimer !== null) clearTimeout(pollTimer)
+  const m = match.value
+  if (!m) return
+  const asSchedulerMatch = [{ kickoff: m.kickoff, state: m.state, status: '' }]
+  if (isInActiveWindow(asSchedulerMatch, Date.now())) {
+    pollTimer = setTimeout(async () => {
+      await fetchDetail()
+      schedulePoll()
+    }, POLL_INTERVAL_MS)
+  } else {
+    const ms = msUntilActiveWindow(asSchedulerMatch, Date.now())
+    if (ms !== null) {
+      pollTimer = setTimeout(async () => {
+        await fetchDetail()
+        schedulePoll()
+      }, ms)
+    }
+  }
+}
+
 onMounted(async () => {
-  const matchId = route.params.matchId as string
   const res = await fetch(`/api/matches/${matchId}`)
   if (res.ok) {
     const data = await res.json()
     match.value = data.match
     predictions.value = data.predictions ?? []
+    isProjected.value = data.isProjected ?? false
     if (data.scoringFormats?.length > 0) {
       activeFormat.value = data.scoringFormats[0].key
     }
@@ -165,5 +207,10 @@ onMounted(async () => {
   }
   loaded.value = true
   loading.value = false
+  schedulePoll()
+})
+
+onUnmounted(() => {
+  if (pollTimer !== null) clearTimeout(pollTimer)
 })
 </script>
