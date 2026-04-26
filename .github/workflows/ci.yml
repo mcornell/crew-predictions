@@ -75,31 +75,6 @@ jobs:
           fail-on-error: false
           fail-on-empty: false
 
-      - name: Go coverage (Cobertura)
-        if: always()
-        run: gocover-cobertura < go-coverage.out > go-coverage.xml
-
-      - name: Go coverage summary
-        if: always()
-        run: |
-          python3 - <<'EOF'
-          import xml.etree.ElementTree as ET, os
-          try:
-              root = ET.parse('go-coverage.xml').getroot()
-              total = float(root.get('line-rate', 0)) * 100
-              rows = []
-              for p in root.iter('package'):
-                  name = p.get('name', '').replace('github.com/mcornell/crew-predictions/', '')
-                  rate = float(p.get('line-rate', 0)) * 100
-                  icon = '✅' if rate >= 80 else '⚠️' if rate >= 50 else '❌'
-                  rows.append(f'| `{name}` | {icon} {rate:.1f}% |')
-              with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
-                  f.write(f'\n## Go Coverage: {total:.1f}%\n\n| Package | Line Rate |\n|---|---|\n')
-                  f.write('\n'.join(sorted(rows)) + '\n')
-          except Exception as e:
-              print(f'coverage summary error: {e}')
-          EOF
-
       - name: Vue unit tests
         run: |
           echo "## Vue Tests" >> $GITHUB_STEP_SUMMARY
@@ -116,25 +91,35 @@ jobs:
           fail-on-error: false
           fail-on-empty: false
 
-      - name: Vue coverage summary
+      - name: Coverage summary
         if: always()
         run: |
+          gocover-cobertura < go-coverage.out > go-coverage.xml
           python3 - <<'EOF'
           import xml.etree.ElementTree as ET, os
-          try:
-              root = ET.parse('coverage/cobertura-coverage.xml').getroot()
+
+          def coverage_table(path, strip_prefix=''):
+              root = ET.parse(path).getroot()
               total = float(root.get('line-rate', 0)) * 100
               rows = []
               for p in root.iter('package'):
-                  name = p.get('name', '') or 'src'
+                  name = (p.get('name', '') or 'src').replace(strip_prefix, '')
                   rate = float(p.get('line-rate', 0)) * 100
                   icon = '✅' if rate >= 80 else '⚠️' if rate >= 50 else '❌'
                   rows.append(f'| `{name}` | {icon} {rate:.1f}% |')
-              with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
-                  f.write(f'\n## Vue Coverage: {total:.1f}%\n\n| Package | Line Rate |\n|---|---|\n')
-                  f.write('\n'.join(sorted(rows)) + '\n')
-          except Exception as e:
-              print(f'coverage summary error: {e}')
+              return total, rows
+
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
+              for label, path, prefix in [
+                  ('Go',  'go-coverage.xml',                  'github.com/mcornell/crew-predictions/'),
+                  ('Vue', 'coverage/cobertura-coverage.xml',  ''),
+              ]:
+                  try:
+                      total, rows = coverage_table(path, prefix)
+                      f.write(f'\n## {label} Coverage: {total:.1f}%\n\n| Package | Line Rate |\n|---|---|\n')
+                      f.write('\n'.join(sorted(rows)) + '\n')
+                  except Exception as e:
+                      f.write(f'\n## {label} Coverage: error ({e})\n')
           EOF
 
       - name: TypeScript type check
