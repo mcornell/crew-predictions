@@ -71,7 +71,6 @@ func (h *PredictionsHandler) Submit(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.store.Save(r.Context(), repository.Prediction{
 		MatchID:   matchID,
-		Handle:    user.Handle,
 		UserID:    user.UserID,
 		HomeGoals: home,
 		AwayGoals: away,

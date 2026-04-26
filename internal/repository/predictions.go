@@ -8,7 +8,6 @@ import (
 type Prediction struct {
 	MatchID   string
 	UserID    string
-	Handle    string
 	HomeGoals int
 	AwayGoals int
 }

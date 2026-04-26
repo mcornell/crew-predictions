@@ -47,7 +47,7 @@ func TestBackfillUsersHandler_Returns500WhenGetAllFails(t *testing.T) {
 
 func TestBackfillUsersHandler_Returns500WhenUpsertFails(t *testing.T) {
 	predictions := repository.NewMemoryPredictionStore()
-	predictions.Save(context.Background(), repository.Prediction{MatchID: "m1", UserID: "firebase:u1", Handle: "fan"})
+	predictions.Save(context.Background(), repository.Prediction{MatchID: "m1", UserID: "firebase:u1"})
 	h := NewBackfillUsersHandler(predictions, &errUserStore{UserStore: repository.NewMemoryUserStore()})
 	req := httptest.NewRequest(http.MethodPost, "/admin/backfill-users", nil)
 	w := httptest.NewRecorder()

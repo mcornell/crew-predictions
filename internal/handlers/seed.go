@@ -30,7 +30,6 @@ func (h *SeedPredictionHandler) Submit(w http.ResponseWriter, r *http.Request) {
 	h.store.Save(r.Context(), repository.Prediction{
 		MatchID:   r.FormValue("match_id"),
 		UserID:    r.FormValue("user_id"),
-		Handle:    r.FormValue("handle"),
 		HomeGoals: home,
 		AwayGoals: away,
 	})

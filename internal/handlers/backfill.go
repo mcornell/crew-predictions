@@ -25,18 +25,16 @@ func (h *BackfillUsersHandler) Backfill(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	seen := map[string]string{}
+	seen := map[string]struct{}{}
 	for _, p := range preds {
 		if p.UserID == "" {
 			continue
 		}
-		if _, ok := seen[p.UserID]; !ok {
-			seen[p.UserID] = p.Handle
-		}
+		seen[p.UserID] = struct{}{}
 	}
 
-	for userID, handle := range seen {
-		if err := h.users.Upsert(ctx, repository.User{UserID: userID, Handle: handle}); err != nil {
+	for userID := range seen {
+		if err := h.users.Upsert(ctx, repository.User{UserID: userID}); err != nil {
 			http.Error(w, "upsert failed", http.StatusInternalServerError)
 			return
 		}

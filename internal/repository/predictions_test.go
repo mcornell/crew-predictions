@@ -34,8 +34,8 @@ func TestMemoryPredictionStore_GetAllReturnsAllSaved(t *testing.T) {
 	store := repository.NewMemoryPredictionStore()
 	ctx := context.Background()
 
-	store.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "google:user1", Handle: "a@bsky.mock", HomeGoals: 1, AwayGoals: 0})
-	store.Save(ctx, repository.Prediction{MatchID: "m2", UserID: "google:user2", Handle: "b@bsky.mock", HomeGoals: 2, AwayGoals: 1})
+	store.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "google:user1", HomeGoals: 1, AwayGoals: 0})
+	store.Save(ctx, repository.Prediction{MatchID: "m2", UserID: "google:user2", HomeGoals: 2, AwayGoals: 1})
 
 	all, err := store.GetAll(ctx)
 	if err != nil {
@@ -64,9 +64,9 @@ func TestMemoryPredictionStore_GetByMatch_ReturnsOnlyMatchPredictions(t *testing
 	store := repository.NewMemoryPredictionStore()
 	ctx := context.Background()
 
-	store.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "google:u1", Handle: "fan1@bsky.mock", HomeGoals: 2, AwayGoals: 1})
-	store.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "google:u2", Handle: "fan2@bsky.mock", HomeGoals: 0, AwayGoals: 0})
-	store.Save(ctx, repository.Prediction{MatchID: "m2", UserID: "google:u3", Handle: "fan3@bsky.mock", HomeGoals: 1, AwayGoals: 1})
+	store.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "google:u1", HomeGoals: 2, AwayGoals: 1})
+	store.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "google:u2", HomeGoals: 0, AwayGoals: 0})
+	store.Save(ctx, repository.Prediction{MatchID: "m2", UserID: "google:u3", HomeGoals: 1, AwayGoals: 1})
 
 	got, err := store.GetByMatch(ctx, "m1")
 	if err != nil {
@@ -102,7 +102,6 @@ func TestMemoryPredictionStore_SaveAndRetrieve(t *testing.T) {
 	pred := repository.Prediction{
 		MatchID:   "match1",
 		UserID:    "google:abc123",
-		Handle:    "BlackAndGold@bsky.mock",
 		HomeGoals: 3,
 		AwayGoals: 1,
 	}

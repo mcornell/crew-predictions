@@ -30,8 +30,12 @@ func TestMatchDetailHandler_ReturnsPredictionsWithScores(t *testing.T) {
 	}
 	matchStore.Seed([]models.Match{match})
 
-	predStore.Save(ctx, repository.Prediction{MatchID: "m-test", UserID: "google:u1", Handle: "fan1@bsky.mock", HomeGoals: 2, AwayGoals: 1})
-	predStore.Save(ctx, repository.Prediction{MatchID: "m-test", UserID: "google:u2", Handle: "fan2@bsky.mock", HomeGoals: 0, AwayGoals: 0})
+	userStore := repository.NewMemoryUserStore()
+	userStore.Upsert(ctx, repository.User{UserID: "google:u1", Handle: "fan1@bsky.mock"})
+	userStore.Upsert(ctx, repository.User{UserID: "google:u2", Handle: "fan2@bsky.mock"})
+
+	predStore.Save(ctx, repository.Prediction{MatchID: "m-test", UserID: "google:u1", HomeGoals: 2, AwayGoals: 1})
+	predStore.Save(ctx, repository.Prediction{MatchID: "m-test", UserID: "google:u2", HomeGoals: 0, AwayGoals: 0})
 
 	resultStore.SaveResult(ctx, repository.Result{
 		MatchID:   "m-test",
@@ -41,7 +45,7 @@ func TestMatchDetailHandler_ReturnsPredictionsWithScores(t *testing.T) {
 		AwayGoals: 1,
 	})
 
-	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, repository.NewMemoryUserStore(), "Columbus Crew")
+	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew")
 
 	req := httptest.NewRequest("GET", "/api/matches/m-test", nil)
 	req.SetPathValue("matchId", "m-test")
@@ -93,7 +97,7 @@ func TestMatchDetailHandler_IncludesGrouchyPoints(t *testing.T) {
 		HomeScore: "2", AwayScore: "0",
 	}})
 	// Columbus home, predicted 3-0 (Win by 2+), actual 2-0 (Win by 2+) → 1 pt
-	predStore.Save(ctx, repository.Prediction{MatchID: "m-grouchy", UserID: "u1", Handle: "GrouchyFan", HomeGoals: 3, AwayGoals: 0})
+	predStore.Save(ctx, repository.Prediction{MatchID: "m-grouchy", UserID: "u1", HomeGoals: 3, AwayGoals: 0})
 	resultStore.SaveResult(ctx, repository.Result{
 		MatchID: "m-grouchy", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", HomeGoals: 2, AwayGoals: 0,
 	})
@@ -159,7 +163,7 @@ func TestMatchDetailHandler_UsesCurrentHandleFromUserStore(t *testing.T) {
 		Kickoff: time.Now().Add(-24 * time.Hour), Status: "STATUS_FULL_TIME",
 		HomeScore: "1", AwayScore: "0",
 	}})
-	predStore.Save(ctx, repository.Prediction{MatchID: "m-handle", UserID: "google:u1", Handle: "My Full Name", HomeGoals: 1, AwayGoals: 0})
+	predStore.Save(ctx, repository.Prediction{MatchID: "m-handle", UserID: "google:u1", HomeGoals: 1, AwayGoals: 0})
 	userStore.Upsert(ctx, repository.User{UserID: "google:u1", Handle: "BlackAndGold"})
 
 	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew")
@@ -178,7 +182,7 @@ func TestMatchDetailHandler_UsesCurrentHandleFromUserStore(t *testing.T) {
 	}
 }
 
-func TestMatchDetailHandler_FallsBackToStoredHandleWhenNoUserStoreEntry(t *testing.T) {
+func TestMatchDetailHandler_ShowsEmptyHandleWhenUserNotInStore(t *testing.T) {
 	predStore := repository.NewMemoryPredictionStore()
 	resultStore := repository.NewMemoryResultStore()
 	matchStore := repository.NewMemoryMatchStore()
@@ -186,16 +190,15 @@ func TestMatchDetailHandler_FallsBackToStoredHandleWhenNoUserStoreEntry(t *testi
 	ctx := context.Background()
 
 	matchStore.Seed([]models.Match{{
-		ID: "m-legacy", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",
+		ID: "m-no-user", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",
 		Kickoff: time.Now().Add(-24 * time.Hour), Status: "STATUS_FULL_TIME",
 		HomeScore: "1", AwayScore: "0",
 	}})
-	predStore.Save(ctx, repository.Prediction{MatchID: "m-legacy", UserID: "google:legacy", Handle: "OldHandle", HomeGoals: 1, AwayGoals: 0})
+	predStore.Save(ctx, repository.Prediction{MatchID: "m-no-user", UserID: "google:orphan", HomeGoals: 1, AwayGoals: 0})
 
 	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew")
-
-	req := httptest.NewRequest("GET", "/api/matches/m-legacy", nil)
-	req.SetPathValue("matchId", "m-legacy")
+	req := httptest.NewRequest("GET", "/api/matches/m-no-user", nil)
+	req.SetPathValue("matchId", "m-no-user")
 	w := httptest.NewRecorder()
 	h.Get(w, req)
 
@@ -203,8 +206,8 @@ func TestMatchDetailHandler_FallsBackToStoredHandleWhenNoUserStoreEntry(t *testi
 	json.NewDecoder(w.Body).Decode(&resp)
 	predictions := resp["predictions"].([]any)
 	handle := predictions[0].(map[string]any)["handle"].(string)
-	if handle != "OldHandle" {
-		t.Errorf("expected fallback handle %q, got %q", "OldHandle", handle)
+	if handle != "" {
+		t.Errorf("expected empty handle when user not in UserStore, got %q", handle)
 	}
 }
 
@@ -219,10 +222,14 @@ func TestMatchDetailHandler_LiveMatchProjectsScores(t *testing.T) {
 		Kickoff: time.Now().Add(-45 * time.Minute), Status: "STATUS_IN_PROGRESS",
 		State: "in", HomeScore: "2", AwayScore: "0",
 	}})
-	predStore.Save(ctx, repository.Prediction{MatchID: "m-live", UserID: "u1", Handle: "exact@bsky.mock", HomeGoals: 2, AwayGoals: 0})
-	predStore.Save(ctx, repository.Prediction{MatchID: "m-live", UserID: "u2", Handle: "wrong@bsky.mock", HomeGoals: 1, AwayGoals: 1})
+	userStore := repository.NewMemoryUserStore()
+	userStore.Upsert(ctx, repository.User{UserID: "u1", Handle: "exact@bsky.mock"})
+	userStore.Upsert(ctx, repository.User{UserID: "u2", Handle: "wrong@bsky.mock"})
 
-	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, repository.NewMemoryUserStore(), "Columbus Crew")
+	predStore.Save(ctx, repository.Prediction{MatchID: "m-live", UserID: "u1", HomeGoals: 2, AwayGoals: 0})
+	predStore.Save(ctx, repository.Prediction{MatchID: "m-live", UserID: "u2", HomeGoals: 1, AwayGoals: 1})
+
+	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew")
 	req := httptest.NewRequest("GET", "/api/matches/m-live", nil)
 	req.SetPathValue("matchId", "m-live")
 	w := httptest.NewRecorder()
@@ -269,7 +276,7 @@ func TestMatchDetailHandler_LiveMatchWithNoScoreDoesNotProject(t *testing.T) {
 		Kickoff: time.Now().Add(-5 * time.Minute), Status: "STATUS_IN_PROGRESS",
 		State: "in", HomeScore: "", AwayScore: "",
 	}})
-	predStore.Save(ctx, repository.Prediction{MatchID: "m-live-noscore", UserID: "u1", Handle: "fan@bsky.mock", HomeGoals: 1, AwayGoals: 0})
+	predStore.Save(ctx, repository.Prediction{MatchID: "m-live-noscore", UserID: "u1", HomeGoals: 1, AwayGoals: 0})
 
 	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, repository.NewMemoryUserStore(), "Columbus Crew")
 	req := httptest.NewRequest("GET", "/api/matches/m-live-noscore", nil)

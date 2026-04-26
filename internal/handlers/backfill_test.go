@@ -14,9 +14,9 @@ func TestBackfillUsersHandler_CreatesUserRecordsFromPredictions(t *testing.T) {
 	users := repository.NewMemoryUserStore()
 	ctx := context.Background()
 
-	predictions.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "firebase:u1", Handle: "crewfan"})
-	predictions.Save(ctx, repository.Prediction{MatchID: "m2", UserID: "firebase:u1", Handle: "crewfan"})
-	predictions.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "firebase:u2", Handle: "northend96"})
+	predictions.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "firebase:u1", })
+	predictions.Save(ctx, repository.Prediction{MatchID: "m2", UserID: "firebase:u1", })
+	predictions.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "firebase:u2", })
 
 	h := NewBackfillUsersHandler(predictions, users)
 	req := httptest.NewRequest(http.MethodPost, "/admin/backfill-users", nil)
@@ -27,12 +27,12 @@ func TestBackfillUsersHandler_CreatesUserRecordsFromPredictions(t *testing.T) {
 		t.Fatalf("expected 200, got %d", w.Code)
 	}
 	u1, _ := users.GetByID(ctx, "firebase:u1")
-	if u1 == nil || u1.Handle != "crewfan" {
-		t.Errorf("expected u1 crewfan, got %+v", u1)
+	if u1 == nil {
+		t.Error("expected UserStore entry for firebase:u1")
 	}
 	u2, _ := users.GetByID(ctx, "firebase:u2")
-	if u2 == nil || u2.Handle != "northend96" {
-		t.Errorf("expected u2 northend96, got %+v", u2)
+	if u2 == nil {
+		t.Error("expected UserStore entry for firebase:u2")
 	}
 }
 
@@ -41,7 +41,7 @@ func TestBackfillUsersHandler_SkipsPredictionsWithNoUserID(t *testing.T) {
 	users := repository.NewMemoryUserStore()
 	ctx := context.Background()
 
-	predictions.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "", Handle: "legacyfan"})
+	predictions.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "", })
 
 	h := NewBackfillUsersHandler(predictions, users)
 	req := httptest.NewRequest(http.MethodPost, "/admin/backfill-users", nil)

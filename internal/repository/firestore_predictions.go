@@ -23,7 +23,6 @@ func (s *FirestorePredictionStore) Save(ctx context.Context, p Prediction) error
 	_, err := doc.Set(ctx, map[string]any{
 		"MatchID":   p.MatchID,
 		"UserID":    p.UserID,
-		"Handle":    p.Handle,
 		"HomeGoals": p.HomeGoals,
 		"AwayGoals": p.AwayGoals,
 	})
