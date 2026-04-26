@@ -186,9 +186,7 @@ func main() {
 	}
 	rmh := handlers.NewRefreshMatchesHandler(matchStore, refreshFetcher, onRefresh)
 	mux.HandleFunc("POST /admin/refresh-matches", handlers.AdminAuth(rmh.Refresh))
-	bfh := handlers.NewBackfillUsersHandler(predStore, userStore)
-	mux.HandleFunc("POST /admin/backfill-users", handlers.AdminAuth(bfh.Backfill))
-	psh := handlers.NewPollScoresHandler(matchStore, resultStore, refreshFetcher, recalcFn)
+psh := handlers.NewPollScoresHandler(matchStore, resultStore, refreshFetcher, recalcFn)
 	mux.HandleFunc("POST /admin/poll-scores", handlers.AdminAuth(psh.Poll))
 
 	// Auth endpoints

@@ -34,35 +34,3 @@ func TestHandleHandler_Returns500WhenUpsertFails(t *testing.T) {
 	}
 }
 
-func TestBackfillUsersHandler_Returns500WhenGetAllFails(t *testing.T) {
-	errPreds := &errGetAllStore{}
-	h := NewBackfillUsersHandler(errPreds, repository.NewMemoryUserStore())
-	req := httptest.NewRequest(http.MethodPost, "/admin/backfill-users", nil)
-	w := httptest.NewRecorder()
-	h.Backfill(w, req)
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("expected 500, got %d", w.Code)
-	}
-}
-
-func TestBackfillUsersHandler_Returns500WhenUpsertFails(t *testing.T) {
-	predictions := repository.NewMemoryPredictionStore()
-	predictions.Save(context.Background(), repository.Prediction{MatchID: "m1", UserID: "firebase:u1"})
-	h := NewBackfillUsersHandler(predictions, &errUserStore{UserStore: repository.NewMemoryUserStore()})
-	req := httptest.NewRequest(http.MethodPost, "/admin/backfill-users", nil)
-	w := httptest.NewRecorder()
-	h.Backfill(w, req)
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("expected 500, got %d", w.Code)
-	}
-}
-
-type errGetAllStore struct{ repository.PredictionStore }
-
-func (e *errGetAllStore) GetAll(_ context.Context) ([]repository.Prediction, error) {
-	return nil, fmt.Errorf("db down")
-}
-func (e *errGetAllStore) Save(_ context.Context, _ repository.Prediction) error { return nil }
-func (e *errGetAllStore) GetByMatchAndUser(_ context.Context, _, _ string) (*repository.Prediction, error) {
-	return nil, nil
-}
