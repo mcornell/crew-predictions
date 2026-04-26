@@ -29,7 +29,6 @@ func TestFirestorePredictionStore_SaveAndRetrieve(t *testing.T) {
 	pred := repository.Prediction{
 		MatchID:   "firestore-match-1",
 		UserID:    "google:nordecke123",
-		Handle:    "ColumbusNordecke@bsky.mock",
 		HomeGoals: 2,
 		AwayGoals: 0,
 	}
@@ -54,8 +53,8 @@ func TestFirestorePredictionStore_GetAllReturnsSaved(t *testing.T) {
 	store := firestoreOrSkip(t)
 	ctx := context.Background()
 
-	store.Save(ctx, repository.Prediction{MatchID: "getall-m1", UserID: "google:user-ga1", Handle: "a@mock", HomeGoals: 1, AwayGoals: 0})
-	store.Save(ctx, repository.Prediction{MatchID: "getall-m2", UserID: "google:user-ga2", Handle: "b@mock", HomeGoals: 2, AwayGoals: 1})
+	store.Save(ctx, repository.Prediction{MatchID: "getall-m1", UserID: "google:user-ga1", HomeGoals: 1, AwayGoals: 0})
+	store.Save(ctx, repository.Prediction{MatchID: "getall-m2", UserID: "google:user-ga2", HomeGoals: 2, AwayGoals: 1})
 
 	all, err := store.GetAll(ctx)
 	if err != nil {
