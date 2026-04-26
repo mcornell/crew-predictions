@@ -73,6 +73,32 @@ func TestSeedMatchHandler_SavesMatchWithScores(t *testing.T) {
 	}
 }
 
+func TestSeedMatchHandler_DerivesStateFromStatusWhenEmpty(t *testing.T) {
+	cases := []struct {
+		status        string
+		expectedState string
+	}{
+		{"STATUS_SCHEDULED", "pre"},
+		{"STATUS_FULL_TIME", "post"},
+		{"STATUS_FINAL", "post"},
+		{"STATUS_FIRST_HALF", "in"},
+		{"STATUS_IN_PROGRESS", "in"},
+	}
+	for _, tc := range cases {
+		store := repository.NewMemoryMatchStore()
+		h := handlers.NewSeedMatchHandler(store)
+		body := "id=mx&home_team=Columbus+Crew&away_team=LA+Galaxy&kickoff=2026-05-01T19:30:00Z&status=" + tc.status
+		req := httptest.NewRequest(http.MethodPost, "/admin/seed-match", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		w := httptest.NewRecorder()
+		h.Submit(w, req)
+		matches, _ := store.GetAll()
+		if len(matches) != 1 || matches[0].State != tc.expectedState {
+			t.Errorf("status=%s: expected state=%q, got %q", tc.status, tc.expectedState, matches[0].State)
+		}
+	}
+}
+
 func TestSeedMatchHandler_RejectsEmptyID(t *testing.T) {
 	h := handlers.NewSeedMatchHandler(repository.NewMemoryMatchStore())
 	req := httptest.NewRequest(http.MethodPost, "/admin/seed-match",

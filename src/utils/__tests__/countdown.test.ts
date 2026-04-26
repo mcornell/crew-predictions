@@ -7,9 +7,15 @@ describe('formatCountdown', () => {
     expect(formatCountdown(-1000)).toBe('kicks off now')
   })
 
-  it('formats minutes only when under an hour', () => {
-    expect(formatCountdown(45 * 60 * 1000)).toBe('locks in 45m')
-    expect(formatCountdown(1 * 60 * 1000)).toBe('locks in 1m')
+  it('formats minutes and seconds when under an hour', () => {
+    expect(formatCountdown(45 * 60 * 1000 + 32 * 1000)).toBe('locks in 45m 32s')
+    expect(formatCountdown(1 * 60 * 1000 + 5 * 1000)).toBe('locks in 1m 5s')
+    expect(formatCountdown(59 * 60 * 1000 + 59 * 1000)).toBe('locks in 59m 59s')
+  })
+
+  it('formats minutes only (no seconds) when exactly on a minute boundary under an hour', () => {
+    expect(formatCountdown(45 * 60 * 1000)).toBe('locks in 45m 0s')
+    expect(formatCountdown(1 * 60 * 1000)).toBe('locks in 1m 0s')
   })
 
   it('formats hours and minutes when under a day', () => {

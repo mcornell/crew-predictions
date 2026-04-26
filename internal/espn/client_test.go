@@ -202,6 +202,36 @@ func TestFetchCrewMatchesFrom_ReturnsErrorWhenScoreboardFetchFails(t *testing.T)
 	}
 }
 
+func TestFetchCrewMatchesFrom_DerivesStateFromStatusWhenMissing(t *testing.T) {
+	cases := []struct {
+		statusName    string
+		expectedState string
+	}{
+		{"STATUS_FIRST_HALF", "in"},
+		{"STATUS_SECOND_HALF", "in"},
+		{"STATUS_HALFTIME", "in"},
+		{"STATUS_IN_PROGRESS", "in"},
+		{"STATUS_FULL_TIME", "post"},
+		{"STATUS_FINAL", "post"},
+		{"STATUS_SCHEDULED", "pre"},
+	}
+	for _, tc := range cases {
+		json := `{"events":[{"id":"x","date":"2026-05-01T23:00Z","competitions":[{"competitors":[{"homeAway":"home","score":{},"team":{"displayName":"Columbus Crew"}},{"homeAway":"away","score":{},"team":{"displayName":"Portland Timbers"}}],"status":{"state":"","type":{"name":"` + tc.statusName + `"}}}]}]}`
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write([]byte(json)) }))
+		matches, err := fetchCrewMatchesFrom(srv.URL)
+		srv.Close()
+		if err != nil {
+			t.Fatalf("%s: unexpected error: %v", tc.statusName, err)
+		}
+		if len(matches) == 0 {
+			t.Fatalf("%s: expected match", tc.statusName)
+		}
+		if matches[0].State != tc.expectedState {
+			t.Errorf("%s: expected state=%q, got %q", tc.statusName, tc.expectedState, matches[0].State)
+		}
+	}
+}
+
 func TestFetchCrewMatchesFrom_PopulatesMatchState(t *testing.T) {
 	liveJSON := `{"events":[{"id":"live-1","date":"2026-05-01T23:00Z","competitions":[{"competitors":[{"homeAway":"home","score":{},"team":{"displayName":"Columbus Crew"}},{"homeAway":"away","score":{},"team":{"displayName":"Portland Timbers"}}],"status":{"state":"in","type":{"name":"STATUS_IN_PROGRESS"}}}]}]}`
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

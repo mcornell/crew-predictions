@@ -311,7 +311,7 @@ body::after {
   font-size: 0.65rem;
   font-weight: 600;
   letter-spacing: 0.12em;
-  color: var(--danger);
+  color: var(--gold);
   text-transform: uppercase;
   margin-bottom: 0.35rem;
   animation: live-pulse 1.4s ease-in-out infinite;
@@ -342,8 +342,8 @@ body::after {
 }
 
 @keyframes live-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.45; }
+  0%, 100% { opacity: 1; text-shadow: 0 0 8px var(--gold), 0 0 16px rgba(254,221,0,0.4); }
+  50%       { opacity: 0.55; text-shadow: none; }
 }
 
 .delayed-indicator {
@@ -364,7 +364,8 @@ body::after {
 }
 
 .match-card--live {
-  border-left: 3px solid var(--danger);
+  border-left: 4px solid var(--gold);
+  background: rgba(254,221,0,0.04);
 }
 
 .match-card--link {

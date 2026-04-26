@@ -2,6 +2,7 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
 import './style.css'
+import { initAnalytics } from './firebase'
 
 async function bootstrap() {
   try {
@@ -15,6 +16,7 @@ async function bootstrap() {
   } catch {
     // no config served (tests / local dev without server)
   }
+  initAnalytics()
   createApp(App).use(router).mount('#app')
 }
 

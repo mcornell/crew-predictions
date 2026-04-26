@@ -6,5 +6,6 @@ export function formatCountdown(ms: number): string {
   const minutes = Math.floor((totalSeconds % 3600) / 60)
   if (days > 0) return `locks in ${days}d ${hours}h`
   if (hours > 0) return `locks in ${hours}h ${minutes}m`
-  return `locks in ${minutes}m`
+  const seconds = totalSeconds % 60
+  return `locks in ${minutes}m ${seconds}s`
 }

@@ -85,6 +85,21 @@ Then('match {string} should appear before match {string}', async ({ page }, firs
   expect(firstIdx).toBeLessThan(secondIdx);
 });
 
+Then('the now playing card should appear before the upcoming card', async ({ page }) => {
+  const nowPlayingCard = page.locator('[data-testid="now-playing-card"]').first();
+  const matchCard = page.locator('[data-testid="match-card"]').first();
+  const nowPlayingY = await nowPlayingCard.boundingBox().then(b => b?.y ?? 0);
+  const matchCardY = await matchCard.boundingBox().then(b => b?.y ?? 0);
+  expect(nowPlayingY).toBeLessThan(matchCardY);
+});
+
+Then('the now playing card should show score {string} to {string}', async ({ page }, home: string, away: string) => {
+  const card = page.locator('[data-testid="now-playing-card"]').first();
+  const scores = card.locator('.inline-score');
+  await expect(scores.nth(0)).toHaveText(home);
+  await expect(scores.nth(1)).toHaveText(away);
+});
+
 Given('the match {string} has already kicked off', async ({ request }, matchId: string) => {
   const d = new Date();
   d.setMinutes(d.getMinutes() - 5);

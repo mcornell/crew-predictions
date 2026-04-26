@@ -1,10 +1,17 @@
 import { initializeApp, getApps } from 'firebase/app'
 import { getAuth, connectAuthEmulator, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithRedirect, getRedirectResult, GoogleAuthProvider, sendPasswordResetEmail, updateProfile, onAuthStateChanged, type User } from 'firebase/auth'
+import { getAnalytics } from 'firebase/analytics'
 
 declare global {
   interface Window {
-    __firebaseConfig?: Record<string, string>
+    __firebaseConfig?: Record<string, string | undefined>
   }
+}
+
+export function initAnalytics() {
+  if (!window.__firebaseConfig?.measurementId || !window.__firebaseConfig?.appId) return
+  const app = getApps().length ? getApps()[0] : initializeApp(window.__firebaseConfig)
+  getAnalytics(app)
 }
 
 let emulatorConnected = false

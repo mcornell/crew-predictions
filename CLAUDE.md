@@ -17,6 +17,14 @@ The failure mode is always the same: after committing, `git push` feels like the
 
 **Never write production code without a failing test first.** Full BDD loop detail in [e2e/CLAUDE.md](e2e/CLAUDE.md).
 
+This rule has been violated repeatedly. The specific failure pattern: new UI behavior (e.g. "Now Playing" section) gets implemented by changing frontend filtering logic without first writing a failing e2e scenario. The result is the feature ships with zero e2e coverage AND the filtering change breaks 18 existing tests. Both outcomes happened in the same session. The user was angry.
+
+**The outer BDD loop is not optional.** Before touching any production file for a new feature:
+1. Write the Gherkin scenario. Run `npm test`. Confirm it fails for the right reason.
+2. Only then open any `.vue`, `.go`, or `.ts` production file.
+
+If you find yourself writing production code and cannot point to the specific failing e2e scenario that demands it, stop. You are violating this rule.
+
 ---
 
 ## Project Goal

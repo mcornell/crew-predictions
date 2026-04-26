@@ -51,6 +51,25 @@ Feature: Match listings
     When I visit the matches page
     Then match "m-early" should appear before match "m-late"
 
+  Scenario: Live match appears in Now Playing section above Upcoming
+    Given the following matches are seeded:
+      | id       | homeTeam      | awayTeam  | status             | state |
+      | m-now    | Columbus Crew | FC Dallas | STATUS_IN_PROGRESS | in    |
+      | m-sched2 | Columbus Crew | LA Galaxy | STATUS_SCHEDULED   |       |
+    And I am not logged in
+    When I visit the matches page
+    Then I should see the "Now Playing" heading
+    And I should see the "Upcoming" heading
+    And the now playing card should appear before the upcoming card
+
+  Scenario: Live match shows current score not dashes
+    Given the following matches are seeded:
+      | id      | homeTeam      | awayTeam  | status             | state | homeScore | awayScore |
+      | m-score | Columbus Crew | FC Dallas | STATUS_IN_PROGRESS | in    | 2         | 1         |
+    And I am not logged in
+    When I visit the matches page
+    Then the now playing card should show score "2" to "1"
+
   Scenario: Predict button is absent for a match past kickoff
     Given the following matches are seeded in order:
       | id       | homeTeam      | awayTeam  | status           | kickoffOffset |

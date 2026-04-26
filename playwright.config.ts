@@ -11,7 +11,7 @@ export default defineConfig({
   workers: 2,
   globalSetup: './e2e/global-setup.ts',
   reporter: process.env.CI
-    ? [['github'], ['html', { open: 'never' }], ['junit', { outputFile: 'playwright-results.xml' }]]
+    ? [['list'], ['github'], ['html', { open: 'never' }], ['junit', { outputFile: 'playwright-results.xml' }]]
     : [['list'], ['html', { open: 'never' }]],
   use: {
     baseURL: 'http://localhost:8082',
