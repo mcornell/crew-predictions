@@ -28,7 +28,7 @@
 
     <section class="rules-section">
       <h2 class="section-title">Upper 90 Club</h2>
-      <p class="rules-desc">Gentler scoring for the optimists. Points stack — get both right and you're golden.</p>
+      <p class="rules-desc">Gentler scoring for the optimists. Points stack — nail all three and you're golden.</p>
       <div class="rules-table">
         <div class="rules-row rules-row--positive">
           <span class="rules-points">+1</span>
@@ -38,8 +38,12 @@
           <span class="rules-points">+1</span>
           <span class="rules-condition">Exact Columbus Crew goal tally — you predicted the right number of Crew goals</span>
         </div>
+        <div class="rules-row rules-row--positive">
+          <span class="rules-points">+1</span>
+          <span class="rules-condition">Exact opponent goal tally — you predicted the right number of goals for the other lot</span>
+        </div>
       </div>
-      <p class="rules-note">Points stack. Nail the result and the Crew's goal tally and you're at +2.</p>
+      <p class="rules-note">Points stack. Nail all three and you're at +3.</p>
     </section>
 
     <section class="rules-section">
