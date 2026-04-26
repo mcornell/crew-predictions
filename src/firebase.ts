@@ -9,8 +9,9 @@ declare global {
 }
 
 export function initAnalytics() {
-  if (!window.__firebaseConfig?.measurementId || !window.__firebaseConfig?.appId) return
-  const app = getApps().length ? getApps()[0] : initializeApp(window.__firebaseConfig)
+  const cfg = window.__firebaseConfig
+  if (!cfg?.measurementId || !cfg?.appId || !cfg?.projectId) return
+  const app = getApps().length ? getApps()[0] : initializeApp(cfg)
   getAnalytics(app)
 }
 

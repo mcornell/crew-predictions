@@ -17,8 +17,8 @@ describe('initAnalytics', () => {
     delete (window as any).__firebaseConfig
   })
 
-  it('initializes analytics when measurementId is present', async () => {
-    ;(window as any).__firebaseConfig = { measurementId: 'G-TEST123', appId: '1:123:web:abc' }
+  it('initializes analytics when measurementId, appId, and projectId are present', async () => {
+    ;(window as any).__firebaseConfig = { measurementId: 'G-TEST123', appId: '1:123:web:abc', projectId: 'crew-predictions' }
     const { initAnalytics } = await import('../firebase')
     initAnalytics()
     expect(mockGetAnalytics).toHaveBeenCalledOnce()
