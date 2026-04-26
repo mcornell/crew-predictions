@@ -8,6 +8,20 @@ import (
 	"github.com/mcornell/crew-predictions/internal/repository"
 )
 
+func deriveStateFromStatus(status string) string {
+	switch status {
+	case "STATUS_FIRST_HALF", "STATUS_SECOND_HALF", "STATUS_HALFTIME",
+		"STATUS_IN_PROGRESS", "STATUS_END_PERIOD", "STATUS_OVERTIME",
+		"STATUS_EXTRA_TIME", "STATUS_SHOOTOUT":
+		return "in"
+	case "STATUS_FULL_TIME", "STATUS_FINAL", "STATUS_FT",
+		"STATUS_FULL_PEN", "STATUS_ABANDONED":
+		return "post"
+	default:
+		return "pre"
+	}
+}
+
 type SeedMatchHandler struct {
 	store *repository.MemoryMatchStore
 }
@@ -27,13 +41,17 @@ func (h *SeedMatchHandler) Submit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "kickoff must be RFC3339", http.StatusBadRequest)
 		return
 	}
+	state := r.FormValue("state")
+	if state == "" {
+		state = deriveStateFromStatus(r.FormValue("status"))
+	}
 	h.store.Seed([]models.Match{{
 		ID:        r.FormValue("id"),
 		HomeTeam:  r.FormValue("home_team"),
 		AwayTeam:  r.FormValue("away_team"),
 		Kickoff:   kickoff,
 		Status:    r.FormValue("status"),
-		State:     r.FormValue("state"),
+		State:     state,
 		HomeScore: r.FormValue("home_score"),
 		AwayScore: r.FormValue("away_score"),
 	}})
