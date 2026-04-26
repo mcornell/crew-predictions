@@ -17,11 +17,18 @@ type scoreField struct {
 }
 
 func (s *scoreField) UnmarshalJSON(data []byte) error {
+	// Completed matches send {"displayValue":"2",...}
 	var obj struct {
 		DisplayValue string `json:"displayValue"`
 	}
 	if err := json.Unmarshal(data, &obj); err == nil && obj.DisplayValue != "" {
 		s.Display = obj.DisplayValue
+		return nil
+	}
+	// Live matches send a plain string "2"
+	var str string
+	if err := json.Unmarshal(data, &str); err == nil {
+		s.Display = str
 	}
 	return nil
 }

@@ -113,6 +113,16 @@ func TestScoreField_ParsesObjectForm(t *testing.T) {
 	}
 }
 
+func TestScoreField_ParsesStringForm(t *testing.T) {
+	var s scoreField
+	if err := json.Unmarshal([]byte(`"2"`), &s); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if s.Display != "2" {
+		t.Errorf("expected display '2', got %q", s.Display)
+	}
+}
+
 func TestScoreField_ParsesIntegerForm(t *testing.T) {
 	var s scoreField
 	if err := json.Unmarshal([]byte(`0`), &s); err != nil {
