@@ -56,6 +56,9 @@ jobs:
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum
 
+      - name: Install gocover-cobertura
+        run: go install github.com/boumenot/gocover-cobertura@latest
+
       - name: Go unit tests
         run: |
           echo "## Go Tests" >> $GITHUB_STEP_SUMMARY
@@ -72,32 +75,18 @@ jobs:
           fail-on-error: false
           fail-on-empty: false
 
-      - name: Go coverage summary
+      - name: Go coverage (Cobertura)
         if: always()
-        run: |
-          python3 -c "
-          from collections import defaultdict
-          covered, total = defaultdict(int), defaultdict(int)
-          with open('go-coverage.out') as f:
-              for line in f:
-                  line = line.strip()
-                  if line.startswith('mode:') or not line:
-                      continue
-                  loc, stmts, count = line.split()
-                  pkg = loc.rsplit('/', 1)[0].replace('github.com/mcornell/crew-predictions/', '')
-                  n = int(stmts)
-                  total[pkg] += n
-                  if int(count) > 0:
-                      covered[pkg] += n
-          ac, at = sum(covered.values()), sum(total.values())
-          print('## Go Coverage')
-          print('| Package | % | Covered / Total |')
-          print('|---|---|---|')
-          for pkg in sorted(total):
-              c, t = covered[pkg], total[pkg]
-              print(f'| \`{pkg}\` | {100*c/t:.1f}% | {c}/{t} |')
-          print(f'| **total** | **{100*ac/at:.1f}%** | **{ac}/{at}** |')
-          " >> $GITHUB_STEP_SUMMARY
+        run: gocover-cobertura < go-coverage.out > go-coverage.xml
+
+      - name: Go coverage summary
+        uses: irongut/CodeCoverageSummary@v1.3.0
+        if: always()
+        with:
+          filename: go-coverage.xml
+          badge: false
+          format: markdown
+          output: both
 
       - name: Vue unit tests
         run: |
@@ -116,20 +105,13 @@ jobs:
           fail-on-empty: false
 
       - name: Vue coverage summary
+        uses: irongut/CodeCoverageSummary@v1.3.0
         if: always()
-        run: |
-          if [ -f coverage/coverage-summary.json ]; then
-            python3 -c "
-          import json, sys
-          d = json.load(open('coverage/coverage-summary.json'))['total']
-          print('## Vue Coverage')
-          print('| Metric | % | Covered / Total |')
-          print('|---|---|---|')
-          for k in ['statements', 'branches', 'functions', 'lines']:
-              v = d[k]
-              print(f'| {k.capitalize()} | {v[\"pct\"]}% | {v[\"covered\"]}/{v[\"total\"]} |')
-          " >> $GITHUB_STEP_SUMMARY
-          fi
+        with:
+          filename: coverage/cobertura-coverage.xml
+          badge: false
+          format: markdown
+          output: both
 
       - name: TypeScript type check
         run: npm run typecheck

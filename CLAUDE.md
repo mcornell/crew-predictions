@@ -25,6 +25,8 @@ This rule has been violated repeatedly. The specific failure pattern: new UI beh
 
 If you find yourself writing production code and cannot point to the specific failing e2e scenario that demands it, stop. You are violating this rule.
 
+**Before declaring any work done — feature OR refactor — run `go test ./...`, `npm run typecheck && npm run test:unit`, and `npm test`. All three must be green.** This applies to refactors and removals too, not just new features — observable behavior can regress without a new scenario failing first.
+
 ---
 
 ## Project Goal
