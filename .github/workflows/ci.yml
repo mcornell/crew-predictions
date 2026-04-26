@@ -80,13 +80,25 @@ jobs:
         run: gocover-cobertura < go-coverage.out > go-coverage.xml
 
       - name: Go coverage summary
-        uses: irongut/CodeCoverageSummary@v1.3.0
         if: always()
-        with:
-          filename: go-coverage.xml
-          badge: false
-          format: markdown
-          output: both
+        run: |
+          python3 - <<'EOF'
+          import xml.etree.ElementTree as ET, os
+          try:
+              root = ET.parse('go-coverage.xml').getroot()
+              total = float(root.get('line-rate', 0)) * 100
+              rows = []
+              for p in root.iter('package'):
+                  name = p.get('name', '').replace('github.com/mcornell/crew-predictions/', '')
+                  rate = float(p.get('line-rate', 0)) * 100
+                  icon = '✅' if rate >= 80 else '⚠️' if rate >= 50 else '❌'
+                  rows.append(f'| `{name}` | {icon} {rate:.1f}% |')
+              with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
+                  f.write(f'\n## Go Coverage: {total:.1f}%\n\n| Package | Line Rate |\n|---|---|\n')
+                  f.write('\n'.join(sorted(rows)) + '\n')
+          except Exception as e:
+              print(f'coverage summary error: {e}')
+          EOF
 
       - name: Vue unit tests
         run: |
@@ -105,13 +117,25 @@ jobs:
           fail-on-empty: false
 
       - name: Vue coverage summary
-        uses: irongut/CodeCoverageSummary@v1.3.0
         if: always()
-        with:
-          filename: coverage/cobertura-coverage.xml
-          badge: false
-          format: markdown
-          output: both
+        run: |
+          python3 - <<'EOF'
+          import xml.etree.ElementTree as ET, os
+          try:
+              root = ET.parse('coverage/cobertura-coverage.xml').getroot()
+              total = float(root.get('line-rate', 0)) * 100
+              rows = []
+              for p in root.iter('package'):
+                  name = p.get('name', '') or 'src'
+                  rate = float(p.get('line-rate', 0)) * 100
+                  icon = '✅' if rate >= 80 else '⚠️' if rate >= 50 else '❌'
+                  rows.append(f'| `{name}` | {icon} {rate:.1f}% |')
+              with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
+                  f.write(f'\n## Vue Coverage: {total:.1f}%\n\n| Package | Line Rate |\n|---|---|\n')
+                  f.write('\n'.join(sorted(rows)) + '\n')
+          except Exception as e:
+              print(f'coverage summary error: {e}')
+          EOF
 
       - name: TypeScript type check
         run: npm run typecheck
