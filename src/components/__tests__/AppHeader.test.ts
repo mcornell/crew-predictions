@@ -90,6 +90,14 @@ describe('AppHeader', () => {
     expect(wrapper.find('[data-testid="mobile-drawer"] a[href="/login"]').exists()).toBe(false)
   })
 
+  it('clicking backdrop closes the drawer', async () => {
+    const wrapper = mount(AppHeader, { props: { user: null } })
+    await wrapper.find('button[data-testid="hamburger"]').trigger('click')
+    expect(wrapper.find('[data-testid="mobile-drawer"]').exists()).toBe(true)
+    await wrapper.find('.drawer-backdrop').trigger('click')
+    expect(wrapper.find('[data-testid="mobile-drawer"]').exists()).toBe(false)
+  })
+
   it('removes resize listener on unmount', () => {
     const removeSpy = vi.spyOn(window, 'removeEventListener')
     const wrapper = mount(AppHeader, { props: { user: null } })

@@ -2,11 +2,19 @@ package recalculator_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/mcornell/crew-predictions/internal/recalculator"
 	"github.com/mcornell/crew-predictions/internal/repository"
 )
+
+type errorGetResultStore struct{}
+
+func (e *errorGetResultStore) SaveResult(_ context.Context, _ repository.Result) error { return nil }
+func (e *errorGetResultStore) GetResult(_ context.Context, _ string) (*repository.Result, error) {
+	return nil, fmt.Errorf("simulated GetResult failure")
+}
 
 func TestRecalculate_SetsAllScoringSystemPoints(t *testing.T) {
 	ctx := context.Background()
@@ -112,6 +120,31 @@ func TestRecalculate_CreatesUserStoreEntryForPredictionOnlyUser(t *testing.T) {
 	}
 	if u.AcesRadioPoints != 15 {
 		t.Errorf("expected 15 AcesRadio points, got %d", u.AcesRadioPoints)
+	}
+}
+
+func TestRecalculate_ReturnsErrorWhenGetResultFails(t *testing.T) {
+	ctx := context.Background()
+	users := repository.NewMemoryUserStore()
+	users.Upsert(ctx, repository.User{UserID: "u1"})
+	preds := repository.NewMemoryPredictionStore()
+	preds.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "u1", HomeGoals: 1, AwayGoals: 0})
+
+	err := recalculator.Recalculate(ctx, preds, &errorGetResultStore{}, users, "Columbus Crew")
+	if err == nil {
+		t.Error("expected error when result store GetResult fails, got nil")
+	}
+}
+
+func TestRecalculate_ReturnsErrorWhenPhantomUserUpsertFails(t *testing.T) {
+	ctx := context.Background()
+	preds := repository.NewMemoryPredictionStore()
+	preds.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "google:ghost", HomeGoals: 1, AwayGoals: 0})
+
+	// ErrorUpsertUserStore: GetAll returns empty (no error) → phantom user detected; Upsert returns error
+	err := recalculator.Recalculate(ctx, preds, repository.NewMemoryResultStore(), repository.NewErrorUpsertUserStore(), "Columbus Crew")
+	if err == nil {
+		t.Error("expected error when phantom user upsert fails, got nil")
 	}
 }
 

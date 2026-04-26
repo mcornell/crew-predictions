@@ -90,5 +90,5 @@ func rankFor(userID string, totals map[string]int) standingEntry {
 			return standingEntry{Points: points, Rank: rank}
 		}
 	}
-	return standingEntry{Points: points, Rank: 0}
+	panic("rankFor: userID not found in sorted slice — this is a bug")
 }

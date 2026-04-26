@@ -359,3 +359,19 @@ func TestMatchPoller_Reset_ClearsActiveAndReschedules(t *testing.T) {
 		t.Errorf("expected 1 new timer after reset, got %d", len(delays))
 	}
 }
+
+func TestMatchPoller_Run_ExitsOnContextCancel(t *testing.T) {
+	p := newPoller(repository.NewMemoryMatchStore(), repository.NewMemoryResultStore(), nil, capturingTimer(new([]time.Duration)))
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() {
+		p.Run(ctx, 10*time.Millisecond)
+		close(done)
+	}()
+	cancel()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Error("Run did not exit after context cancellation")
+	}
+}

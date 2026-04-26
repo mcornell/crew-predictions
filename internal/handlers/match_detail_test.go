@@ -309,6 +309,32 @@ func TestMatchDetailHandler_Returns404ForUnknownMatch(t *testing.T) {
 	}
 }
 
+func TestMatchDetailHandler_LiveMatchWithNonNumericScoreDoesNotProject(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	matchStore.Seed([]models.Match{{
+		ID: "m-live-nan", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",
+		Kickoff: time.Now().Add(-5 * time.Minute), Status: "STATUS_IN_PROGRESS",
+		State: "in", HomeScore: "TBD", AwayScore: "TBD",
+	}})
+	h := handlers.NewMatchDetailHandler(
+		repository.NewMemoryPredictionStore(),
+		repository.NewMemoryResultStore(),
+		matchStore,
+		repository.NewMemoryUserStore(),
+		"Columbus Crew",
+	)
+	req := httptest.NewRequest("GET", "/api/matches/m-live-nan", nil)
+	req.SetPathValue("matchId", "m-live-nan")
+	w := httptest.NewRecorder()
+	h.Get(w, req)
+
+	var resp map[string]any
+	json.NewDecoder(w.Body).Decode(&resp)
+	if resp["isProjected"] == true {
+		t.Error("expected isProjected=false when live score is non-numeric")
+	}
+}
+
 func TestMatchDetailHandler_ReturnsEmptyPredictionsWhenNone(t *testing.T) {
 	predStore := repository.NewMemoryPredictionStore()
 	resultStore := repository.NewMemoryResultStore()

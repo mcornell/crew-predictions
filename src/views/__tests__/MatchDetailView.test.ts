@@ -233,4 +233,44 @@ describe('MatchDetailView', () => {
     await flushPromises()
     expect(wrapper.find('[data-testid="mobile-sort-grouchy"]').exists()).toBe(true)
   })
+
+  it('schedules a poll when kickoff is in the future but outside the active window', async () => {
+    vi.useFakeTimers()
+    const futureKickoff = new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString()
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: { ...mockMatch, kickoff: futureKickoff, state: '', status: 'STATUS_SCHEDULED' },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const setTimeoutSpy = vi.spyOn(global, 'setTimeout')
+    const router = makeRouter()
+    await router.isReady()
+    mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    expect(setTimeoutSpy).toHaveBeenCalled()
+    vi.useRealTimers()
+  })
+
+  it('clears poll timer on unmount when a poll was scheduled', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: { ...mockMatch, state: 'in', status: 'STATUS_IN_PROGRESS' },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout')
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    wrapper.unmount()
+    expect(clearTimeoutSpy).toHaveBeenCalled()
+    vi.useRealTimers()
+  })
 })
