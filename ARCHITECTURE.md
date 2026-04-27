@@ -57,7 +57,7 @@ Entry point: `cmd/server/main.go`
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | `GET` | `/api/matches` | optional | Upcoming matches + caller's predictions |
-| `GET` | `/api/matches/:matchId` | none | Match detail: match info + all predictions with per-format scores + `scoringFormats` array |
+| `GET` | `/api/matches/:matchId` | none | Match detail: match info + all predictions with per-format scores + `scoringFormats` array; when live returns `state`, `displayClock`, and `isProjected: true` with scores computed from current live result |
 | `POST` | `/api/predictions` | required | Submit a score prediction (form data) |
 | `GET` | `/api/leaderboard` | none | `{entries: [{userID, handle, acesRadioPoints, upper90ClubPoints, grouchyPoints, hasProfile}]}` sorted by Aces Radio desc; reads precomputed points from `UserStore` — O(U) reads; only users with `PredictionCount > 0` appear |
 | `GET` | `/api/me` | optional | Current session user `{userID, handle}` or 401; lazily upserts user to `UserStore` |
@@ -122,12 +122,12 @@ Entry: `src/main.ts` → loads `/auth/config.js` → mounts Vue app
 | `src/views/ResetView.vue` | `/reset` | Password reset request |
 | `src/views/LeaderboardView.vue` | `/leaderboard` | Unified sortable table (RANK · PREDICTOR · ACES RADIO · UPPER 90 CLUB · GROUCHY™); click column headers to sort; handles link to `/profile/:userID`; mobile: stacked cards, sort buttons above, active format score shown only |
 | `src/views/ProfileView.vue` | `/profile/:userID` | Public profile; 4-stat grid (Predictions · Aces Radio · Upper 90 Club · Grouchy™, each with rank); edit form shown only on own profile |
-| `src/views/MatchDetailView.vue` | `/matches/:matchId` | Unified sortable table (RANK · PREDICTOR+PICK · ACES RADIO · UPPER 90 CLUB · GROUCHY™); click column headers to sort; prediction shown below handle; result cards link here, upcoming cards do not; mobile: stacked cards with active format score |
+| `src/views/MatchDetailView.vue` | `/matches/:matchId` | Unified sortable table (RANK · PREDICTOR+PICK · ACES RADIO · UPPER 90 CLUB · GROUCHY™); click column headers to sort; prediction shown below handle; result cards link here, upcoming cards do not; mobile: stacked cards with active format score. When live: pulsing gold LIVE bar with match clock, projected scores computed from current live score (`isProjected` flag), smart polling every ~30s |
 | `src/views/RulesView.vue` | `/rules` | Scoring format explainer |
 | `src/views/NotFoundView.vue` | `*` | 404 catch-all |
 | `src/components/AppHeader.vue` | (all) | Nav header; desktop nav + hamburger drawer at ≤600px |
 | `src/App.vue` | — | Root: fetches `/api/me` on mount + route change; handles Google redirect result |
-| `src/firebase.ts` | — | Firebase Auth SDK init + `signIn` / `signInWithGoogle` helpers |
+| `src/firebase.ts` | — | Firebase Auth SDK init + `signIn` / `signInWithGoogle` helpers; `initAnalytics()` guarded by `measurementId`, `appId`, and `projectId` — all three required or analytics is skipped |
 | `src/guestPredictions.ts` | — | Shared guest prediction helpers: `readGuestPredictions`, `writeGuestPredictions`, `flushGuestPredictions` (auto-submits localStorage predictions on login; called from LoginView, SignupView, App.vue Google redirect) |
 
 **CSS:** `src/style.css` — Industrial Black & Gold Brutalism design tokens as CSS variables, imported in `src/main.ts`.
@@ -158,13 +158,14 @@ users/{userID}
   predictionCount: int      // precomputed by Recalculate(); 0 = excluded from leaderboard
 
 matches/{matchID}
-  homeTeam:   string
-  awayTeam:   string
-  kickoff:    timestamp
-  status:     string
-  homeScore:  string
-  awayScore:  string
-  state:      string   // "pre" / "in" / "post"
+  homeTeam:     string
+  awayTeam:     string
+  kickoff:      timestamp
+  status:       string
+  homeScore:    string
+  awayScore:    string
+  state:        string   // "pre" / "in" / "post"
+  displayClock: string   // e.g. "48'", "HT" — live match clock from ESPN
 ```
 
 ---

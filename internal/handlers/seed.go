@@ -30,9 +30,28 @@ func (h *SeedPredictionHandler) Submit(w http.ResponseWriter, r *http.Request) {
 	h.store.Save(r.Context(), repository.Prediction{
 		MatchID:   r.FormValue("match_id"),
 		UserID:    r.FormValue("user_id"),
-		Handle:    r.FormValue("handle"),
 		HomeGoals: home,
 		AwayGoals: away,
 	})
+	w.WriteHeader(http.StatusNoContent)
+}
+
+type SeedUserHandler struct {
+	store repository.UserStore
+}
+
+func NewSeedUserHandler(store repository.UserStore) *SeedUserHandler {
+	return &SeedUserHandler{store: store}
+}
+
+func (h *SeedUserHandler) Submit(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	userID := r.FormValue("user_id")
+	handle := r.FormValue("handle")
+	if userID == "" {
+		http.Error(w, "user_id is required", http.StatusBadRequest)
+		return
+	}
+	h.store.Upsert(r.Context(), repository.User{UserID: userID, Handle: handle})
 	w.WriteHeader(http.StatusNoContent)
 }

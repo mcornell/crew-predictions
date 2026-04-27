@@ -56,6 +56,9 @@ jobs:
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum
 
+      - name: Install gocover-cobertura
+        run: go install github.com/boumenot/gocover-cobertura@latest
+
       - name: Go unit tests
         run: |
           echo "## Go Tests" >> $GITHUB_STEP_SUMMARY
@@ -71,33 +74,6 @@ jobs:
           list-tests: failed
           fail-on-error: false
           fail-on-empty: false
-
-      - name: Go coverage summary
-        if: always()
-        run: |
-          python3 -c "
-          from collections import defaultdict
-          covered, total = defaultdict(int), defaultdict(int)
-          with open('go-coverage.out') as f:
-              for line in f:
-                  line = line.strip()
-                  if line.startswith('mode:') or not line:
-                      continue
-                  loc, stmts, count = line.split()
-                  pkg = loc.rsplit('/', 1)[0].replace('github.com/mcornell/crew-predictions/', '')
-                  n = int(stmts)
-                  total[pkg] += n
-                  if int(count) > 0:
-                      covered[pkg] += n
-          ac, at = sum(covered.values()), sum(total.values())
-          print('## Go Coverage')
-          print('| Package | % | Covered / Total |')
-          print('|---|---|---|')
-          for pkg in sorted(total):
-              c, t = covered[pkg], total[pkg]
-              print(f'| \`{pkg}\` | {100*c/t:.1f}% | {c}/{t} |')
-          print(f'| **total** | **{100*ac/at:.1f}%** | **{ac}/{at}** |')
-          " >> $GITHUB_STEP_SUMMARY
 
       - name: Vue unit tests
         run: |
@@ -115,21 +91,36 @@ jobs:
           fail-on-error: false
           fail-on-empty: false
 
-      - name: Vue coverage summary
+      - name: Coverage summary
         if: always()
         run: |
-          if [ -f coverage/coverage-summary.json ]; then
-            python3 -c "
-          import json, sys
-          d = json.load(open('coverage/coverage-summary.json'))['total']
-          print('## Vue Coverage')
-          print('| Metric | % | Covered / Total |')
-          print('|---|---|---|')
-          for k in ['statements', 'branches', 'functions', 'lines']:
-              v = d[k]
-              print(f'| {k.capitalize()} | {v[\"pct\"]}% | {v[\"covered\"]}/{v[\"total\"]} |')
-          " >> $GITHUB_STEP_SUMMARY
-          fi
+          gocover-cobertura < go-coverage.out > go-coverage.xml
+          python3 - <<'EOF'
+          import xml.etree.ElementTree as ET, os
+
+          def coverage_table(path, strip_prefix=''):
+              root = ET.parse(path).getroot()
+              total = float(root.get('line-rate', 0)) * 100
+              rows = []
+              for p in root.iter('package'):
+                  name = (p.get('name', '') or 'src').replace(strip_prefix, '')
+                  rate = float(p.get('line-rate', 0)) * 100
+                  icon = '✅' if rate >= 80 else '⚠️' if rate >= 50 else '❌'
+                  rows.append(f'| `{name}` | {icon} {rate:.1f}% |')
+              return total, rows
+
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
+              for label, path, prefix in [
+                  ('Go',  'go-coverage.xml',                  'github.com/mcornell/crew-predictions/'),
+                  ('Vue', 'coverage/cobertura-coverage.xml',  ''),
+              ]:
+                  try:
+                      total, rows = coverage_table(path, prefix)
+                      f.write(f'\n## {label} Coverage: {total:.1f}%\n\n| Package | Line Rate |\n|---|---|\n')
+                      f.write('\n'.join(sorted(rows)) + '\n')
+                  except Exception as e:
+                      f.write(f'\n## {label} Coverage: error ({e})\n')
+          EOF
 
       - name: TypeScript type check
         run: npm run typecheck
@@ -290,6 +281,8 @@ jobs:
     if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
     needs: deploy-staging
     runs-on: ubuntu-latest
+    permissions:
+      checks: write
 
     steps:
       - uses: actions/checkout@v6
@@ -325,6 +318,17 @@ jobs:
           STAGING_URL: https://crew-predictions-staging.web.app
           STAGING_API_KEY: ${{ secrets.STAGING_FIREBASE_API_KEY }}
           SMOKE_TEST_PASSWORD: ${{ secrets.SMOKE_TEST_PASSWORD }}
+
+      - name: Smoke test report
+        uses: dorny/test-reporter@v3
+        if: always()
+        with:
+          name: Smoke Tests
+          path: smoke-results.xml
+          reporter: java-junit
+          list-tests: failed
+          fail-on-error: false
+          fail-on-empty: false
 
       - name: Upload smoke report
         if: always()
@@ -454,3 +458,62 @@ jobs:
           else
             echo "::warning::No prod-previous.zip found — Firebase Hosting not rolled back (first deploy?)"
           fi
+
+  smoke-prod:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: deploy-prod
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Get Playwright version
+        id: playwright-version
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v5
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Playwright system deps
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Run prod smoke tests
+        run: npm run test:smoke:prod
+        env:
+          PROD_URL: https://crew-predictions.web.app
+
+      - name: Prod smoke test report
+        uses: dorny/test-reporter@v3
+        if: always()
+        with:
+          name: Prod Smoke Tests
+          path: prod-smoke-results.xml
+          reporter: java-junit
+          list-tests: failed
+          fail-on-error: false
+          fail-on-empty: false
+
+      - name: Upload prod smoke report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: prod-smoke-report
+          path: prod-smoke-report/
+          retention-days: 5

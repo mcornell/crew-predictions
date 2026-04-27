@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/mcornell/crew-predictions/internal/handlers"
@@ -88,6 +89,20 @@ func TestMeHandler_Returns401WhenNotLoggedIn(t *testing.T) {
 
 	if w.Code != http.StatusUnauthorized {
 		t.Errorf("expected 401, got %d", w.Code)
+	}
+}
+
+func TestMeHandler_StillRespondsWhenLazyUpsertFails(t *testing.T) {
+	h := handlers.NewMeHandler(repository.NewErrorUpsertUserStore())
+	req := httptest.NewRequest(http.MethodGet, "/api/me", nil)
+	req.AddCookie(sessionCookie("google:abc", "Fan"))
+	w := httptest.NewRecorder()
+	output := captureLog(t, func() { h.Get(w, req) })
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200 even when upsert fails, got %d", w.Code)
+	}
+	if !strings.Contains(output, "lazy upsert failed") {
+		t.Errorf("expected 'lazy upsert failed' in log output, got %q", output)
 	}
 }
 

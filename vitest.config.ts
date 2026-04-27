@@ -11,7 +11,7 @@ export default defineConfig({
       : ['verbose'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json-summary'],
+      reporter: ['text', 'cobertura'],
       include: ['src/**/*.{ts,vue}'],
       exclude: ['src/main.ts'],
     },

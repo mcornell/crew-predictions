@@ -1,6 +1,7 @@
 {
   "projects": {
     "default": "crew-predictions",
-    "production": "crew-predictions"
+    "production": "crew-predictions",
+    "staging": "crew-predictions-staging"
   }
 }

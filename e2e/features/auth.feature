@@ -1,10 +1,12 @@
 Feature: Authentication
 
+  @smoke
   Scenario: Unauthenticated user sees sign-in option
     Given I am not logged in
     When I visit the matches page
     Then I should see a "Sign In" link in the header
 
+  @smoke
   Scenario: Sign in link points to the login page
     Given I am not logged in
     When I visit the matches page

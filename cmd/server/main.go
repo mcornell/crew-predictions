@@ -186,9 +186,7 @@ func main() {
 	}
 	rmh := handlers.NewRefreshMatchesHandler(matchStore, refreshFetcher, onRefresh)
 	mux.HandleFunc("POST /admin/refresh-matches", handlers.AdminAuth(rmh.Refresh))
-	bfh := handlers.NewBackfillUsersHandler(predStore, userStore)
-	mux.HandleFunc("POST /admin/backfill-users", handlers.AdminAuth(bfh.Backfill))
-	psh := handlers.NewPollScoresHandler(matchStore, resultStore, refreshFetcher, recalcFn)
+psh := handlers.NewPollScoresHandler(matchStore, resultStore, refreshFetcher, recalcFn)
 	mux.HandleFunc("POST /admin/poll-scores", handlers.AdminAuth(psh.Poll))
 
 	// Auth endpoints
@@ -217,6 +215,9 @@ func main() {
 			seedH := handlers.NewSeedPredictionHandler(predStore)
 			mux.HandleFunc("POST /admin/seed-prediction", seedH.Submit)
 			log.Printf("test seed endpoint registered at POST /admin/seed-prediction")
+			seedUH := handlers.NewSeedUserHandler(userStore)
+			mux.HandleFunc("POST /admin/seed-user", seedUH.Submit)
+			log.Printf("test seed endpoint registered at POST /admin/seed-user")
 		}
 		seedMH := handlers.NewSeedMatchHandler(memMatchStore)
 		mux.HandleFunc("POST /admin/seed-match", seedMH.Submit)

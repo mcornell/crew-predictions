@@ -2,11 +2,19 @@ package recalculator_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/mcornell/crew-predictions/internal/recalculator"
 	"github.com/mcornell/crew-predictions/internal/repository"
 )
+
+type errorGetResultStore struct{}
+
+func (e *errorGetResultStore) SaveResult(_ context.Context, _ repository.Result) error { return nil }
+func (e *errorGetResultStore) GetResult(_ context.Context, _ string) (*repository.Result, error) {
+	return nil, fmt.Errorf("simulated GetResult failure")
+}
 
 func TestRecalculate_SetsAllScoringSystemPoints(t *testing.T) {
 	ctx := context.Background()
@@ -16,7 +24,7 @@ func TestRecalculate_SetsAllScoringSystemPoints(t *testing.T) {
 
 	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "CrewFan"})
 	// Columbus home, exact 2-1 → AcesRadio=15, Upper90=3 (correct outcome + both scores), Grouchy=1 (win by 1)
-	preds.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "u1", Handle: "CrewFan", HomeGoals: 2, AwayGoals: 1})
+	preds.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "u1", HomeGoals: 2, AwayGoals: 1})
 	results.SaveResult(ctx, repository.Result{MatchID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", HomeGoals: 2, AwayGoals: 1})
 
 	recalculator.Recalculate(ctx, preds, results, users, "Columbus Crew")
@@ -96,7 +104,7 @@ func TestRecalculate_CreatesUserStoreEntryForPredictionOnlyUser(t *testing.T) {
 	results := repository.NewMemoryResultStore()
 
 	// User has a prediction but was never upserted to UserStore (e.g. seeded via admin endpoint)
-	preds.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "google:BlackAndGold", Handle: "BlackAndGold", HomeGoals: 2, AwayGoals: 1})
+	preds.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "google:BlackAndGold", HomeGoals: 2, AwayGoals: 1})
 	results.SaveResult(ctx, repository.Result{MatchID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", HomeGoals: 2, AwayGoals: 1})
 
 	if err := recalculator.Recalculate(ctx, preds, results, users, "Columbus Crew"); err != nil {
@@ -115,25 +123,28 @@ func TestRecalculate_CreatesUserStoreEntryForPredictionOnlyUser(t *testing.T) {
 	}
 }
 
-func TestRecalculate_SetsHandleForPredictionOnlyUser(t *testing.T) {
+func TestRecalculate_ReturnsErrorWhenGetResultFails(t *testing.T) {
 	ctx := context.Background()
 	users := repository.NewMemoryUserStore()
+	users.Upsert(ctx, repository.User{UserID: "u1"})
 	preds := repository.NewMemoryPredictionStore()
-	results := repository.NewMemoryResultStore()
+	preds.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "u1", HomeGoals: 1, AwayGoals: 0})
 
-	preds.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "google:SomeFan", Handle: "SomeFan", HomeGoals: 1, AwayGoals: 0})
-	results.SaveResult(ctx, repository.Result{MatchID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", HomeGoals: 1, AwayGoals: 0})
-
-	if err := recalculator.Recalculate(ctx, preds, results, users, "Columbus Crew"); err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	err := recalculator.Recalculate(ctx, preds, &errorGetResultStore{}, users, "Columbus Crew")
+	if err == nil {
+		t.Error("expected error when result store GetResult fails, got nil")
 	}
+}
 
-	u, err := users.GetByID(ctx, "google:SomeFan")
-	if err != nil {
-		t.Fatalf("expected user to be created: %v", err)
-	}
-	if u == nil || u.Handle != "SomeFan" {
-		t.Errorf("expected Handle SomeFan for prediction-only user, got %+v", u)
+func TestRecalculate_ReturnsErrorWhenPhantomUserUpsertFails(t *testing.T) {
+	ctx := context.Background()
+	preds := repository.NewMemoryPredictionStore()
+	preds.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "google:ghost", HomeGoals: 1, AwayGoals: 0})
+
+	// ErrorUpsertUserStore: GetAll returns empty (no error) → phantom user detected; Upsert returns error
+	err := recalculator.Recalculate(ctx, preds, repository.NewMemoryResultStore(), repository.NewErrorUpsertUserStore(), "Columbus Crew")
+	if err == nil {
+		t.Error("expected error when phantom user upsert fails, got nil")
 	}
 }
 
@@ -144,7 +155,7 @@ func TestRecalculate_SetsAcesRadioPoints(t *testing.T) {
 	results := repository.NewMemoryResultStore()
 
 	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "CrewFan"})
-	preds.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "u1", Handle: "CrewFan", HomeGoals: 2, AwayGoals: 1})
+	preds.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "u1", HomeGoals: 2, AwayGoals: 1})
 	results.SaveResult(ctx, repository.Result{MatchID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", HomeGoals: 2, AwayGoals: 1})
 
 	if err := recalculator.Recalculate(ctx, preds, results, users, "Columbus Crew"); err != nil {

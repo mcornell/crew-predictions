@@ -53,7 +53,6 @@ func (b *TwoOneBot) Predict(ctx context.Context, matches []models.Match) {
 		if err := b.predictions.Save(ctx, repository.Prediction{
 			MatchID:   m.ID,
 			UserID:    UserID,
-			Handle:    "TwoOneBot",
 			HomeGoals: homeGoals,
 			AwayGoals: awayGoals,
 		}); err != nil {

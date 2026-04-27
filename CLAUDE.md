@@ -25,6 +25,8 @@ This rule has been violated repeatedly. The specific failure pattern: new UI beh
 
 If you find yourself writing production code and cannot point to the specific failing e2e scenario that demands it, stop. You are violating this rule.
 
+**Before declaring any work done — feature OR refactor — run `go test ./...`, `npm run typecheck && npm run test:unit`, and `npm test`. All three must be green.** This applies to refactors and removals too, not just new features — observable behavior can regress without a new scenario failing first.
+
 ---
 
 ## Project Goal
@@ -40,14 +42,15 @@ Predictions ranking system for Columbus Crew fans. Sarcastic #Crew96 tone. Only 
 ## Test Commands
 
 ```bash
-go test ./...          # Go unit tests — always run the full suite
+go test ./...                                           # Go unit tests — always run the full suite
+FIRESTORE_EMULATOR_HOST=localhost:8081 go test -tags integration ./internal/repository/...  # Firestore integration tests (requires emulator)
 npm run typecheck      # TypeScript type check (vue-tsc --noEmit)
 npm run test:unit      # Vitest unit tests for Vue components
 npm test               # e2e BDD outer loop — runs against local emulator
 npm run test:smoke     # post-deploy smoke suite against staging
 ```
 
-**Before pushing:** `npm run typecheck`, `npm run test:unit`, and `npm test` must all be green locally first.
+**Before pushing:** `go test ./...`, `npm run typecheck`, `npm run test:unit`, and `npm test` must all be green locally first. When emulators are running, also run the integration tests — they use `//go:build integration` so `go test ./...` silently skips them.
 
 ---
 

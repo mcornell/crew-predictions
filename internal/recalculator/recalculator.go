@@ -46,9 +46,9 @@ func Recalculate(ctx context.Context, predictions repository.PredictionStore, re
 
 	// Also include users who have predictions but no UserStore entry yet.
 	// Upsert their profile so handle is available for leaderboard/match detail display.
-	for userID, preds := range predsByUser {
+	for userID := range predsByUser {
 		if _, exists := knownUsers[userID]; !exists {
-			u := repository.User{UserID: userID, Handle: preds[0].Handle}
+			u := repository.User{UserID: userID}
 			knownUsers[userID] = u
 			if err := users.Upsert(ctx, u); err != nil {
 				return fmt.Errorf("recalculate: upsert new user %s: %w", userID, err)

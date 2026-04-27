@@ -4,8 +4,11 @@ import { expect } from '@playwright/test';
 const { Given, When, Then } = createBdd();
 
 Given('{string} predicted {int}-{int} for match {string}', async ({ request }, handle: string, home: number, away: number, matchID: string) => {
+  await request.post('/admin/seed-user', {
+    form: { user_id: `google:${handle}`, handle },
+  });
   await request.post('/admin/seed-prediction', {
-    form: { match_id: matchID, user_id: `google:${handle}`, handle, home_goals: String(home), away_goals: String(away) },
+    form: { match_id: matchID, user_id: `google:${handle}`, home_goals: String(home), away_goals: String(away) },
   });
 });
 

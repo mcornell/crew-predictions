@@ -108,10 +108,7 @@ func (h *MatchDetailHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 	entries := make([]matchDetailPrediction, 0, len(preds))
 	for _, p := range preds {
-		handle := p.Handle
-		if h, ok := handleByUserID[p.UserID]; ok {
-			handle = h
-		}
+		handle := handleByUserID[p.UserID]
 		entry := matchDetailPrediction{
 			UserID:    p.UserID,
 			Handle:    handle,

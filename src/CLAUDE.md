@@ -25,4 +25,4 @@ Key patterns:
 - Locked state: blinking `▊` indicator in `--danger` red
 - Noise texture overlay on `body::before`; gold stripe on `body::after` (top of viewport, fixed)
 
-Typography: `Bebas Neue` (headings) · `DM Mono` (scores/metadata) · `Barlow` (body copy)
+Typography: `Barlow Condensed 800` (headings) · `DM Mono` (scores/metadata) · `Barlow` (body copy)

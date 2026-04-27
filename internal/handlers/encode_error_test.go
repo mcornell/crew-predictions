@@ -95,14 +95,6 @@ func TestProfileHandler_LogsEncodeError(t *testing.T) {
 	}
 }
 
-func TestBackfillHandler_LogsEncodeError(t *testing.T) {
-	h := handlers.NewBackfillUsersHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryUserStore())
-	req := httptest.NewRequest(http.MethodPost, "/admin/backfill-users", nil)
-	got := captureLog(t, func() { h.Backfill(newFailWriter(), req) })
-	if !strings.Contains(got, "encode") {
-		t.Errorf("expected encode error logged, got %q", got)
-	}
-}
 
 func TestMatchDetailHandler_LogsEncodeError(t *testing.T) {
 	matchStore := repository.NewMemoryMatchStore()
