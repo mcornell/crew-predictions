@@ -281,6 +281,8 @@ jobs:
     if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
     needs: deploy-staging
     runs-on: ubuntu-latest
+    permissions:
+      checks: write
 
     steps:
       - uses: actions/checkout@v6
@@ -461,6 +463,8 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     needs: deploy-prod
     runs-on: ubuntu-latest
+    permissions:
+      checks: write
 
     steps:
       - uses: actions/checkout@v6
