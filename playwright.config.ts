@@ -14,7 +14,7 @@ export default defineConfig({
     ? [['list'], ['github'], ['html', { open: 'never' }], ['junit', { outputFile: 'playwright-results.xml' }]]
     : [['list'], ['html', { open: 'never' }]],
   use: {
-    baseURL: 'http://localhost:8082',
+    baseURL: 'http://localhost:8083',
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
   },
@@ -29,17 +29,25 @@ export default defineConfig({
       workers: 1,
     },
   ],
-  webServer: {
-    command: 'vite build --logLevel silent && go run ./cmd/server',
-    port: 8082,
-    reuseExistingServer: !process.env.CI,
-    env: {
-      PORT: '8082',
-      FIREBASE_AUTH_EMULATOR_HOST: 'localhost:9099',
-      FIREBASE_PROJECT_ID: 'crew-predictions',
-      FIREBASE_API_KEY: 'fake-api-key',
-      FIREBASE_AUTH_DOMAIN: 'localhost',
-      TEST_MODE: '1',
+  webServer: [
+    {
+      command: process.env.CI ? './server' : 'go run ./cmd/server',
+      port: 8082,
+      reuseExistingServer: !process.env.CI,
+      env: {
+        PORT: '8082',
+        FIREBASE_AUTH_EMULATOR_HOST: 'localhost:9099',
+        FIREBASE_PROJECT_ID: 'crew-predictions',
+        FIREBASE_API_KEY: 'fake-api-key',
+        FIREBASE_AUTH_DOMAIN: 'localhost',
+        TEST_MODE: '1',
+      },
     },
-  },
+    {
+      command: process.env.CI ? 'vite preview --port 8083' : 'vite build --logLevel silent && vite preview --port 8083',
+      port: 8083,
+      reuseExistingServer: !process.env.CI,
+      timeout: 120000,
+    },
+  ],
 });

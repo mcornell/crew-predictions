@@ -4,7 +4,6 @@
 
 ### Infrastructure
 
-- [ ] **Decouple frontend from Docker image** — Go server currently embeds `dist/` and serves the SPA directly from Cloud Run as a fallback. Since Firebase Hosting is the real frontend entry point (and rewrites API paths to Cloud Run), the frontend doesn't need to be in the image. Refactor: remove `spaHandler`/`assetsHandler` from `main.go`, strip the Node/Vite build stage from the Dockerfile, build the Vue app as a separate CI step, and upload the artifact directly to GCS — no `docker cp` extraction needed. Smaller image, cleaner separation of concerns.
 
 ### Security
 
@@ -14,11 +13,6 @@
 
 - [ ] **Per-worker server isolation** — current parallelism runs two Playwright projects (`auth` + `app`) against a shared server. If the app group grows too slow, give each worker its own Go server instance on a separate port so they don't share in-memory state.
 
-### Low Priority
-
-- [ ] **Prod smoke suite** — unauthenticated-only scenarios (app loads, leaderboard/matches API responds, Vue hydrates); replaces current `curl` liveness check in `deploy-prod`.
-- [ ] **Real-data scoring accuracy test** — e2e scenario using actual 2025 Columbus Crew match results to validate the scoring engine against real outcomes. Get match data from user before writing.
-- [ ] **Remove stale `handle` from predictions** — `handle` on prediction documents is legacy; leaderboard and profile now source display names from `UserStore` by `userID`. Stop writing it on new predictions and drop the field once confirmed no UID-less predictions exist in prod.
 
 ---
 
@@ -30,6 +24,7 @@
 
 ## Decisions Made / Won't Do
 
+- **Remove stale `handle` from prediction documents** — field is dead weight in Firestore but Go ignores unknown fields on read; no runtime cost or correctness issue. Leave it; clean up opportunistically if a migration runs for another reason.
 - **Custom domain migration** — Firebase Hosting custom domain + Cloud Run domain mapping. Low priority — may never be needed.
 - **Cloud Scheduler for match refresh** — `POST /admin/refresh-matches` is called manually after deploy. No cron job needed.
 - **Match result entry UI** — admin page not needed; `POST /admin/results` API is sufficient for now.
@@ -43,13 +38,15 @@
 
 ## Done
 
+- [x] **Decouple frontend from Docker image** — removed `spaHandler`/`assetsHandler` from Go server and Node/Vite build stage from Dockerfile; Vue built as a separate CI step (`npm run build`); `vite preview` on :8083 proxies to Go API on :8082 for e2e tests, mirroring production architecture (Firebase Hosting → Cloud Run).
 - [x] **Live match experience** — Now Playing section shows in-progress (`state=in`) and delayed matches above Upcoming; pulsing gold LIVE badge with match clock (`48'`, `HT`), blinking red DELAYED badge; no prediction inputs; STATUS_DELAYED rejects predictions with 403. Now Playing card is a clickable link to match detail. Match detail page shows LIVE indicator bar with clock, projected scores computed on-the-fly from live ESPN data (`isProjected: true` flag, projected label above table), smart polling every ~30s (self-rescheduling setTimeout, active window = live/delayed or within 30min of kickoff up to 2h after kickoff). ESPN live scores parsed correctly — scores arrive as plain strings (`"2"`) during play, not objects; `scoreField.UnmarshalJSON` handles both forms. `displayClock` field propagated through model → Firestore → API → Vue.
 - [x] **Scoring engines** — AcesRadio (+15 exact, +10 correct result, −15 flipped scoreline, 0 otherwise); Upper 90 Club (+1 correct result, +1 correct Crew goals, +1 correct opponent goals, max +3); Grouchy™ (+1 for correct Columbus margin bucket: Win 2+, Win 1, Draw, Lose 1, Lose 2+). Rules page matches the actual engines. `internal/scoring` package; 100% coverage.
 - [x] **Leaderboard** — unified sortable grid table (RANK · PREDICTOR · ACES RADIO · UPPER 90 CLUB · GROUCHY™); click headers to sort; dynamic tied ranks; shows users with ≥1 prediction at 0 pts before results land; profile link disabled for legacy handle-only users (`hasProfile` field). Mobile: stacked cards, sort buttons, active format score shown in gold. Precomputed via `Recalculate()` — O(U) reads instead of O(P×R) per request.
 - [x] **Match detail page** — `/matches/:matchId`; unified sortable predictions table (RANK · PREDICTOR+PICK · ACES RADIO · UPPER 90 CLUB · GROUCHY™); prediction shown below handle; result cards link here, upcoming cards do not. `GET /api/matches/:matchId` returns per-format scores, `scoringFormats` array, live state, `isProjected`.
 - [x] **Match data & polling infrastructure** — in-memory `MatchStore` backed by `WriteThroughMatchStore` (Firestore durable writes + fast memory reads); survives restarts. ESPN client fetches four league endpoints (MLS, US Open Cup, Leagues Cup, CONCACAF Champions); `fetchCrewMatchesFrom(base)` injectable for tests. `MatchPoller` schedules per-match kickoff timers, ticks ESPN every 2 minutes while active, writes `ResultStore` on terminal status. Daily refresh at 4am ET resets pollers and runs `Backfill()` to catch results that finalized during downtime. `POST /admin/refresh-matches` and `POST /admin/poll-scores` for manual triggers and e2e.
 - [x] **Score recalculation** — `internal/recalculator.Recalculate()` recomputes all three format totals and prediction count per user from scratch; upserts to `UserStore`. Triggered after every match final (via `MatchPoller.SetOnResultSaved`) and on startup after `Backfill()`. Leaderboard and profile read precomputed values.
-- [x] **CI/CD pipeline** — GitHub Actions; Go unit tests + Vue unit tests + TypeScript typecheck + e2e BDD suite on every develop push; deploy-staging (Docker → Artifact Registry → Cloud Run staging → Firebase Hosting staging → smoke tests); deploy-prod on main merge (promotes staging artifact — no rebuild; Cloud Run prod → Firebase Hosting prod → liveness check → automatic rollback on failure). GCS frontend artifacts (`sha-{SHA}.zip` / `latest.zip` / `prod.zip` / `prod-previous.zip`). Concurrency cancel on develop. Workload Identity Federation for GCP auth (no stored keys). Firebase config env vars (`FIREBASE_PROJECT_ID`, `FIREBASE_API_KEY`, `FIREBASE_AUTH_DOMAIN`, `GOOGLE_CLOUD_PROJECT`) set correctly for both staging and prod via `--set-env-vars`.
+- [x] **CI/CD pipeline** — GitHub Actions; Go unit tests + Vue unit tests + TypeScript typecheck + e2e BDD suite on every develop push; deploy-staging (Docker → Artifact Registry → Cloud Run staging → Firebase Hosting staging → smoke tests with `dorny/test-reporter` step summary + JUnit artifact); deploy-prod on main merge (promotes staging artifact — no rebuild; Cloud Run prod → Firebase Hosting prod → prod smoke suite → automatic rollback on failure). GCS frontend artifacts (`sha-{SHA}.zip` / `latest.zip` / `prod.zip` / `prod-previous.zip`). Coverage tables (Go + Vue Cobertura) in unit test step summary. Concurrency cancel on develop. Workload Identity Federation for GCP auth (no stored keys). Firebase config env vars set correctly for both staging and prod via `--set-env-vars`.
+- [x] **Prod smoke suite** — `playwright.prod-smoke.ts`; 8 @smoke scenarios (6 shared e2e + 2 health API shape checks); no test accounts needed; runs automatically after `deploy-prod` in CI with step summary report. Smoke suite restructured as true subset of e2e: @smoke tag filters existing scenarios from `auth.feature`, `layout.feature`, `login.feature`. Staging smoke adds 6 live-auth scenarios (4 email + 2 Google redirect) on top.
 - [x] **Staging environment** — separate GCP project (`crew-predictions-staging`); Cloud Run + Firebase Hosting (`crew-predictions-staging.web.app`); staging smoke suite hits real staging URL with permanent test accounts (no account creation); `authDomain` correctly set to `.firebaseapp.com`.
 - [x] **Artifact Registry cleanup** — `infra/artifact-policy.json` keeps `prod`-tagged and `latest`-tagged images indefinitely; deletes everything else after 4 hours. `prod` tag applied only after staging smoke passes. Separate policy for Cloud Functions repo: keep 3 most recent, delete after 4 hours.
 - [x] **Firebase Analytics** — `initAnalytics()` guarded by `measurementId`, `appId`, and `projectId` (all three required — Firebase Installations needs `projectId` or it throws); called inside try/catch in `bootstrap()` so a crash never blocks `mount('#app')`.
