@@ -12,7 +12,9 @@ export default defineConfig({
   testDir,
   timeout: 30000,
   workers: 1,
-  reporter: [['list'], ['html', { outputFolder: 'smoke-report', open: debug ? 'always' : 'never' }]],
+  reporter: process.env.CI
+    ? [['list'], ['html', { outputFolder: 'smoke-report', open: 'never' }], ['junit', { outputFile: 'smoke-results.xml' }]]
+    : [['list'], ['html', { outputFolder: 'smoke-report', open: debug ? 'always' : 'never' }]],
   globalSetup: './e2e/smoke/global-setup.ts',
   globalTeardown: './e2e/smoke/global-teardown.ts',
   use: {
