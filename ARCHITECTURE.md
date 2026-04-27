@@ -70,7 +70,6 @@ Entry point: `cmd/server/main.go`
 | `POST` | `/admin/poll-scores` | — | Trigger a score poll immediately (fetch ESPN, update store, write terminal results) |
 | `DELETE` | `/admin/reset` | — | Reset in-memory stores (TEST_MODE=1 only) |
 | `POST` | `/admin/results` | — | Record a final match result for scoring |
-| `POST` | `/admin/backfill-users` | — | One-time: populate `users` collection from existing predictions |
 | `POST` | `/admin/seed-match` | — | Inject a fixture match (TEST_MODE=1 only) |
 | `POST` | `/admin/seed-prediction` | — | Inject a fixture prediction (TEST_MODE=1 only) |
 
@@ -140,7 +139,6 @@ Entry: `src/main.ts` → loads `/auth/config.js` → mounts Vue app
 predictions/{predictionId}
   MatchID:    string   // PascalCase — matches Go struct field names (no firestore: tags)
   UserID:     string   // "firebase:{uid}" or "bot:twooonebot"
-  Handle:     string   // display name at time of prediction
   HomeGoals:  int
   AwayGoals:  int
 
@@ -199,15 +197,18 @@ push to develop
     └── deploy-staging ── Docker build → Artifact Registry
                           Cloud Run deploy (crew-predictions-staging, us-east5)
                           Firebase Hosting deploy → crew-predictions-staging.web.app
-                          Smoke test suite (real staging URL, permanent accounts only — no account creation)
-                          Frontend artifact uploaded (retained 90 days)
+                          Frontend artifact uploaded to GCS (retained 90 days)
+                          smoke-staging: 13 @smoke scenarios (e2e subset + live-auth + health checks)
+                            → step summary report via dorny/test-reporter + JUnit artifact
 
 push to main (merge from develop)
     │
     └── deploy-prod ─────  Promote Docker image from staging artifact (no rebuild)
                            Cloud Run deploy (crew-predictions, us-east5)
                            Firebase Hosting deploy → crew-predictions.web.app
-                           curl liveness check
+                           Automatic rollback on failure
+                           smoke-prod: 8 @smoke scenarios (e2e subset + health checks)
+                             → step summary report via dorny/test-reporter + JUnit artifact
 ```
 
 **Artifact promotion:** prod deploys reuse the Docker image built for staging — no rebuild on merge. The frontend dist is downloaded from the staging workflow artifact and deployed directly.
