@@ -241,7 +241,6 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
-          load: true
           tags: |
             us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions:sha-${{ github.sha }}
             us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions:latest
@@ -261,11 +260,8 @@ jobs:
         env:
           STAGING_API_KEY: ${{ secrets.STAGING_FIREBASE_API_KEY }}
 
-      - name: Extract frontend from Docker image
-        run: |
-          docker create --name tmp us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions:sha-${{ github.sha }}
-          docker cp tmp:/app/dist ./dist
-          docker rm tmp
+      - name: Build frontend
+        run: npm run build
 
       - name: Deploy staging to Firebase Hosting
         run: npx firebase deploy --only hosting --project crew-predictions-staging --config firebase.staging.json

@@ -31,7 +31,7 @@ Browser (Vue SPA)
 
 **Local dev:** Vite dev server (:5173) proxies `/api`, `/auth`, `/admin` to Go server (:8080). Firebase Auth + Firestore emulators run on :9099 and :8081.
 
-**E2e test server** runs on :8082 (`PORT=8082` in Playwright's `webServer` env) so `npm test` can run alongside `dev.sh` without port conflicts.
+**E2e test server:** `npm test` starts two servers in parallel — Go API on :8082 (TEST_MODE) and Vite preview on :8083. Playwright's `baseURL` is :8083, which proxies `/api`/`/auth`/`/admin` to :8082, mirroring production (Firebase Hosting → Cloud Run). Both can run alongside `dev.sh` without port conflicts.
 
 ---
 

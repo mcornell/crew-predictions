@@ -195,12 +195,6 @@ psh := handlers.NewPollScoresHandler(matchStore, resultStore, refreshFetcher, re
 	mux.HandleFunc("GET /auth/logout", handlers.Logout)
 	mux.HandleFunc("GET /auth/config.js", serveFirebaseConfig)
 
-	// Vite build assets
-	mux.Handle("GET /assets/", assetsHandler("dist"))
-
-	// SPA shell — all other routes serve index.html
-	mux.Handle("GET /", spaHandler("dist"))
-
 	if os.Getenv("TEST_MODE") == "1" {
 		if memPred, ok := predStore.(*repository.MemoryPredictionStore); ok {
 			mux.HandleFunc("DELETE /admin/reset", func(w http.ResponseWriter, r *http.Request) {
@@ -303,17 +297,3 @@ func serveFirebaseConfig(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "window.__firebaseConfig = %s;", cfg)
 }
 
-func spaHandler(distDir string) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Cache-Control", "no-cache")
-		http.ServeFile(w, r, distDir+"/index.html")
-	})
-}
-
-func assetsHandler(distDir string) http.Handler {
-	fs := http.FileServer(http.Dir(distDir))
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
-		fs.ServeHTTP(w, r)
-	})
-}

@@ -46,6 +46,6 @@ Always run `npx bddgen` after editing a `.feature` file.
 
 ## Environment
 
-`npm test` builds Vue then starts its own Go server on :8082 (TEST_MODE). Emulators must already be running (`./dev.sh` handles that). `dev.sh` and `npm test` can run simultaneously — no port conflict.
+`npm test` starts two servers in parallel: the Go API server on :8082 (TEST_MODE) and `vite preview` on :8083. Playwright's `baseURL` is :8083, which proxies `/api`, `/auth`, and `/admin` to :8082 — mirroring the production architecture (Firebase Hosting → Cloud Run). Emulators must already be running (`./dev.sh` handles that). `dev.sh` and `npm test` can run simultaneously — no port conflict.
 
 Do **not** set `GOOGLE_CLOUD_PROJECT` in the playwright `webServer` env — it triggers Firestore and breaks test isolation.

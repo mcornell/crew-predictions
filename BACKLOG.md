@@ -4,7 +4,6 @@
 
 ### Infrastructure
 
-- [ ] **Decouple frontend from Docker image** — Go server currently embeds `dist/` and serves the SPA directly from Cloud Run as a fallback. Since Firebase Hosting is the real frontend entry point (and rewrites API paths to Cloud Run), the frontend doesn't need to be in the image. Refactor: remove `spaHandler`/`assetsHandler` from `main.go`, strip the Node/Vite build stage from the Dockerfile, build the Vue app as a separate CI step, and upload the artifact directly to GCS — no `docker cp` extraction needed. Smaller image, cleaner separation of concerns.
 
 ### Security
 
@@ -39,6 +38,7 @@
 
 ## Done
 
+- [x] **Decouple frontend from Docker image** — removed `spaHandler`/`assetsHandler` from Go server and Node/Vite build stage from Dockerfile; Vue built as a separate CI step (`npm run build`); `vite preview` on :8083 proxies to Go API on :8082 for e2e tests, mirroring production architecture (Firebase Hosting → Cloud Run).
 - [x] **Live match experience** — Now Playing section shows in-progress (`state=in`) and delayed matches above Upcoming; pulsing gold LIVE badge with match clock (`48'`, `HT`), blinking red DELAYED badge; no prediction inputs; STATUS_DELAYED rejects predictions with 403. Now Playing card is a clickable link to match detail. Match detail page shows LIVE indicator bar with clock, projected scores computed on-the-fly from live ESPN data (`isProjected: true` flag, projected label above table), smart polling every ~30s (self-rescheduling setTimeout, active window = live/delayed or within 30min of kickoff up to 2h after kickoff). ESPN live scores parsed correctly — scores arrive as plain strings (`"2"`) during play, not objects; `scoreField.UnmarshalJSON` handles both forms. `displayClock` field propagated through model → Firestore → API → Vue.
 - [x] **Scoring engines** — AcesRadio (+15 exact, +10 correct result, −15 flipped scoreline, 0 otherwise); Upper 90 Club (+1 correct result, +1 correct Crew goals, +1 correct opponent goals, max +3); Grouchy™ (+1 for correct Columbus margin bucket: Win 2+, Win 1, Draw, Lose 1, Lose 2+). Rules page matches the actual engines. `internal/scoring` package; 100% coverage.
 - [x] **Leaderboard** — unified sortable grid table (RANK · PREDICTOR · ACES RADIO · UPPER 90 CLUB · GROUCHY™); click headers to sort; dynamic tied ranks; shows users with ≥1 prediction at 0 pts before results land; profile link disabled for legacy handle-only users (`hasProfile` field). Mobile: stacked cards, sort buttons, active format score shown in gold. Precomputed via `Recalculate()` — O(U) reads instead of O(P×R) per request.
