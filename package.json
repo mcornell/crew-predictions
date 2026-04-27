@@ -15,7 +15,8 @@
     "test:report": "playwright show-report",
     "test:gen": "bddgen",
     "test:smoke": "bddgen --config playwright.smoke.ts && playwright test --config playwright.smoke.ts",
-    "test:smoke:debug": "SMOKE_DEBUG=1 bddgen --config playwright.smoke.ts && SMOKE_DEBUG=1 playwright test --config playwright.smoke.ts"
+    "test:smoke:debug": "SMOKE_DEBUG=1 bddgen --config playwright.smoke.ts && SMOKE_DEBUG=1 playwright test --config playwright.smoke.ts",
+    "test:smoke:prod": "bddgen --config playwright.prod-smoke.ts && playwright test --config playwright.prod-smoke.ts"
   },
   "repository": {
     "type": "git",

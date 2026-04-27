@@ -456,3 +456,60 @@ jobs:
           else
             echo "::warning::No prod-previous.zip found — Firebase Hosting not rolled back (first deploy?)"
           fi
+
+  smoke-prod:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: deploy-prod
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Get Playwright version
+        id: playwright-version
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v5
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Playwright system deps
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Run prod smoke tests
+        run: npm run test:smoke:prod
+        env:
+          PROD_URL: https://crew-predictions.web.app
+
+      - name: Prod smoke test report
+        uses: dorny/test-reporter@v3
+        if: always()
+        with:
+          name: Prod Smoke Tests
+          path: prod-smoke-results.xml
+          reporter: java-junit
+          list-tests: failed
+          fail-on-error: false
+          fail-on-empty: false
+
+      - name: Upload prod smoke report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: prod-smoke-report
+          path: prod-smoke-report/
+          retention-days: 5

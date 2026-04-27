@@ -7,6 +7,7 @@ Feature: Login
     Then I should be on the matches page
     And I should see "testfan@example.com" in the header
 
+  @smoke
   Scenario: Login page links to sign-up for new users
     When I visit the login page
     And I click the "Sign up" link
