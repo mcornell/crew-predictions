@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: ${{ github.ref == 'refs/heads/develop' }}
 
 jobs:
-  test:
+  build-and-test:
     if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     permissions:
@@ -125,6 +125,12 @@ jobs:
       - name: TypeScript type check
         run: npm run typecheck
 
+      - name: Build frontend
+        run: npm run build
+
+      - name: Build Go server binary
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o server ./cmd/server
+
       - name: Start Firebase emulators
         run: npx firebase emulators:start --only auth,firestore --project crew-predictions &
         env:
@@ -202,13 +208,28 @@ jobs:
             test-results/
           retention-days: 3
 
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-dist
+          path: dist/
+          retention-days: 1
+
+      - name: Upload server binary artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: server-binary
+          path: server
+          retention-days: 1
+
   deploy-staging:
     if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
-    needs: test
+    needs: build-and-test
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
+      actions: read
 
     steps:
       - uses: actions/checkout@v6
@@ -219,6 +240,21 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: frontend-dist
+          path: dist/
+
+      - name: Download server binary artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: server-binary
+          path: .
+
+      - name: Make server binary executable
+        run: chmod +x server
 
       - id: auth
         uses: google-github-actions/auth@v3
@@ -240,6 +276,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
+          context: .
           push: true
           tags: |
             us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions:sha-${{ github.sha }}
@@ -259,9 +296,6 @@ jobs:
             --quiet
         env:
           STAGING_API_KEY: ${{ secrets.STAGING_FIREBASE_API_KEY }}
-
-      - name: Build frontend
-        run: npm run build
 
       - name: Deploy staging to Firebase Hosting
         run: npx firebase deploy --only hosting --project crew-predictions-staging --config firebase.staging.json

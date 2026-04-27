@@ -189,12 +189,17 @@ All deploys flow through GitHub Actions (`.github/workflows/ci.yml`).
 ```
 push to develop
     │
-    ├── test job ──────── Go unit tests (coverage report + pass/skip/fail summary → step summary)
+    ├── build-and-test ── Go unit tests (coverage report + pass/skip/fail summary → step summary)
     │                    Vue unit tests (v8 coverage table → step summary)
     │                    TypeScript type check
-    │                    e2e BDD suite — Playwright, Firebase emulators (JUnit → step summary via dorny/test-reporter@v3)
+    │                    npm run build → dist/
+    │                    CGO_ENABLED=0 go build → server binary
+    │                    Firebase emulators → Go integration tests
+    │                    e2e BDD suite — Playwright (JUnit → step summary via dorny/test-reporter@v3)
+    │                    Upload dist/ + server binary as GitHub Actions artifacts
     │
-    └── deploy-staging ── Docker build → Artifact Registry
+    └── deploy-staging ── Download dist/ + server binary artifacts
+                          Docker build (single-stage, copies pre-built binary) → Artifact Registry
                           Cloud Run deploy (crew-predictions-staging, us-east5)
                           Firebase Hosting deploy → crew-predictions-staging.web.app
                           Frontend artifact uploaded to GCS (retained 90 days)

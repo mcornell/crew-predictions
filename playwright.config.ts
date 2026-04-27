@@ -31,7 +31,7 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: 'go run ./cmd/server',
+      command: process.env.CI ? './server' : 'go run ./cmd/server',
       port: 8082,
       reuseExistingServer: !process.env.CI,
       env: {
@@ -44,7 +44,7 @@ export default defineConfig({
       },
     },
     {
-      command: 'vite build --logLevel silent && vite preview --port 8083',
+      command: process.env.CI ? 'vite preview --port 8083' : 'vite build --logLevel silent && vite preview --port 8083',
       port: 8083,
       reuseExistingServer: !process.env.CI,
       timeout: 120000,
