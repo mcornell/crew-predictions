@@ -27,7 +27,6 @@
             </div>
             <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
           </div>
-          <div class="btn-spacer"></div>
         </RouterLink>
       </div>
     </section>
@@ -70,7 +69,6 @@
             <button v-if="savedPredictions[match.id]" class="btn-lock btn-unlock" @click="unlock(match.id)">Unlock</button>
             <button v-else class="btn-lock" @click="submit(match.id)">Predict</button>
           </template>
-          <div v-else class="btn-spacer"></div>
         </div>
       </div>
     </section>
@@ -99,7 +97,6 @@
               Your pick: {{ savedPredictions[match.id]!.homeGoals }} – {{ savedPredictions[match.id]!.awayGoals }}
             </div>
           </div>
-          <div class="btn-spacer"></div>
         </RouterLink>
       </div>
     </section>

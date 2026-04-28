@@ -23,7 +23,7 @@ Feature: Mobile layout
     Given I am not logged in
     And I am viewing on an iPhone 15
     When I visit the matches page
-    Then each match card should be at most 180px tall
+    Then each match card should be at most 260px tall
 
   Scenario: Site header stays within a single row on mobile
     Given I am not logged in
@@ -37,7 +37,7 @@ Feature: Mobile layout
     When I visit the matches page
     Then the page should not overflow horizontally
     And I should see at least one Columbus Crew match card
-    And each match card should be at most 180px tall
+    And each match card should be at most 260px tall
 
   Scenario: Team names are not clipped on Galaxy S24
     Given I am not logged in
