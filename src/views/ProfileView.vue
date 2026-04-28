@@ -63,7 +63,6 @@
 <script setup lang="ts">
 import { ref, inject, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { updateDisplayName } from '../firebase'
 import type { Ref } from 'vue'
 
 interface Standing { points: number; rank: number }
@@ -113,9 +112,9 @@ onMounted(async () => {
 async function handleSubmit() {
   error.value = ''
   try {
-    await updateDisplayName(displayName.value)
     const body = new URLSearchParams({ handle: displayName.value, location: location.value })
-    await fetch('/auth/handle', { method: 'POST', body })
+    const res = await fetch('/auth/handle', { method: 'POST', body })
+    if (!res.ok) throw new Error('save failed')
     router.push('/matches')
   } catch {
     error.value = 'Could not save profile. Please try again.'
