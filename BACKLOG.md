@@ -2,6 +2,21 @@
 
 ## Up Next
 
+### Season History & Year-End Reset
+
+- [ ] **Season archive and leaderboard reset** — At the end of each season, snapshot the final leaderboard standings into a `seasons/{seasonID}` Firestore collection, then zero out user scores for the new season. The leaderboard UI gets a season selector (e.g. "2026", "2027 Short", "2027–28") so anyone can browse historical standings. The current leaderboard always shows the active season.
+
+  Season cadence to plan for:
+  - **2026** — current full MLS season
+  - **2027 Short** — transition season as MLS shifts to fall–spring calendar
+  - **2027–28**, **2028–29**, etc. — full fall–spring seasons going forward
+
+  Key design questions to answer before writing tests:
+  - What triggers a reset? Manual admin call, or automatic on a date?
+  - Does "reset" zero out scores in the `users` collection, or write to a new sub-collection?
+  - How are predictions and results from prior seasons handled — archived or left in place?
+  - What's the URL shape for historical leaderboards: `/leaderboard?season=2026` or `/leaderboard/2026`?
+
 ### Infrastructure
 
 
