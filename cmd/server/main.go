@@ -144,6 +144,7 @@ func main() {
 	ph := handlers.NewPredictionsHandler(predStore, matchFetcher)
 	mux.HandleFunc("POST /api/predictions", ph.Submit)
 	seasonStore := repository.NewMemorySeasonStore()
+	configStore := repository.NewMemoryConfigStore("2026")
 	lh := handlers.NewLeaderboardHandler(predStore, resultStore, userStore, seasonStore, "Columbus Crew")
 	prh := handlers.NewProfileHandler(predStore, resultStore, userStore, "Columbus Crew")
 	rl := handlers.NewRateLimiter(60, 60)
@@ -165,13 +166,15 @@ func main() {
 	}
 
 	recalcFn := func(ctx context.Context) {
-		if err := recalculator.Recalculate(ctx, predStore, resultStore, userStore, "Columbus Crew"); err != nil {
+		if err := recalculator.Recalculate(ctx, predStore, resultStore, userStore, nil, recalculator.SeasonWindow{}, "Columbus Crew"); err != nil {
 			slog.Error("recalculate failed", "error", err)
 		}
 	}
 
 	rh := handlers.NewResultsHandler(resultStore, recalcFn)
 	mux.HandleFunc("POST /admin/results", handlers.AdminAuth(rh.Submit))
+	csh := handlers.NewCloseSeasonHandler(userStore, seasonStore, configStore)
+	mux.HandleFunc("POST /admin/seasons/close", handlers.AdminAuth(csh.Close))
 	var matchPoller *poll.MatchPoller
 	if os.Getenv("TEST_MODE") != "1" {
 		matchPoller = poll.NewMatchPoller(
@@ -208,6 +211,7 @@ psh := handlers.NewPollScoresHandler(matchStore, resultStore, refreshFetcher, re
 				}
 				matchStore.Reset()
 				seasonStore.Reset()
+				configStore.Reset()
 				w.WriteHeader(http.StatusNoContent)
 			})
 			log.Printf("test reset endpoint registered at DELETE /admin/reset")

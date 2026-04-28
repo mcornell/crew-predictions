@@ -16,3 +16,21 @@ When('I visit the historical leaderboard for season {string}', async ({ page }, 
 Then('I should see a season selector on the leaderboard page', async ({ page }) => {
   await expect(page.getByTestId('season-selector')).toBeVisible()
 });
+
+When('an admin closes the current season', async ({ request }) => {
+  await request.post('/admin/seasons/close', {
+    headers: { 'X-Admin-Key': 'test-admin-key' }
+  })
+});
+
+Then('visiting the historical leaderboard for season {string} shows {string} with {int} Aces Radio points', async ({ page }, season: string, handle: string, points: number) => {
+  await page.goto(`/leaderboard/${season}`)
+  const row = page.locator('[data-testid="leaderboard-row"]').filter({ hasText: handle }).first()
+  await expect(row.locator('[data-testid="leaderboard-aces-points"]')).toHaveText(String(points))
+});
+
+Then('the current leaderboard shows {string} with {int} Aces Radio points', async ({ page }, handle: string, points: number) => {
+  await page.goto('/leaderboard')
+  const row = page.locator('[data-testid="leaderboard-row"]').filter({ hasText: handle }).first()
+  await expect(row.locator('[data-testid="leaderboard-aces-points"]')).toHaveText(String(points))
+});

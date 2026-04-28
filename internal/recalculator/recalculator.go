@@ -3,12 +3,26 @@ package recalculator
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/mcornell/crew-predictions/internal/repository"
 	"github.com/mcornell/crew-predictions/internal/scoring"
 )
 
-func Recalculate(ctx context.Context, predictions repository.PredictionStore, results repository.ResultStore, users repository.UserStore, targetTeam string) error {
+type SeasonWindow struct {
+	Start time.Time
+	End   time.Time
+}
+
+func (w SeasonWindow) IsZero() bool {
+	return w.Start.IsZero() && w.End.IsZero()
+}
+
+func (w SeasonWindow) Contains(t time.Time) bool {
+	return !t.Before(w.Start) && t.Before(w.End)
+}
+
+func Recalculate(ctx context.Context, predictions repository.PredictionStore, results repository.ResultStore, users repository.UserStore, kickoffFor func(matchID string) (time.Time, bool), window SeasonWindow, targetTeam string) error {
 	allPredictions, err := predictions.GetAll(ctx)
 	if err != nil {
 		return fmt.Errorf("recalculate: get predictions: %w", err)
@@ -59,6 +73,12 @@ func Recalculate(ctx context.Context, predictions repository.PredictionStore, re
 	for _, u := range knownUsers {
 		var acesTotal, u90Total, grouchyTotal, predCount int
 		for _, p := range predsByUser[u.UserID] {
+			if kickoffFor != nil && !window.IsZero() {
+				kickoff, ok := kickoffFor(p.MatchID)
+				if !ok || !window.Contains(kickoff) {
+					continue
+				}
+			}
 			predCount++
 			r := resultCache[p.MatchID]
 			if r == nil {
