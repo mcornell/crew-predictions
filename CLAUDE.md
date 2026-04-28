@@ -20,10 +20,12 @@ The failure mode is always the same: after committing, `git push` feels like the
 This rule has been violated repeatedly. The specific failure pattern: new UI behavior (e.g. "Now Playing" section) gets implemented by changing frontend filtering logic without first writing a failing e2e scenario. The result is the feature ships with zero e2e coverage AND the filtering change breaks 18 existing tests. Both outcomes happened in the same session. The user was angry.
 
 **The outer BDD loop is not optional.** Before touching any production file for a new feature:
-1. Write the Gherkin scenario. Run `npm test`. Confirm it fails for the right reason.
+1. Write the Gherkin scenario. Immediately create stub step definitions so the suite can run (missing steps block all other tests). Run `npm test`. Confirm it fails for the right reason — the new scenario fails, all others pass.
 2. Only then open any `.vue`, `.go`, or `.ts` production file.
 
 If you find yourself writing production code and cannot point to the specific failing e2e scenario that demands it, stop. You are violating this rule.
+
+**Run all three test suites at every commit, not just at the end.** `go test ./...`, `npm run typecheck && npm run test:unit`, and `npm test` must all be green before every commit during a feature build. "I only changed Go code" is not an excuse to skip `npm test` — a feature file with missing step definitions blocks the entire e2e suite and hides regressions in unrelated tests.
 
 **Before declaring any work done — feature OR refactor — run `go test ./...`, `npm run typecheck && npm run test:unit`, and `npm test`. All three must be green.** This applies to refactors and removals too, not just new features — observable behavior can regress without a new scenario failing first.
 
