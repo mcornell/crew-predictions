@@ -143,10 +143,14 @@ func main() {
 	mux.HandleFunc("GET /api/me", meh.Get)
 	ph := handlers.NewPredictionsHandler(predStore, matchFetcher)
 	mux.HandleFunc("POST /api/predictions", ph.Submit)
-	lh := handlers.NewLeaderboardHandler(predStore, resultStore, userStore, "Columbus Crew")
+	seasonStore := repository.NewMemorySeasonStore()
+	lh := handlers.NewLeaderboardHandler(predStore, resultStore, userStore, seasonStore, "Columbus Crew")
 	prh := handlers.NewProfileHandler(predStore, resultStore, userStore, "Columbus Crew")
 	rl := handlers.NewRateLimiter(60, 60)
 	mux.Handle("GET /api/leaderboard", rl.Middleware(http.HandlerFunc(lh.APIList)))
+	mux.Handle("GET /api/leaderboard/{season}", rl.Middleware(http.HandlerFunc(lh.APIGetSeason)))
+	ssh := handlers.NewSeasonsHandler()
+	mux.Handle("GET /api/seasons", rl.Middleware(http.HandlerFunc(ssh.APIList)))
 	mux.Handle("GET /api/profile/{userID}", rl.Middleware(http.HandlerFunc(prh.Get)))
 	mdh := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew")
 	mux.HandleFunc("GET /api/matches/{matchId}", mdh.Get)
@@ -203,6 +207,7 @@ psh := handlers.NewPollScoresHandler(matchStore, resultStore, refreshFetcher, re
 					memResult.Reset()
 				}
 				matchStore.Reset()
+				seasonStore.Reset()
 				w.WriteHeader(http.StatusNoContent)
 			})
 			log.Printf("test reset endpoint registered at DELETE /admin/reset")
@@ -216,6 +221,9 @@ psh := handlers.NewPollScoresHandler(matchStore, resultStore, refreshFetcher, re
 		seedMH := handlers.NewSeedMatchHandler(memMatchStore)
 		mux.HandleFunc("POST /admin/seed-match", seedMH.Submit)
 		log.Printf("test seed endpoint registered at POST /admin/seed-match")
+		seedSH := handlers.NewSeedSeasonHandler(seasonStore)
+		mux.HandleFunc("POST /admin/seed-season", seedSH.Submit)
+		log.Printf("test seed endpoint registered at POST /admin/seed-season")
 	}
 
 	if os.Getenv("TEST_MODE") != "1" {

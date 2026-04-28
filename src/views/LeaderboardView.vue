@@ -1,6 +1,17 @@
 <template>
   <div class="page">
-    <h1 class="page-title">Leaderboard</h1>
+    <div class="lb-season-bar">
+      <h1 class="page-title">Leaderboard</h1>
+      <select
+        v-if="seasons.length > 0"
+        data-testid="season-selector"
+        class="season-selector"
+        :value="activeSeason"
+        @change="onSeasonChange"
+      >
+        <option v-for="s in seasons" :key="s.id" :value="s.id">{{ s.name }}</option>
+      </select>
+    </div>
 
     <p v-if="loading" data-testid="loading" class="status-msg">Loading…</p>
     <p v-else-if="error" data-testid="error" class="status-msg status-msg--error">{{ error }}</p>
@@ -81,7 +92,7 @@
             :class="{ 'lb-pts--active': activeSort === 'upper90' }"
             data-testid="leaderboard-upper90-points"
             data-label="Upper 90 Club"
-          >{{ entry.upper90ClubPoints }}</span>
+          >{{ upper90For(entry) }}</span>
           <span
             class="lb-cell lb-pts"
             :class="{ 'lb-pts--active': activeSort === 'grouchy' }"
@@ -97,41 +108,83 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 interface Entry {
-  userID: string
+  userID?: string
   handle: string
   acesRadioPoints: number
-  upper90ClubPoints: number
+  upper90ClubPoints?: number
+  upper90Points?: number
   grouchyPoints: number
-  hasProfile: boolean
+  hasProfile?: boolean
 }
 
+interface Season {
+  id: string
+  name: string
+  isCurrent: boolean
+}
+
+const route = useRoute()
+const router = useRouter()
+
 const entries = ref<Entry[]>([])
+const seasons = ref<Season[]>([])
 const activeSort = ref<'aces' | 'upper90' | 'grouchy'>('aces')
 const loading = ref(true)
 const error = ref<string | null>(null)
 
+const activeSeason = computed(() => route.params.season as string | undefined)
+
+function upper90For(e: Entry): number {
+  return e.upper90ClubPoints ?? e.upper90Points ?? 0
+}
+
 const sortedEntries = computed(() => {
-  const key = activeSort.value === 'aces' ? 'acesRadioPoints' : activeSort.value === 'upper90' ? 'upper90ClubPoints' : 'grouchyPoints'
-  return [...entries.value].sort((a, b) => b[key] - a[key])
+  const key = activeSort.value
+  return [...entries.value].sort((a, b) => {
+    if (key === 'aces') return b.acesRadioPoints - a.acesRadioPoints
+    if (key === 'upper90') return upper90For(b) - upper90For(a)
+    return b.grouchyPoints - a.grouchyPoints
+  })
 })
 
 function rankFor(i: number): number {
   if (i === 0) return 1
-  const key = activeSort.value === 'aces' ? 'acesRadioPoints' : activeSort.value === 'upper90' ? 'upper90ClubPoints' : 'grouchyPoints'
-  if (sortedEntries.value[i][key] === sortedEntries.value[i - 1][key]) return rankFor(i - 1)
+  const a = sortedEntries.value[i]
+  const b = sortedEntries.value[i - 1]
+  const key = activeSort.value
+  const av = key === 'aces' ? a.acesRadioPoints : key === 'upper90' ? upper90For(a) : a.grouchyPoints
+  const bv = key === 'aces' ? b.acesRadioPoints : key === 'upper90' ? upper90For(b) : b.grouchyPoints
+  if (av === bv) return rankFor(i - 1)
   return i + 1
+}
+
+function onSeasonChange(e: Event) {
+  const id = (e.target as HTMLSelectElement).value
+  const selected = seasons.value.find(s => s.id === id)
+  if (selected?.isCurrent) {
+    router.push('/leaderboard')
+  } else {
+    router.push(`/leaderboard/${id}`)
+  }
 }
 
 onMounted(async () => {
   document.title = 'Leaderboard — Crew Predictions'
-  const res = await fetch('/api/leaderboard')
-  if (res.ok) {
-    const data = await res.json()
+  const seasonID = route.params.season as string | undefined
+  const url = seasonID ? `/api/leaderboard/${seasonID}` : '/api/leaderboard'
+  const [lbRes, seasonsRes] = await Promise.all([fetch(url), fetch('/api/seasons')])
+  if (lbRes.ok) {
+    const data = await lbRes.json()
     entries.value = data.entries ?? []
   } else {
     error.value = 'Could not load leaderboard. Try again later.'
+  }
+  if (seasonsRes.ok) {
+    const data = await seasonsRes.json()
+    seasons.value = data.seasons ?? []
   }
   loading.value = false
 })
