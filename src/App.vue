@@ -38,8 +38,8 @@ onMounted(async () => {
         return
       }
     }
-  } catch {
-    // redirect result failed — fall through and fetch current session state
+  } catch (err) {
+    console.error('Google redirect result failed:', err)
   }
   await fetchUser()
 })

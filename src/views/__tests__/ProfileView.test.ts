@@ -4,10 +4,6 @@ import { ref } from 'vue'
 import ProfileView from '../ProfileView.vue'
 import { makeRouter } from '../../test-utils/router'
 
-vi.mock('../../firebase', () => ({
-  updateDisplayName: vi.fn(),
-}))
-
 const profileData = {
   userID: 'firebase:abc',
   handle: 'CrewFan',
@@ -66,8 +62,6 @@ describe('ProfileView', () => {
   })
 
   it('posts handle and location on save, then navigates to /matches', async () => {
-    const { updateDisplayName } = await import('../../firebase')
-    vi.mocked(updateDisplayName).mockResolvedValue()
     const fetchMock = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(profileData) })
       .mockResolvedValueOnce({ ok: true })
@@ -126,9 +120,15 @@ describe('ProfileView', () => {
   })
 
   it('shows error when save fails', async () => {
-    const { updateDisplayName } = await import('../../firebase')
-    vi.mocked(updateDisplayName).mockRejectedValue(new Error('network'))
-    const wrapper = await mountProfile('firebase:abc', 'firebase:abc')
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(profileData) })
+      .mockResolvedValueOnce({ ok: false })
+    vi.stubGlobal('fetch', fetchMock)
+    const r = makeRouter()
+    r.addRoute({ path: '/profile/:userID', component: ProfileView })
+    await r.push('/profile/firebase:abc')
+    const currentUser = ref({ userID: 'firebase:abc', handle: 'CrewFan', emailVerified: true })
+    const wrapper = mount(ProfileView, { global: { plugins: [r], provide: { currentUser } } })
     await flushPromises()
 
     await wrapper.find('form').trigger('submit')

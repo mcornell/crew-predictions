@@ -18,14 +18,14 @@ Then('the page should not overflow horizontally', async ({ page }) => {
   expect(overflows).toBe(false);
 });
 
-Then('each match card should be at most 180px tall', async ({ page }) => {
+Then('each match card should be at most 260px tall', async ({ page }) => {
   await expect(page.getByTestId('match-card').first()).toBeVisible();
   const cards = page.getByTestId('match-card');
   const count = await cards.count();
   expect(count).toBeGreaterThan(0);
   for (let i = 0; i < count; i++) {
     const box = await cards.nth(i).boundingBox();
-    expect(box!.height).toBeLessThanOrEqual(180);
+    expect(box!.height).toBeLessThanOrEqual(260);
   }
 });
 

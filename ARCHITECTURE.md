@@ -18,15 +18,28 @@
 
 ## How the Pieces Fit
 
-```
-Browser (Vue SPA)
-    │
-    ├── /api/*  ──────────────────► Go server (Cloud Run :8080)
-    │                                    │
-    ├── /auth/* ──────────────────►      ├── Firebase Admin SDK (token verification)
-    │                                    ├── Firestore (predictions, results)
-    └── /assets/* ─────────────────      └── ESPN API (match data)
-         (Vite build → dist/)
+```mermaid
+graph LR
+    Browser["Browser\n(Vue SPA)"]
+
+    subgraph Firebase ["Firebase (CDN)"]
+        FH["Firebase Hosting\n/assets/*"]
+    end
+
+    subgraph GCP ["GCP Cloud Run"]
+        CR["Go Server :8080\n/api/* /auth/* /admin/*"]
+    end
+
+    subgraph Data
+        FS[("Firestore\npredictions · results\nusers · matches")]
+        ESPN["ESPN API\n(match data)"]
+    end
+
+    Browser -- "/assets/*" --> FH
+    Browser -- "/api/* /auth/*" --> FH
+    FH -- "rewrite" --> CR
+    CR --> FS
+    CR --> ESPN
 ```
 
 **Local dev:** Vite dev server (:5173) proxies `/api`, `/auth`, `/admin` to Go server (:8080). Firebase Auth + Firestore emulators run on :9099 and :8081.
@@ -94,18 +107,45 @@ ESPN data is fetched via `internal/espn.FetchCrewMatches`, which hits four leagu
 ## Auth Flow
 
 ### Email/Password
-1. User submits email + password on `/login` (or creates account on `/signup`)
-2. Vue calls `signInWithEmailAndPassword` / `createUserWithEmailAndPassword`
-3. Gets ID token → POSTs to `POST /auth/session` as form data
-4. Go server verifies token via Firebase Admin SDK, sets `HttpOnly` session cookie
-5. Session cookie = base64-encoded JSON `{ userID, handle, provider }`
-6. Subsequent requests: Go reads cookie via `UserFromSession(r)`
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Vue
+    participant FirebaseAuth as Firebase Auth
+    participant Go as Go Server
+
+    User->>Vue: submit email + password
+    Vue->>FirebaseAuth: signInWithEmailAndPassword()
+    FirebaseAuth-->>Vue: ID token
+    Vue->>Go: POST /auth/session (form: id_token)
+    Go->>FirebaseAuth: VerifyIDToken()
+    FirebaseAuth-->>Go: decoded token (uid, email)
+    Go-->>Vue: Set-Cookie: session (HttpOnly, Secure)
+    Note over Go: cookie = base64 JSON {userID, handle, provider}
+    Vue->>Go: subsequent requests (cookie auto-sent)
+    Go-->>Vue: authenticated response
+```
 
 ### Google SSO
-1. User clicks "Sign in with Google" on `/login` or `/signup`
-2. Vue calls `signInWithRedirect` (redirect — not popup — for mobile compatibility)
-3. After redirect back, `App.vue` calls `getRedirectResult()` on mount
-4. Same session cookie flow as email/password from step 3
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Vue
+    participant FirebaseAuth as Firebase Auth
+    participant Go as Go Server
+
+    User->>Vue: click "Sign in with Google"
+    Vue->>FirebaseAuth: signInWithRedirect()
+    FirebaseAuth-->>User: Google OAuth redirect
+    User-->>FirebaseAuth: complete OAuth
+    FirebaseAuth-->>Vue: redirect back to app
+    Vue->>FirebaseAuth: getRedirectResult() on mount
+    FirebaseAuth-->>Vue: ID token
+    Vue->>Go: POST /auth/session (same as email flow)
+    Go-->>Vue: Set-Cookie: session
+```
 
 ---
 
@@ -186,34 +226,49 @@ matches/{matchID}
 
 All deploys flow through GitHub Actions (`.github/workflows/ci.yml`).
 
-```
-push to develop
-    │
-    ├── build-and-test ── Go unit tests (coverage report + pass/skip/fail summary → step summary)
-    │                    Vue unit tests (v8 coverage table → step summary)
-    │                    TypeScript type check
-    │                    npm run build → dist/
-    │                    CGO_ENABLED=0 go build → server binary
-    │                    Firebase emulators → Go integration tests
-    │                    e2e BDD suite — Playwright (JUnit → step summary via dorny/test-reporter@v3)
-    │                    Upload dist/ + server binary as GitHub Actions artifacts
-    │
-    └── deploy-staging ── Download dist/ + server binary artifacts
-                          Docker build (single-stage, copies pre-built binary) → Artifact Registry
-                          Cloud Run deploy (crew-predictions-staging, us-east5)
-                          Firebase Hosting deploy → crew-predictions-staging.web.app
-                          Frontend artifact uploaded to GCS (retained 90 days)
-                          smoke-staging: 13 @smoke scenarios (e2e subset + live-auth + health checks)
-                            → step summary report via dorny/test-reporter + JUnit artifact
+```mermaid
+flowchart TD
+    PD[push to develop] --> BAT
 
-push to main (merge from develop)
-    │
-    └── deploy-prod ─────  Promote Docker image from staging artifact (no rebuild)
-                           Cloud Run deploy (crew-predictions, us-east5)
-                           Firebase Hosting deploy → crew-predictions.web.app
-                           Automatic rollback on failure
-                           smoke-prod: 8 @smoke scenarios (e2e subset + health checks)
-                             → step summary report via dorny/test-reporter + JUnit artifact
+    subgraph BAT["build-and-test job"]
+        direction TB
+        UT["Go unit tests\nVue unit tests\nTypeScript typecheck"]
+        BLD["npm run build → dist/\ngo build → server binary"]
+        INT["Firebase emulators\nGo integration tests"]
+        E2E["e2e BDD suite\nPlaywright + JUnit"]
+        ART["Upload artifacts\ndist/ + server binary"]
+        UT --> BLD --> INT --> E2E --> ART
+    end
+
+    ART --> DS
+
+    subgraph DS["deploy-staging job"]
+        direction TB
+        DL["Download artifacts"]
+        DCR["Docker build → Artifact Registry\n(crew-predictions project, shared)"]
+        CRS["Cloud Run deploy\ncrew-predictions-staging / us-east5"]
+        FHS["Firebase Hosting deploy\ncrew-predictions-staging.web.app"]
+        GCS["Frontend artifact → GCS\n(retained 90 days)"]
+        SS["smoke-staging\n13 @smoke scenarios"]
+        DL --> DCR --> CRS --> FHS --> GCS --> SS
+    end
+
+    SS -- "smoke passed → apply :prod tag" --> AR[("Artifact Registry\n:prod tag = last known good")]
+
+    PM[push to main] --> DP
+
+    subgraph DP["deploy-prod job"]
+        direction TB
+        PR["Promote :prod Docker image\n(no rebuild)"]
+        CRP["Cloud Run deploy\ncrew-predictions / us-east5"]
+        FHP["Firebase Hosting deploy\ncrew-predictions.web.app"]
+        SP["smoke-prod\n8 @smoke scenarios"]
+        RB["auto-rollback on failure"]
+        PR --> CRP --> FHP --> SP
+        SP -- "failure" --> RB
+    end
+
+    AR --> PR
 ```
 
 **Artifact promotion:** prod deploys reuse the Docker image built for staging — no rebuild on merge. The frontend dist is downloaded from the staging workflow artifact and deployed directly.
@@ -225,6 +280,41 @@ push to main (merge from develop)
 ---
 
 ## Environments
+
+```mermaid
+graph TD
+    subgraph shared ["Shared (crew-predictions GCP project)"]
+        AR[("Artifact Registry\nDocker images\n:latest · :prod")]
+        GH["GitHub Actions\nCI/CD"]
+        BK["Billing Killswitch\nCloud Function"]
+    end
+
+    subgraph prod ["Prod (crew-predictions GCP project)"]
+        FHP["Firebase Hosting\ncrew-predictions.web.app"]
+        CRP["Cloud Run\ncrew-predictions / us-east5"]
+        FSP[("Firestore\nus-east5")]
+        FAP["Firebase Auth"]
+        FHP -- "rewrite /api /auth" --> CRP
+        CRP --- FSP
+        CRP --- FAP
+    end
+
+    subgraph staging ["Staging (crew-predictions-staging GCP project)"]
+        FHS["Firebase Hosting\ncrew-predictions-staging.web.app"]
+        CRS["Cloud Run\ncrew-predictions-staging / us-east5"]
+        FSS[("Firestore\nus-east5")]
+        FAS["Firebase Auth"]
+        FHS -- "rewrite /api /auth" --> CRS
+        CRS --- FSS
+        CRS --- FAS
+    end
+
+    GH -- "build image" --> AR
+    AR -- "promote :prod" --> CRP
+    AR -- ":latest" --> CRS
+    GH -- "deploy frontend" --> FHP
+    GH -- "deploy frontend" --> FHS
+```
 
 | Environment | Frontend URL | Cloud Run | GCP Project |
 |---|---|---|---|
