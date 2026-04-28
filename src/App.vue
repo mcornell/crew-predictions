@@ -1,5 +1,5 @@
 <template>
-  <AppHeader :user="currentUser" :loading="authLoading" />
+  <AppHeader :user="currentUser" :loading="authLoading" :seasons="seasons" />
 <RouterView />
 </template>
 
@@ -14,6 +14,7 @@ const route = useRoute()
 const router = useRouter()
 const currentUser = ref<{ userID: string; handle: string; emailVerified: boolean } | null>(null)
 const authLoading = ref(true)
+const seasons = ref<{ id: string; name: string; isCurrent: boolean }[]>([])
 
 provide('currentUser', currentUser)
 
@@ -21,6 +22,16 @@ async function fetchUser() {
   const res = await fetch('/api/me')
   currentUser.value = res.ok ? await res.json() : null
   authLoading.value = false
+}
+
+async function fetchSeasons() {
+  try {
+    const res = await fetch('/api/seasons')
+    if (res.ok) {
+      const data = await res.json()
+      seasons.value = data.seasons ?? []
+    }
+  } catch { /* non-critical */ }
 }
 
 onMounted(async () => {
@@ -42,6 +53,7 @@ onMounted(async () => {
     console.error('Google redirect result failed:', err)
   }
   await fetchUser()
+  await fetchSeasons()
 })
 
 watch(() => route.path, fetchUser)

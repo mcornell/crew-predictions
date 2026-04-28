@@ -1,17 +1,6 @@
 <template>
   <div class="page">
-    <div class="lb-season-bar">
-      <h1 class="page-title">Leaderboard</h1>
-      <select
-        v-if="seasons.length > 0"
-        data-testid="season-selector"
-        class="season-selector"
-        :value="activeSeason"
-        @change="onSeasonChange"
-      >
-        <option v-for="s in seasons" :key="s.id" :value="s.id">{{ s.name }}</option>
-      </select>
-    </div>
+    <h1 class="page-title">Leaderboard</h1>
 
     <p v-if="loading" data-testid="loading" class="status-msg">Loading…</p>
     <p v-else-if="error" data-testid="error" class="status-msg status-msg--error">{{ error }}</p>
@@ -108,7 +97,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 
 interface Entry {
   userID?: string
@@ -120,22 +109,12 @@ interface Entry {
   hasProfile?: boolean
 }
 
-interface Season {
-  id: string
-  name: string
-  isCurrent: boolean
-}
-
 const route = useRoute()
-const router = useRouter()
 
 const entries = ref<Entry[]>([])
-const seasons = ref<Season[]>([])
 const activeSort = ref<'aces' | 'upper90' | 'grouchy'>('aces')
 const loading = ref(true)
 const error = ref<string | null>(null)
-
-const activeSeason = computed(() => route.params.season as string | undefined)
 
 function upper90For(e: Entry): number {
   return e.upper90ClubPoints ?? e.upper90Points ?? 0
@@ -161,30 +140,16 @@ function rankFor(i: number): number {
   return i + 1
 }
 
-function onSeasonChange(e: Event) {
-  const id = (e.target as HTMLSelectElement).value
-  const selected = seasons.value.find(s => s.id === id)
-  if (selected?.isCurrent) {
-    router.push('/leaderboard')
-  } else {
-    router.push(`/leaderboard/${id}`)
-  }
-}
-
 onMounted(async () => {
   document.title = 'Leaderboard — Crew Predictions'
   const seasonID = route.params.season as string | undefined
   const url = seasonID ? `/api/leaderboard/${seasonID}` : '/api/leaderboard'
-  const [lbRes, seasonsRes] = await Promise.all([fetch(url), fetch('/api/seasons')])
-  if (lbRes.ok) {
-    const data = await lbRes.json()
+  const res = await fetch(url)
+  if (res.ok) {
+    const data = await res.json()
     entries.value = data.entries ?? []
   } else {
     error.value = 'Could not load leaderboard. Try again later.'
-  }
-  if (seasonsRes.ok) {
-    const data = await seasonsRes.json()
-    seasons.value = data.seasons ?? []
   }
   loading.value = false
 })

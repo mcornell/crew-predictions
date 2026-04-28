@@ -150,7 +150,7 @@ func main() {
 	rl := handlers.NewRateLimiter(60, 60)
 	mux.Handle("GET /api/leaderboard", rl.Middleware(http.HandlerFunc(lh.APIList)))
 	mux.Handle("GET /api/leaderboard/{season}", rl.Middleware(http.HandlerFunc(lh.APIGetSeason)))
-	ssh := handlers.NewSeasonsHandler()
+	ssh := handlers.NewSeasonsHandler(configStore)
 	mux.Handle("GET /api/seasons", rl.Middleware(http.HandlerFunc(ssh.APIList)))
 	mux.Handle("GET /api/profile/{userID}", rl.Middleware(http.HandlerFunc(prh.Get)))
 	mdh := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew")

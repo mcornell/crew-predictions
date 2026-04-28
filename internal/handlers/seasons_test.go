@@ -7,10 +7,11 @@ import (
 	"testing"
 
 	"github.com/mcornell/crew-predictions/internal/handlers"
+	"github.com/mcornell/crew-predictions/internal/repository"
 )
 
 func TestSeasonsHandler_ListReturnsAllSeasons(t *testing.T) {
-	sh := handlers.NewSeasonsHandler()
+	sh := handlers.NewSeasonsHandler(repository.NewMemoryConfigStore("2026"))
 	req := httptest.NewRequest(http.MethodGet, "/api/seasons", nil)
 	w := httptest.NewRecorder()
 	sh.APIList(w, req)
@@ -34,4 +35,11 @@ func TestSeasonsHandler_ListReturnsAllSeasons(t *testing.T) {
 	if body.Seasons[0].ID != "2026" || body.Seasons[0].Name != "2026 Season" {
 		t.Errorf("unexpected first season: %+v", body.Seasons[0])
 	}
+	if !body.Seasons[0].IsCurrent {
+		t.Errorf("expected 2026 season to be current, got isCurrent=false")
+	}
+	if body.Seasons[1].IsCurrent {
+		t.Errorf("expected 2027-sprint season to not be current")
+	}
 }
+

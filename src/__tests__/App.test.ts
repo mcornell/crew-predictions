@@ -64,8 +64,9 @@ describe('App', () => {
 
   it('re-fetches /api/me after route change to update auth state', async () => {
     const fetchMock = vi.fn()
-      .mockResolvedValueOnce({ ok: false, status: 401 })
-      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ handle: 'testfan@crew.mock' }) })
+      .mockResolvedValueOnce({ ok: false, status: 401 })                                                   // /api/me (initial)
+      .mockResolvedValueOnce({ ok: false })                                                                 // /api/seasons
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ handle: 'testfan@crew.mock' }) })   // /api/me (route change)
     vi.stubGlobal('fetch', fetchMock)
 
     const router = makeRouter()

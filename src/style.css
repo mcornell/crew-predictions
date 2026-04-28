@@ -116,6 +116,105 @@ body::after {
 }
 .btn-ghost:hover { color: var(--gold); }
 
+/* ── Leaderboard nav flyout ───────────────────────────────────────────────── */
+.nav-lb {
+  position: relative;
+}
+
+.nav-lb-trigger {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--text);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  transition: color 0.15s;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.nav-lb-trigger:hover { color: var(--gold); }
+
+.season-flyout {
+  position: absolute;
+  top: calc(100% + 0.75rem);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--black);
+  border: 1px solid var(--gold);
+  border-top: 3px solid var(--gold);
+  min-width: 200px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+}
+
+.season-flyout-item {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: 1rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text);
+  padding: 0.65rem 1rem;
+  border-left: 3px solid transparent;
+  border-bottom: 1px solid rgba(254, 221, 0, 0.1);
+  transition: color 0.1s, border-color 0.1s;
+  white-space: nowrap;
+}
+.season-flyout-item:last-child { border-bottom: none; }
+.season-flyout-item:hover {
+  color: var(--gold);
+  border-left-color: var(--gold);
+}
+.season-flyout-item--current {
+  color: var(--gold);
+  border-left-color: var(--gold);
+}
+
+/* ── Mobile drawer leaderboard expander ──────────────────────────────────── */
+.drawer-lb-toggle {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 1.4rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text);
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  transition: color 0.15s;
+}
+.drawer-lb-toggle:hover { color: var(--gold); }
+
+.drawer-chevron {
+  font-size: 0.9rem;
+  color: var(--gold);
+}
+
+.drawer-lb-item {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0.55rem 0 0.55rem 1rem;
+  border-bottom: 1px solid rgba(254, 221, 0, 0.08);
+  border-left: 2px solid var(--gold);
+}
+.drawer-lb-item:last-of-type { margin-bottom: 0.25rem; }
+.drawer-lb-item:hover { color: var(--gold); }
+
 .btn-primary {
   font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
   font-size: 1.1rem;

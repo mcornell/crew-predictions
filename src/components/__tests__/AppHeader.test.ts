@@ -37,9 +37,42 @@ describe('AppHeader', () => {
     expect(wrapper.find('a[href="/profile"]').exists()).toBe(false)
   })
 
-  it('always shows a leaderboard link', () => {
+  it('always shows a leaderboard nav trigger', () => {
     const wrapper = mount(AppHeader, { props: { user: null } })
-    expect(wrapper.find('a[href="/leaderboard"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="season-selector"]').exists()).toBe(true)
+  })
+
+  it('clicking leaderboard trigger opens season flyout', async () => {
+    const seasons = [{ id: '2026', name: '2026 Season', isCurrent: true }]
+    const wrapper = mount(AppHeader, { props: { user: null, seasons } })
+    await wrapper.find('[data-testid="season-selector"]').trigger('click')
+    expect(wrapper.find('[data-testid="season-flyout"]').exists()).toBe(true)
+  })
+
+  it('season flyout contains a current season link and historical season links', async () => {
+    const seasons = [{ id: '2026', name: '2026 Season', isCurrent: false }]
+    const wrapper = mount(AppHeader, { props: { user: null, seasons } })
+    await wrapper.find('[data-testid="season-selector"]').trigger('click')
+    const flyout = wrapper.find('[data-testid="season-flyout"]')
+    expect(flyout.find('a[href="/leaderboard"]').exists()).toBe(true)
+    expect(flyout.text()).toContain('2026 Season')
+  })
+
+  it('clicking a flyout season link closes the flyout', async () => {
+    const seasons = [{ id: '2026', name: '2026 Season', isCurrent: false }]
+    const wrapper = mount(AppHeader, { props: { user: null, seasons } })
+    await wrapper.find('[data-testid="season-selector"]').trigger('click')
+    await wrapper.find('[data-testid="season-flyout"] a').trigger('click')
+    expect(wrapper.find('[data-testid="season-flyout"]').exists()).toBe(false)
+  })
+
+  it('mobile drawer shows seasons under leaderboard when expanded', async () => {
+    const seasons = [{ id: '2026', name: '2026 Season', isCurrent: false }]
+    const wrapper = mount(AppHeader, { props: { user: null, seasons } })
+    await wrapper.find('button[data-testid="hamburger"]').trigger('click')
+    const drawer = wrapper.find('[data-testid="mobile-drawer"]')
+    await drawer.find('[data-testid="drawer-lb-toggle"]').trigger('click')
+    expect(drawer.text()).toContain('2026 Season')
   })
 
   it('hides Sign In when auth is loading', () => {

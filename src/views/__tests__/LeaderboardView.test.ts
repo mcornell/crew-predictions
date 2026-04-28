@@ -22,11 +22,6 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-const mockSeasons = { seasons: [
-  { id: '2026', name: '2026 Season', isCurrent: false },
-  { id: '2027-sprint', name: '2027 Sprint Season', isCurrent: true },
-]}
-
 function makeLeaderboardRouter(path = '/leaderboard') {
   const r = makeRouter()
   r.addRoute({ path: '/leaderboard/:season', component: LeaderboardView })
@@ -34,22 +29,11 @@ function makeLeaderboardRouter(path = '/leaderboard') {
 }
 
 describe('LeaderboardView', () => {
-  it('shows a season selector', async () => {
-    vi.stubGlobal('fetch', vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockData) })
-      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSeasons) })
-    )
-    const wrapper = mount(LeaderboardView, { global: { plugins: [makeLeaderboardRouter()] } })
-    await flushPromises()
-    expect(wrapper.find('[data-testid="season-selector"]').exists()).toBe(true)
-  })
-
   it('fetches from /api/leaderboard/:season when season route param is set', async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ entries: [
         { handle: 'HistoryFan', acesRadioPoints: 15, upper90ClubPoints: 3, grouchyPoints: 1 }
       ]}) })
-      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSeasons) })
     vi.stubGlobal('fetch', fetchMock)
     const r = makeLeaderboardRouter()
     await r.push('/leaderboard/2026')

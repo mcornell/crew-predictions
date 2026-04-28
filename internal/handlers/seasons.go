@@ -5,13 +5,16 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/mcornell/crew-predictions/internal/repository"
 	"github.com/mcornell/crew-predictions/internal/seasons"
 )
 
-type SeasonsHandler struct{}
+type SeasonsHandler struct {
+	config repository.ConfigStore
+}
 
-func NewSeasonsHandler() *SeasonsHandler {
-	return &SeasonsHandler{}
+func NewSeasonsHandler(config repository.ConfigStore) *SeasonsHandler {
+	return &SeasonsHandler{config: config}
 }
 
 type seasonResponse struct {
@@ -21,10 +24,11 @@ type seasonResponse struct {
 }
 
 func (h *SeasonsHandler) APIList(w http.ResponseWriter, r *http.Request) {
+	activeID := h.config.GetActiveSeason(r.Context())
 	all := seasons.AllSeasons()
 	out := make([]seasonResponse, len(all))
 	for i, s := range all {
-		out[i] = seasonResponse{ID: s.ID, Name: s.Name}
+		out[i] = seasonResponse{ID: s.ID, Name: s.Name, IsCurrent: s.ID == activeID}
 	}
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(map[string]any{"seasons": out}); err != nil {
