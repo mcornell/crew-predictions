@@ -64,6 +64,12 @@ func (s *MemoryUserStore) UpdateScores(_ context.Context, userID string, count, 
 	return nil
 }
 
+func (s *MemoryUserStore) Reset() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.data = make(map[string]User)
+}
+
 func (s *MemoryUserStore) GetByID(_ context.Context, userID string) (*User, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

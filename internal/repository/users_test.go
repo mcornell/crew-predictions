@@ -136,6 +136,19 @@ func TestMemoryUserStore_UpdateScoresCreatesEntryForNewUser(t *testing.T) {
 	}
 }
 
+func TestMemoryUserStore_ResetClearsAllUsers(t *testing.T) {
+	s := repository.NewMemoryUserStore()
+	ctx := context.Background()
+
+	s.Upsert(ctx, repository.User{UserID: "u1", Handle: "fan"})
+	s.Reset()
+
+	all, _ := s.GetAll(ctx)
+	if len(all) != 0 {
+		t.Errorf("expected 0 users after Reset, got %d", len(all))
+	}
+}
+
 func TestMemoryUserStore_GetByID_NotFound(t *testing.T) {
 	s := repository.NewMemoryUserStore()
 	got, err := repository.NewMemoryUserStore().GetByID(context.Background(), "nope")

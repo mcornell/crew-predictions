@@ -209,6 +209,9 @@ psh := handlers.NewPollScoresHandler(matchStore, resultStore, refreshFetcher, re
 				if memResult, ok := resultStore.(*repository.MemoryResultStore); ok {
 					memResult.Reset()
 				}
+				if memUser, ok := userStore.(*repository.MemoryUserStore); ok {
+					memUser.Reset()
+				}
 				matchStore.Reset()
 				seasonStore.Reset()
 				configStore.Reset()
