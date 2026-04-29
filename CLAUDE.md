@@ -33,6 +33,8 @@ If you find yourself writing production code and cannot point to the specific fa
 
 **Before declaring any work done — feature OR refactor — run `go test ./...`, `npm run typecheck && npm run test:unit`, and `npm test`. All three must be green.** This applies to refactors and removals too, not just new features — observable behavior can regress without a new scenario failing first.
 
+**`npm test` is a hard gate before any push.** This was violated when the `MemoryUserStore.Reset()` fix was committed and pushed without running `npm test` locally. CI surfaced two regressions: the profile pre-populate scenario (user not in store due to Vue child-before-parent mount race) and the TwoOneBot leaderboard scenario (same root cause). The "never push" rule and the "run tests" rule are one rule: you cannot request a push unless `npm test` has passed in this session with the current code. "I only changed test infrastructure" and "it looked correct by inspection" are not exceptions — code that seems obviously correct has caused CI failures before.
+
 ---
 
 ## Project Goal
