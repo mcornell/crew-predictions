@@ -443,7 +443,7 @@ jobs:
           gcloud run deploy crew-predictions \
             --image=${{ env.DEPLOY_IMAGE }} \
             --region=us-east5 \
-            --set-env-vars=FIREBASE_PROJECT_ID=crew-predictions,FIREBASE_API_KEY=$PROD_API_KEY,FIREBASE_AUTH_DOMAIN=crew-predictions.firebaseapp.com,GOOGLE_CLOUD_PROJECT=crew-predictions,FIREBASE_MEASUREMENT_ID=G-PFL8D07Q09,FIREBASE_APP_ID=1:937208344837:web:28d1ccfe9f2ac0a2dd876c \
+            --set-env-vars=FIREBASE_PROJECT_ID=crew-predictions,FIREBASE_API_KEY=$PROD_API_KEY,FIREBASE_AUTH_DOMAIN=crew-predictions.web.app,GOOGLE_CLOUD_PROJECT=crew-predictions,FIREBASE_MEASUREMENT_ID=G-PFL8D07Q09,FIREBASE_APP_ID=1:937208344837:web:28d1ccfe9f2ac0a2dd876c \
             --update-secrets=ADMIN_KEY=admin-key:latest,SESSION_SECRET=session-secret:latest \
             --quiet
         env:
