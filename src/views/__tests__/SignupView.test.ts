@@ -67,9 +67,10 @@ describe('SignupView', () => {
     expect(link.text()).toBe('Sign in')
   })
 
-  it('calls signInWithGoogle on button click', async () => {
+  it('Google sign-in creates session and navigates to /matches on success', async () => {
     const { signInWithGoogle } = await import('../../firebase')
-    vi.mocked(signInWithGoogle).mockResolvedValue(undefined)
+    vi.mocked(signInWithGoogle).mockResolvedValue('google-token')
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }))
 
     const router = makeRouter()
     await router.push('/signup')
@@ -79,6 +80,39 @@ describe('SignupView', () => {
     await flushPromises()
 
     expect(signInWithGoogle).toHaveBeenCalled()
+    expect(global.fetch).toHaveBeenCalledWith('/auth/session', expect.objectContaining({ method: 'POST' }))
+    expect(router.currentRoute.value.path).toBe('/matches')
+  })
+
+  it('Google sign-in shows error when session endpoint fails', async () => {
+    const { signInWithGoogle } = await import('../../firebase')
+    vi.mocked(signInWithGoogle).mockResolvedValue('google-token')
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 401 }))
+
+    const router = makeRouter()
+    await router.push('/signup')
+    const wrapper = mount(SignupView, { global: { plugins: [router] } })
+
+    await wrapper.find('button[data-testid="google-signin"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.path).toBe('/signup')
+    expect(wrapper.find('.form-error').exists()).toBe(true)
+  })
+
+  it('Google sign-in shows error when popup is cancelled', async () => {
+    const { signInWithGoogle } = await import('../../firebase')
+    vi.mocked(signInWithGoogle).mockRejectedValue(new Error('auth/popup-closed-by-user'))
+
+    const router = makeRouter()
+    await router.push('/signup')
+    const wrapper = mount(SignupView, { global: { plugins: [router] } })
+
+    await wrapper.find('button[data-testid="google-signin"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.path).toBe('/signup')
+    expect(wrapper.find('.form-error').exists()).toBe(true)
   })
 
   it('shows a specific message when email is already registered', async () => {
