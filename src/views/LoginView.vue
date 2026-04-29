@@ -63,14 +63,7 @@ async function handleSubmit() {
 async function handleGoogle() {
   error.value = ''
   try {
-    const token = await signInWithGoogle()
-    const ok = await postSession(token)
-    if (!ok) {
-      error.value = 'Google sign-in failed'
-      return
-    }
-    await flushGuestPredictions()
-    router.push('/matches')
+    await signInWithGoogle()
   } catch {
     error.value = 'Google sign-in failed'
   }

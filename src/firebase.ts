@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from 'firebase/app'
-import { getAuth, connectAuthEmulator, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, getRedirectResult, GoogleAuthProvider, sendPasswordResetEmail } from 'firebase/auth'
+import { getAuth, connectAuthEmulator, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithRedirect, getRedirectResult, GoogleAuthProvider, sendPasswordResetEmail } from 'firebase/auth'
 import { getAnalytics } from 'firebase/analytics'
 
 declare global {
@@ -39,10 +39,9 @@ export async function signUp(email: string, password: string): Promise<string> {
   return result.user.getIdToken()
 }
 
-export async function signInWithGoogle(): Promise<string> {
+export async function signInWithGoogle(): Promise<void> {
   const auth = getFirebaseAuth()
-  const result = await signInWithPopup(auth, new GoogleAuthProvider())
-  return result.user.getIdToken()
+  await signInWithRedirect(auth, new GoogleAuthProvider())
 }
 
 export async function getGoogleRedirectResult(): Promise<string | null> {
@@ -56,4 +55,3 @@ export async function sendPasswordReset(email: string): Promise<void> {
   const auth = getFirebaseAuth()
   await sendPasswordResetEmail(auth, email)
 }
-
