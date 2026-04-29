@@ -5,7 +5,7 @@ import webfontDownload from 'vite-plugin-webfont-dl'
 export default defineConfig({
   plugins: [
     vue(),
-    webfontDownload('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=DM+Mono:wght@300;400;500&family=Barlow:wght@300;400;500;600&display=swap'),
+    webfontDownload('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=DM+Mono:wght@300;400;500&family=Barlow:wght@300;400;500;600&display=optional'),
   ],
   build: {
     target: 'esnext',
