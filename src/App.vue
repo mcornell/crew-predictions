@@ -29,7 +29,10 @@ async function fetchSeasons() {
     const res = await fetch('/api/seasons')
     if (res.ok) {
       const data = await res.json()
-      seasons.value = data.seasons ?? []
+      const all: { id: string; name: string; isCurrent: boolean }[] = data.seasons ?? []
+      const currentIdx = all.findIndex(s => s.isCurrent)
+      const past = currentIdx >= 0 ? all.slice(0, currentIdx) : []
+      seasons.value = [...past].reverse()
     }
   } catch { /* non-critical */ }
 }
