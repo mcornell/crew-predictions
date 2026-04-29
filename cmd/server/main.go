@@ -147,12 +147,16 @@ func main() {
 	configStore := repository.NewMemoryConfigStore("2026")
 	lh := handlers.NewLeaderboardHandler(predStore, resultStore, userStore, seasonStore, "Columbus Crew")
 	prh := handlers.NewProfileHandler(predStore, resultStore, userStore, "Columbus Crew")
-	rl := handlers.NewRateLimiter(60, 60)
-	mux.Handle("GET /api/leaderboard", rl.Middleware(http.HandlerFunc(lh.APIList)))
-	mux.Handle("GET /api/leaderboard/{season}", rl.Middleware(http.HandlerFunc(lh.APIGetSeason)))
+	rateLimitMw := func(h http.Handler) http.Handler { return h }
+	if os.Getenv("TEST_MODE") != "1" {
+		rl := handlers.NewRateLimiter(60, 60)
+		rateLimitMw = rl.Middleware
+	}
+	mux.Handle("GET /api/leaderboard", rateLimitMw(http.HandlerFunc(lh.APIList)))
+	mux.Handle("GET /api/leaderboard/{season}", rateLimitMw(http.HandlerFunc(lh.APIGetSeason)))
 	ssh := handlers.NewSeasonsHandler(configStore)
-	mux.Handle("GET /api/seasons", rl.Middleware(http.HandlerFunc(ssh.APIList)))
-	mux.Handle("GET /api/profile/{userID}", rl.Middleware(http.HandlerFunc(prh.Get)))
+	mux.Handle("GET /api/seasons", rateLimitMw(http.HandlerFunc(ssh.APIList)))
+	mux.Handle("GET /api/profile/{userID}", rateLimitMw(http.HandlerFunc(prh.Get)))
 	mdh := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew")
 	mux.HandleFunc("GET /api/matches/{matchId}", mdh.Get)
 	if os.Getenv("TEST_MODE") != "1" && os.Getenv("ADMIN_KEY") == "" {
