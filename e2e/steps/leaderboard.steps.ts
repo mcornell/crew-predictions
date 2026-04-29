@@ -42,3 +42,16 @@ Then('I should see {string} with {int} Grouchy points', async ({ page }, handle:
   const row = page.locator('[data-testid="leaderboard-row"]').filter({ hasText: handle }).first();
   await expect(row.locator('[data-testid="leaderboard-grouchy-points"]')).toHaveText(String(points));
 });
+
+When('I open the leaderboard dropdown', async ({ page }) => {
+  await page.getByTestId('season-selector').click();
+  await expect(page.getByTestId('season-flyout')).toBeVisible();
+});
+
+Then('the season dropdown includes {string}', async ({ page }, seasonName: string) => {
+  await expect(page.getByTestId('season-flyout')).toContainText(seasonName);
+});
+
+Then('the season dropdown does not include {string}', async ({ page }, seasonName: string) => {
+  await expect(page.getByTestId('season-flyout')).not.toContainText(seasonName);
+});

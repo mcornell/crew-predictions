@@ -21,3 +21,11 @@ Feature: Leaderboard
     And the final score for match "match-scoring-3" was 4-0 with Columbus away
     When I visit the leaderboard
     Then I should see "GrouchyFan@bsky.mock" with 1 Grouchy points
+
+  Scenario: Season dropdown shows past seasons and hides future seasons
+    When an admin closes the current season
+    And I visit the leaderboard
+    And I open the leaderboard dropdown
+    Then the season dropdown includes "2026 Season"
+    And the season dropdown does not include "2027-28 Season"
+    And the season dropdown does not include "2028-29 Season"
