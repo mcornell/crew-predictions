@@ -138,4 +138,57 @@ describe('AppHeader', () => {
     expect(removeSpy).toHaveBeenCalledWith('resize', expect.any(Function))
     removeSpy.mockRestore()
   })
+
+  it('clicking a season link in the drawer closes drawer and collapses leaderboard section', async () => {
+    const seasons = [{ id: '2026', name: '2026 Season', isCurrent: false }]
+    const wrapper = mount(AppHeader, { props: { user: null, seasons } })
+    await wrapper.find('button[data-testid="hamburger"]').trigger('click')
+    await wrapper.find('[data-testid="drawer-lb-toggle"]').trigger('click')
+    const seasonLink = wrapper.findAll('.drawer-lb-item').find(a => a.text() === '2026 Season')
+    await seasonLink!.trigger('click')
+    expect(wrapper.find('[data-testid="mobile-drawer"]').exists()).toBe(false)
+  })
+
+  it('clicking Current Season in the drawer closes drawer', async () => {
+    const wrapper = mount(AppHeader, { props: { user: null } })
+    await wrapper.find('button[data-testid="hamburger"]').trigger('click')
+    await wrapper.find('[data-testid="drawer-lb-toggle"]').trigger('click')
+    await wrapper.find('a.drawer-lb-item[href="/leaderboard"]').trigger('click')
+    expect(wrapper.find('[data-testid="mobile-drawer"]').exists()).toBe(false)
+  })
+
+  it('clicking a flyout season link (v-for) closes the flyout', async () => {
+    const seasons = [{ id: '2026', name: '2026 Season', isCurrent: false }]
+    const wrapper = mount(AppHeader, { props: { user: null, seasons } })
+    await wrapper.find('[data-testid="season-selector"]').trigger('click')
+    const seasonLinks = wrapper.findAll('[data-testid="season-flyout"] a')
+    const historicalLink = seasonLinks.find(a => a.text() === '2026 Season')
+    await historicalLink!.trigger('click')
+    expect(wrapper.find('[data-testid="season-flyout"]').exists()).toBe(false)
+  })
+
+  it('clicking user profile link in drawer closes the drawer', async () => {
+    const wrapper = mount(AppHeader, { props: { user: { userID: 'firebase:abc', handle: 'CrewFan' } } })
+    await wrapper.find('button[data-testid="hamburger"]').trigger('click')
+    await wrapper.find('[data-testid="mobile-drawer"] a[href="/profile/firebase:abc"]').trigger('click')
+    expect(wrapper.find('[data-testid="mobile-drawer"]').exists()).toBe(false)
+  })
+
+  it('clicking sign-out link in drawer closes the drawer', async () => {
+    const wrapper = mount(AppHeader, { props: { user: { userID: 'firebase:abc', handle: 'CrewFan' } } })
+    await wrapper.find('button[data-testid="hamburger"]').trigger('click')
+    await wrapper.find('[data-testid="mobile-drawer"] a[href="/auth/logout"]').trigger('click')
+    expect(wrapper.find('[data-testid="mobile-drawer"]').exists()).toBe(false)
+  })
+
+  it('clicking outside the leaderboard nav closes the flyout', async () => {
+    const seasons = [{ id: '2026', name: '2026 Season', isCurrent: false }]
+    const wrapper = mount(AppHeader, { props: { user: null, seasons }, attachTo: document.body })
+    await wrapper.find('[data-testid="season-selector"]').trigger('click')
+    expect(wrapper.find('[data-testid="season-flyout"]').exists()).toBe(true)
+    document.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[data-testid="season-flyout"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
 })

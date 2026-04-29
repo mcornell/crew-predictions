@@ -190,4 +190,21 @@ describe('LeaderboardView', () => {
     await flushPromises()
     expect(wrapper.find('[data-testid="mobile-sort-grouchy"]').exists()).toBe(true)
   })
+
+  it('mobile sort Grouchy button triggers sort change', async () => {
+    const wrapper = mount(LeaderboardView, { global: { plugins: [makeRouter()] } })
+    await flushPromises()
+    await wrapper.find('[data-testid="mobile-sort-grouchy"]').trigger('click')
+    const rows = wrapper.findAll('[data-testid="leaderboard-row"]')
+    expect(rows[0].find('[data-testid="leaderboard-grouchy-points"]').text()).toBe('3')
+  })
+
+  it('mobile sort Aces button switches back from another sort', async () => {
+    const wrapper = mount(LeaderboardView, { global: { plugins: [makeRouter()] } })
+    await flushPromises()
+    await wrapper.find('[data-testid="mobile-sort-upper90"]').trigger('click')
+    await wrapper.find('[data-testid="mobile-sort-aces"]').trigger('click')
+    const rows = wrapper.findAll('[data-testid="leaderboard-row"]')
+    expect(rows[0].find('[data-testid="leaderboard-aces-points"]').text()).toBe('15')
+  })
 })

@@ -64,6 +64,14 @@ func TestSeasonForDate(t *testing.T) {
 	}
 }
 
+func TestSeasonForDate_BeforeAllSeasonsFallsBackToFirst(t *testing.T) {
+	before2026 := time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC)
+	s := seasons.SeasonForDate(before2026)
+	if s.ID != "2026" {
+		t.Errorf("expected fallback to first season 2026, got %q", s.ID)
+	}
+}
+
 func TestMaybeCloseSeason(t *testing.T) {
 	noExists := func(string) bool { return false }
 	alreadyExists := func(string) bool { return true }
@@ -102,5 +110,11 @@ func TestMaybeCloseSeason(t *testing.T) {
 	}
 	if closeID != "2027-sprint" || openID != "2027-28" {
 		t.Errorf("expected 2027-sprint→2027-28, got %q→%q", closeID, openID)
+	}
+
+	// Unknown season ID — should not close
+	_, _, should = seasons.MaybeCloseSeason(jan10, "nonexistent-season", noExists)
+	if should {
+		t.Error("should not close for unknown season ID")
 	}
 }

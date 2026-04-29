@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import MatchDetailView from '../MatchDetailView.vue'
+import { POLL_INTERVAL_MS } from '../../utils/pollScheduler'
 
 const mockMatch = {
   id: 'm-test',
@@ -234,6 +235,126 @@ describe('MatchDetailView', () => {
     expect(wrapper.find('[data-testid="mobile-sort-grouchy"]').exists()).toBe(true)
   })
 
+  it('mobile sort Grouchy button triggers sort change', async () => {
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    await wrapper.find('[data-testid="mobile-sort-grouchy"]').trigger('click')
+    const rows = wrapper.findAll('[data-testid="prediction-row"]')
+    expect(rows[0].find('[data-testid="prediction-grouchy-points"]').text()).toBe('1')
+  })
+
+  it('mobile sort Aces button switches back to Aces Radio', async () => {
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    await wrapper.find('[data-testid="mobile-sort-upper90"]').trigger('click')
+    await wrapper.find('[data-testid="mobile-sort-aces"]').trigger('click')
+    const rows = wrapper.findAll('[data-testid="prediction-row"]')
+    expect(rows[0].find('[data-testid="prediction-aces-points"]').text()).toBe('15')
+  })
+
+  it('desktop sort Aces button switches back to Aces Radio from another sort', async () => {
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    await wrapper.find('[data-testid="sort-upper90"]').trigger('click')
+    await wrapper.find('[data-testid="sort-aces"]').trigger('click')
+    const rows = wrapper.findAll('[data-testid="prediction-row"]')
+    expect(rows[0].find('[data-testid="prediction-aces-points"]').text()).toBe('15')
+  })
+
+  it('shows live indicator when match state is "in"', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: { ...mockMatch, state: 'in', displayClock: '67\'', status: 'STATUS_IN_PROGRESS' },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="live-indicator-detail"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain("67'")
+  })
+
+  it('shows halftime indicator when match status is STATUS_HALFTIME', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: { ...mockMatch, state: 'in', status: 'STATUS_HALFTIME' },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    expect(wrapper.text()).toContain('HT')
+  })
+
+  it('shows projected label when isProjected is true', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: mockMatch,
+        predictions: mockPredictions,
+        isProjected: true,
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="projected-label"]').exists()).toBe(true)
+  })
+
+  it('formatKickoff returns empty string for invalid date', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: { ...mockMatch, kickoff: 'not-a-date' },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    expect(wrapper.find('.match-meta').text()).toBe('')
+  })
+
+  it('poll timer callback re-fetches detail when it fires', async () => {
+    vi.useFakeTimers()
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: { ...mockMatch, state: 'in', status: 'STATUS_IN_PROGRESS' },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const router = makeRouter()
+    await router.isReady()
+    mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    const callsBefore = fetchMock.mock.calls.length
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS)
+    await flushPromises()
+    expect(fetchMock.mock.calls.length).toBeGreaterThan(callsBefore)
+    vi.useRealTimers()
+  })
+
   it('schedules a poll when kickoff is in the future but outside the active window', async () => {
     vi.useFakeTimers()
     const futureKickoff = new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString()
@@ -251,6 +372,30 @@ describe('MatchDetailView', () => {
     mount(MatchDetailView, { global: { plugins: [router] } })
     await flushPromises()
     expect(setTimeoutSpy).toHaveBeenCalled()
+    vi.useRealTimers()
+  })
+
+  it('future-window poll timer fires and re-fetches', async () => {
+    vi.useFakeTimers()
+    // Kickoff 31 minutes from now → msUntilActiveWindow ≈ 60 000 ms (1 minute before active window)
+    const kickoff = new Date(Date.now() + 31 * 60 * 1000).toISOString()
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: { ...mockMatch, kickoff, state: 'pre', status: 'STATUS_SCHEDULED' },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const router = makeRouter()
+    await router.isReady()
+    mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    const callsBefore = fetchMock.mock.calls.length
+    await vi.advanceTimersByTimeAsync(61_000)
+    await flushPromises()
+    expect(fetchMock.mock.calls.length).toBeGreaterThan(callsBefore)
     vi.useRealTimers()
   })
 

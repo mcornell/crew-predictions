@@ -78,6 +78,25 @@ func TestCloseSeason_ReturnsErrorForUnknownSeasonID(t *testing.T) {
 	}
 }
 
+func TestCloseSeason_ReturnsErrorWhenGetAllFails(t *testing.T) {
+	err := seasons.CloseSeason(context.Background(), "2026", repository.NewErrorGetAllUserStore(), repository.NewMemorySeasonStore(), time.Now())
+	if err == nil {
+		t.Error("expected error when GetAll fails, got nil")
+	}
+}
+
+func TestCloseSeason_ReturnsErrorWhenSaveFails(t *testing.T) {
+	ctx := context.Background()
+	users := repository.NewMemoryUserStore()
+	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "Fan"})
+	users.UpdateScores(ctx, "u1", 1, 10, 0, 0)
+
+	err := seasons.CloseSeason(ctx, "2026", users, repository.NewErrorSeasonStore(), time.Now())
+	if err == nil {
+		t.Error("expected error when season Save fails, got nil")
+	}
+}
+
 func TestCloseSeason_SetsClosedAt(t *testing.T) {
 	ctx := context.Background()
 	users := repository.NewMemoryUserStore()

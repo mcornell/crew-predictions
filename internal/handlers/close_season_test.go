@@ -42,6 +42,17 @@ func TestCloseSeasonHandler_ClosesActiveSeasonAndReturns204(t *testing.T) {
 	}
 }
 
+func TestCloseSeasonHandler_Returns500WhenCloseSeasonFails(t *testing.T) {
+	cfg := repository.NewMemoryConfigStore("2026")
+	h := handlers.NewCloseSeasonHandler(repository.NewErrorGetAllUserStore(), repository.NewMemorySeasonStore(), cfg)
+	req := httptest.NewRequest(http.MethodPost, "/admin/seasons/close", nil)
+	rr := httptest.NewRecorder()
+	h.Close(rr, req)
+	if rr.Code != http.StatusInternalServerError {
+		t.Errorf("expected 500, got %d", rr.Code)
+	}
+}
+
 func TestCloseSeasonHandler_AdvancesActiveSeason(t *testing.T) {
 	ctx := context.Background()
 	users := repository.NewMemoryUserStore()

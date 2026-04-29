@@ -257,3 +257,20 @@ func TestLeaderboardAPIHandler_IncludesGrouchyPoints(t *testing.T) {
 		t.Errorf("expected grouchyPoints=1, got %+v", body.Entries)
 	}
 }
+
+func TestLeaderboardAPIHandler_GetSeason_Returns500WhenStoreErrors(t *testing.T) {
+	lh := handlers.NewLeaderboardHandler(
+		repository.NewMemoryPredictionStore(),
+		repository.NewMemoryResultStore(),
+		repository.NewMemoryUserStore(),
+		repository.NewErrorGetByIDSeasonStore(),
+		"Columbus Crew",
+	)
+	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard/2026", nil)
+	req.SetPathValue("season", "2026")
+	w := httptest.NewRecorder()
+	lh.APIGetSeason(w, req)
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("expected 500, got %d", w.Code)
+	}
+}

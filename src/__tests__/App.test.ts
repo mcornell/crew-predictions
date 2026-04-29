@@ -62,6 +62,38 @@ describe('App', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/me')
   })
 
+  it('completes google redirect sign-in and navigates to /matches', async () => {
+    const { getGoogleRedirectResult } = await import('../firebase')
+    vi.mocked(getGoogleRedirectResult).mockResolvedValueOnce('google-id-token')
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true })                                                                   // /auth/session
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ handle: 'NewUser@bsky.mock' }) })    // /api/me (fetchUser)
+      .mockResolvedValueOnce({ ok: false })                                                                  // /api/seasons
+    vi.stubGlobal('fetch', fetchMock)
+
+    const router = makeRouter()
+    mount(App, { global: { plugins: [router] } })
+    await flushPromises()
+
+    expect(fetchMock).toHaveBeenCalledWith('/auth/session', expect.objectContaining({ method: 'POST' }))
+    expect(router.currentRoute.value.path).toBe('/matches')
+  })
+
+  it('falls through to fetchUser when google redirect session create fails', async () => {
+    const { getGoogleRedirectResult } = await import('../firebase')
+    vi.mocked(getGoogleRedirectResult).mockResolvedValueOnce('google-id-token')
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: false })                                                                  // /auth/session (fails)
+      .mockResolvedValueOnce({ ok: false, status: 401 })                                                    // /api/me
+      .mockResolvedValueOnce({ ok: false })                                                                  // /api/seasons
+    vi.stubGlobal('fetch', fetchMock)
+
+    mount(App, { global: { plugins: [makeRouter()] } })
+    await flushPromises()
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/me')
+  })
+
   it('re-fetches /api/me after route change to update auth state', async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce({ ok: false, status: 401 })                                                   // /api/me (initial)
