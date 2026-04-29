@@ -291,7 +291,7 @@ jobs:
             --project=crew-predictions-staging \
             --region=us-east5 \
             --allow-unauthenticated \
-            --set-env-vars=FIREBASE_PROJECT_ID=crew-predictions-staging,FIREBASE_API_KEY=$STAGING_API_KEY,FIREBASE_AUTH_DOMAIN=crew-predictions-staging.firebaseapp.com,GOOGLE_CLOUD_PROJECT=crew-predictions-staging,FIREBASE_MEASUREMENT_ID=G-7N1MBBZ18B,FIREBASE_APP_ID=1:99152086201:web:3ea10e771e33452cecc768 \
+            --set-env-vars=FIREBASE_PROJECT_ID=crew-predictions-staging,FIREBASE_API_KEY=$STAGING_API_KEY,FIREBASE_AUTH_DOMAIN=crew-predictions-staging.web.app,GOOGLE_CLOUD_PROJECT=crew-predictions-staging,FIREBASE_MEASUREMENT_ID=G-7N1MBBZ18B,FIREBASE_APP_ID=1:99152086201:web:3ea10e771e33452cecc768 \
             --update-secrets=ADMIN_KEY=admin-key:latest,SESSION_SECRET=session-secret:latest \
             --quiet
         env:
