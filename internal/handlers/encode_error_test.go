@@ -48,6 +48,7 @@ func TestLeaderboardHandler_LogsEncodeError(t *testing.T) {
 		repository.NewMemoryPredictionStore(),
 		repository.NewMemoryResultStore(),
 		repository.NewMemoryUserStore(),
+		repository.NewMemorySeasonStore(),
 		"Columbus Crew",
 	)
 	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)

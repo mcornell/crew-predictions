@@ -10,7 +10,7 @@ Every feature increment starts from a failing Playwright scenario and is driven 
 
 ### Outer loop
 
-1. **Red** — Write one Gherkin scenario describing the next observable user behavior. Run `npm test`. Confirm it fails for the expected reason. Do not proceed until the failure matches intent.
+1. **Red** — Write one Gherkin scenario describing the next observable user behavior. Immediately write stub step definitions for any new steps (missing steps cause `bddgen` to abort, which blocks all other tests from running — this hides regressions). Run `npm test`. Confirm: the new scenario fails, all existing scenarios pass. Do not proceed until the failure matches intent.
 2. **Inner loop** — Repeat until you believe the scenario can pass:
    - **Red** — Write the smallest failing unit test for the next missing piece. One test at a time. Run it. Confirm it fails.
    - **Green** — Write the minimum production code to pass that one test. Only what the test demands. Run it. **Commit.**

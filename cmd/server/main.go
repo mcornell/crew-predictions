@@ -143,11 +143,20 @@ func main() {
 	mux.HandleFunc("GET /api/me", meh.Get)
 	ph := handlers.NewPredictionsHandler(predStore, matchFetcher)
 	mux.HandleFunc("POST /api/predictions", ph.Submit)
-	lh := handlers.NewLeaderboardHandler(predStore, resultStore, userStore, "Columbus Crew")
+	seasonStore := repository.NewMemorySeasonStore()
+	configStore := repository.NewMemoryConfigStore("2026")
+	lh := handlers.NewLeaderboardHandler(predStore, resultStore, userStore, seasonStore, "Columbus Crew")
 	prh := handlers.NewProfileHandler(predStore, resultStore, userStore, "Columbus Crew")
-	rl := handlers.NewRateLimiter(60, 60)
-	mux.Handle("GET /api/leaderboard", rl.Middleware(http.HandlerFunc(lh.APIList)))
-	mux.Handle("GET /api/profile/{userID}", rl.Middleware(http.HandlerFunc(prh.Get)))
+	rateLimitMw := func(h http.Handler) http.Handler { return h }
+	if os.Getenv("TEST_MODE") != "1" {
+		rl := handlers.NewRateLimiter(60, 60)
+		rateLimitMw = rl.Middleware
+	}
+	mux.Handle("GET /api/leaderboard", rateLimitMw(http.HandlerFunc(lh.APIList)))
+	mux.Handle("GET /api/leaderboard/{season}", rateLimitMw(http.HandlerFunc(lh.APIGetSeason)))
+	ssh := handlers.NewSeasonsHandler(configStore)
+	mux.Handle("GET /api/seasons", rateLimitMw(http.HandlerFunc(ssh.APIList)))
+	mux.Handle("GET /api/profile/{userID}", rateLimitMw(http.HandlerFunc(prh.Get)))
 	mdh := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew")
 	mux.HandleFunc("GET /api/matches/{matchId}", mdh.Get)
 	if os.Getenv("TEST_MODE") != "1" && os.Getenv("ADMIN_KEY") == "" {
@@ -161,13 +170,15 @@ func main() {
 	}
 
 	recalcFn := func(ctx context.Context) {
-		if err := recalculator.Recalculate(ctx, predStore, resultStore, userStore, "Columbus Crew"); err != nil {
+		if err := recalculator.Recalculate(ctx, predStore, resultStore, userStore, nil, recalculator.SeasonWindow{}, "Columbus Crew"); err != nil {
 			slog.Error("recalculate failed", "error", err)
 		}
 	}
 
 	rh := handlers.NewResultsHandler(resultStore, recalcFn)
 	mux.HandleFunc("POST /admin/results", handlers.AdminAuth(rh.Submit))
+	csh := handlers.NewCloseSeasonHandler(userStore, seasonStore, configStore)
+	mux.HandleFunc("POST /admin/seasons/close", handlers.AdminAuth(csh.Close))
 	var matchPoller *poll.MatchPoller
 	if os.Getenv("TEST_MODE") != "1" {
 		matchPoller = poll.NewMatchPoller(
@@ -202,7 +213,12 @@ psh := handlers.NewPollScoresHandler(matchStore, resultStore, refreshFetcher, re
 				if memResult, ok := resultStore.(*repository.MemoryResultStore); ok {
 					memResult.Reset()
 				}
+				if memUser, ok := userStore.(*repository.MemoryUserStore); ok {
+					memUser.Reset()
+				}
 				matchStore.Reset()
+				seasonStore.Reset()
+				configStore.Reset()
 				w.WriteHeader(http.StatusNoContent)
 			})
 			log.Printf("test reset endpoint registered at DELETE /admin/reset")
@@ -216,6 +232,9 @@ psh := handlers.NewPollScoresHandler(matchStore, resultStore, refreshFetcher, re
 		seedMH := handlers.NewSeedMatchHandler(memMatchStore)
 		mux.HandleFunc("POST /admin/seed-match", seedMH.Submit)
 		log.Printf("test seed endpoint registered at POST /admin/seed-match")
+		seedSH := handlers.NewSeedSeasonHandler(seasonStore)
+		mux.HandleFunc("POST /admin/seed-season", seedSH.Submit)
+		log.Printf("test seed endpoint registered at POST /admin/seed-season")
 	}
 
 	if os.Getenv("TEST_MODE") != "1" {

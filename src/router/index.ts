@@ -21,6 +21,7 @@ export default createRouter({
     { path: '/profile', redirect: '/matches' },
     { path: '/profile/:userID', component: ProfileView },
     { path: '/leaderboard', component: LeaderboardView },
+    { path: '/leaderboard/:season', component: LeaderboardView },
     { path: '/rules', component: RulesView },
     { path: '/:pathMatch(.*)*', component: NotFoundView },
   ],

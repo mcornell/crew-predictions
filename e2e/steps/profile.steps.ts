@@ -16,6 +16,11 @@ When('I visit my profile page', async ({ page, context }) => {
   const session = cookies.find(c => c.name === '__session')
   if (!session) throw new Error('No session cookie — user must be logged in first')
   const { userID } = JSON.parse(Buffer.from(session.value, 'base64').toString())
+  // Ensure the user exists in the server's UserStore before navigating. Without
+  // this, ProfileView's fetch races against App.vue's onMounted /api/me call —
+  // Vue child components mount before parent, so ProfileView can request
+  // /api/profile/:userID before App.vue has upserted the user via /api/me.
+  await page.request.get('/api/me')
   await page.goto(`/profile/${userID}`)
   await page.waitForSelector('[data-testid="prediction-count"], form[data-testid="profile-form"]', { timeout: 5000 })
 });

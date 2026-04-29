@@ -164,6 +164,44 @@ func (e *ErrorGetByIDUserStore) UpdateScores(_ context.Context, _ string, _, _, 
 	return nil
 }
 
+// ErrorSeasonStore is a test double that always fails on Save.
+type ErrorSeasonStore struct{}
+
+func NewErrorSeasonStore() *ErrorSeasonStore { return &ErrorSeasonStore{} }
+
+func (e *ErrorSeasonStore) Save(_ context.Context, _ SeasonSnapshot) error {
+	return fmt.Errorf("simulated season store failure")
+}
+
+func (e *ErrorSeasonStore) GetByID(_ context.Context, _ string) (*SeasonSnapshot, error) {
+	return nil, nil
+}
+
+func (e *ErrorSeasonStore) ListAll(_ context.Context) ([]SeasonSnapshot, error) { return nil, nil }
+
+func (e *ErrorSeasonStore) Exists(_ context.Context, _ string) bool { return false }
+
+func (e *ErrorSeasonStore) Reset() {}
+
+// ErrorGetByIDSeasonStore always fails on GetByID.
+type ErrorGetByIDSeasonStore struct{}
+
+func NewErrorGetByIDSeasonStore() *ErrorGetByIDSeasonStore { return &ErrorGetByIDSeasonStore{} }
+
+func (e *ErrorGetByIDSeasonStore) Save(_ context.Context, _ SeasonSnapshot) error { return nil }
+
+func (e *ErrorGetByIDSeasonStore) GetByID(_ context.Context, _ string) (*SeasonSnapshot, error) {
+	return nil, fmt.Errorf("simulated season store GetByID failure")
+}
+
+func (e *ErrorGetByIDSeasonStore) ListAll(_ context.Context) ([]SeasonSnapshot, error) {
+	return nil, nil
+}
+
+func (e *ErrorGetByIDSeasonStore) Exists(_ context.Context, _ string) bool { return false }
+
+func (e *ErrorGetByIDSeasonStore) Reset() {}
+
 // ErrorResultStore is a test double that always fails on SaveResult.
 type ErrorResultStore struct{}
 

@@ -16,12 +16,34 @@ beforeEach(() => {
     json: () => Promise.resolve(mockData),
   }))
 })
+// Note: individual tests that need distinct fetch responses stub fetch themselves
 
 afterEach(() => {
   vi.restoreAllMocks()
 })
 
+function makeLeaderboardRouter(path = '/leaderboard') {
+  const r = makeRouter()
+  r.addRoute({ path: '/leaderboard/:season', component: LeaderboardView })
+  return r
+}
+
 describe('LeaderboardView', () => {
+  it('fetches from /api/leaderboard/:season when season route param is set', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ entries: [
+        { handle: 'HistoryFan', acesRadioPoints: 15, upper90ClubPoints: 3, grouchyPoints: 1 }
+      ]}) })
+    vi.stubGlobal('fetch', fetchMock)
+    const r = makeLeaderboardRouter()
+    await r.push('/leaderboard/2026')
+    const wrapper = mount(LeaderboardView, { global: { plugins: [r] } })
+    await flushPromises()
+    expect(fetchMock).toHaveBeenCalledWith('/api/leaderboard/2026')
+    const rows = wrapper.findAll('[data-testid="leaderboard-row"]')
+    expect(rows[0].find('[data-testid="leaderboard-aces-points"]').text()).toBe('15')
+  })
+
   it('sets document title to Leaderboard — Crew Predictions', async () => {
     mount(LeaderboardView, { global: { plugins: [makeRouter()] } })
     await flushPromises()
@@ -167,5 +189,22 @@ describe('LeaderboardView', () => {
     const wrapper = mount(LeaderboardView, { global: { plugins: [makeRouter()] } })
     await flushPromises()
     expect(wrapper.find('[data-testid="mobile-sort-grouchy"]').exists()).toBe(true)
+  })
+
+  it('mobile sort Grouchy button triggers sort change', async () => {
+    const wrapper = mount(LeaderboardView, { global: { plugins: [makeRouter()] } })
+    await flushPromises()
+    await wrapper.find('[data-testid="mobile-sort-grouchy"]').trigger('click')
+    const rows = wrapper.findAll('[data-testid="leaderboard-row"]')
+    expect(rows[0].find('[data-testid="leaderboard-grouchy-points"]').text()).toBe('3')
+  })
+
+  it('mobile sort Aces button switches back from another sort', async () => {
+    const wrapper = mount(LeaderboardView, { global: { plugins: [makeRouter()] } })
+    await flushPromises()
+    await wrapper.find('[data-testid="mobile-sort-upper90"]').trigger('click')
+    await wrapper.find('[data-testid="mobile-sort-aces"]').trigger('click')
+    const rows = wrapper.findAll('[data-testid="leaderboard-row"]')
+    expect(rows[0].find('[data-testid="leaderboard-aces-points"]').text()).toBe('15')
   })
 })

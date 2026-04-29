@@ -10,11 +10,12 @@ import (
 )
 
 type LeaderboardHandler struct {
-	users repository.UserStore
+	users   repository.UserStore
+	seasons repository.SeasonStore
 }
 
-func NewLeaderboardHandler(_ repository.PredictionStore, _ repository.ResultStore, users repository.UserStore, _ string) *LeaderboardHandler {
-	return &LeaderboardHandler{users: users}
+func NewLeaderboardHandler(_ repository.PredictionStore, _ repository.ResultStore, users repository.UserStore, seasons repository.SeasonStore, _ string) *LeaderboardHandler {
+	return &LeaderboardHandler{users: users, seasons: seasons}
 }
 
 type leaderboardEntry struct {
@@ -24,6 +25,23 @@ type leaderboardEntry struct {
 	Upper90Points   int    `json:"upper90ClubPoints"`
 	GrouchyPoints   int    `json:"grouchyPoints"`
 	HasProfile      bool   `json:"hasProfile"`
+}
+
+func (h *LeaderboardHandler) APIGetSeason(w http.ResponseWriter, r *http.Request) {
+	seasonID := r.PathValue("season")
+	snap, err := h.seasons.GetByID(r.Context(), seasonID)
+	if err != nil {
+		http.Error(w, "couldn't load season", http.StatusInternalServerError)
+		return
+	}
+	if snap == nil {
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(map[string]any{"entries": snap.Entries}); err != nil {
+		log.Printf("leaderboard season: encode response: %v", err)
+	}
 }
 
 func (h *LeaderboardHandler) APIList(w http.ResponseWriter, r *http.Request) {

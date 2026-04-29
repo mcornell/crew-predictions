@@ -55,4 +55,3 @@ export async function sendPasswordReset(email: string): Promise<void> {
   const auth = getFirebaseAuth()
   await sendPasswordResetEmail(auth, email)
 }
-

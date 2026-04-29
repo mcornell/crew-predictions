@@ -12,7 +12,50 @@ import (
 )
 
 func newLeaderboard(users repository.UserStore) *handlers.LeaderboardHandler {
-	return handlers.NewLeaderboardHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), users, "Columbus Crew")
+	return handlers.NewLeaderboardHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), users, repository.NewMemorySeasonStore(), "Columbus Crew")
+}
+
+func TestLeaderboardAPIHandler_GetSeason_Returns404ForUnknown(t *testing.T) {
+	lh := newLeaderboard(repository.NewMemoryUserStore())
+	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard/2026", nil)
+	req.SetPathValue("season", "2026")
+	w := httptest.NewRecorder()
+	lh.APIGetSeason(w, req)
+	if w.Code != http.StatusNotFound {
+		t.Errorf("expected 404 for unknown season, got %d", w.Code)
+	}
+}
+
+func TestLeaderboardAPIHandler_GetSeason_ReturnsSnapshotEntries(t *testing.T) {
+	seasons := repository.NewMemorySeasonStore()
+	ctx := context.Background()
+	seasons.Save(ctx, repository.SeasonSnapshot{
+		ID:   "2026",
+		Name: "2026 Season",
+		Entries: []repository.SeasonEntry{
+			{Handle: "HistoryFan", AcesRadioPoints: 15, Upper90Points: 3, GrouchyPoints: 1, Rank: 1},
+		},
+	})
+	lh := handlers.NewLeaderboardHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), repository.NewMemoryUserStore(), seasons, "Columbus Crew")
+	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard/2026", nil)
+	req.SetPathValue("season", "2026")
+	w := httptest.NewRecorder()
+	lh.APIGetSeason(w, req)
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", w.Code)
+	}
+	var body struct {
+		Entries []struct {
+			Handle          string `json:"handle"`
+			AcesRadioPoints int    `json:"acesRadioPoints"`
+		} `json:"entries"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+		t.Fatalf("invalid JSON: %v", err)
+	}
+	if len(body.Entries) != 1 || body.Entries[0].Handle != "HistoryFan" || body.Entries[0].AcesRadioPoints != 15 {
+		t.Errorf("unexpected entries: %+v", body.Entries)
+	}
 }
 
 type leaderboardBody struct {
@@ -73,7 +116,7 @@ func TestLeaderboardAPIHandler_ReturnsJSON(t *testing.T) {
 }
 
 func TestLeaderboardAPIHandler_Returns500WhenGetAllFails(t *testing.T) {
-	lh := handlers.NewLeaderboardHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), repository.NewErrorGetAllUserStore(), "Columbus Crew")
+	lh := handlers.NewLeaderboardHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), repository.NewErrorGetAllUserStore(), repository.NewMemorySeasonStore(), "Columbus Crew")
 	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
 	w := httptest.NewRecorder()
 
@@ -212,5 +255,22 @@ func TestLeaderboardAPIHandler_IncludesGrouchyPoints(t *testing.T) {
 	body := decodeLeaderboard(t, w)
 	if len(body.Entries) == 0 || body.Entries[0].GrouchyPoints != 1 {
 		t.Errorf("expected grouchyPoints=1, got %+v", body.Entries)
+	}
+}
+
+func TestLeaderboardAPIHandler_GetSeason_Returns500WhenStoreErrors(t *testing.T) {
+	lh := handlers.NewLeaderboardHandler(
+		repository.NewMemoryPredictionStore(),
+		repository.NewMemoryResultStore(),
+		repository.NewMemoryUserStore(),
+		repository.NewErrorGetByIDSeasonStore(),
+		"Columbus Crew",
+	)
+	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard/2026", nil)
+	req.SetPathValue("season", "2026")
+	w := httptest.NewRecorder()
+	lh.APIGetSeason(w, req)
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("expected 500, got %d", w.Code)
 	}
 }

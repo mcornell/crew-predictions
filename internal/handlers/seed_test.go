@@ -66,3 +66,41 @@ func TestSeedPredictionHandler_RejectsBadGoals(t *testing.T) {
 		t.Errorf("expected 400, got %d", w.Code)
 	}
 }
+
+func TestSeedUserHandler_UpsertsSetsHandleAndUserID(t *testing.T) {
+	store := repository.NewMemoryUserStore()
+	sh := handlers.NewSeedUserHandler(store)
+
+	req := httptest.NewRequest(http.MethodPost, "/admin/seed-user",
+		strings.NewReader("user_id=google:fan1&handle=fan1@bsky.mock"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+
+	sh.Submit(w, req)
+
+	if w.Code != http.StatusNoContent {
+		t.Errorf("expected 204, got %d", w.Code)
+	}
+	u, err := store.GetByID(context.Background(), "google:fan1")
+	if err != nil || u == nil {
+		t.Fatalf("expected user to exist, got err=%v u=%v", err, u)
+	}
+	if u.Handle != "fan1@bsky.mock" {
+		t.Errorf("expected handle fan1@bsky.mock, got %q", u.Handle)
+	}
+}
+
+func TestSeedUserHandler_RejectsMissingUserID(t *testing.T) {
+	sh := handlers.NewSeedUserHandler(repository.NewMemoryUserStore())
+
+	req := httptest.NewRequest(http.MethodPost, "/admin/seed-user",
+		strings.NewReader("handle=fan1@bsky.mock"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+
+	sh.Submit(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", w.Code)
+	}
+}

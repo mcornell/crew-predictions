@@ -19,13 +19,21 @@ The failure mode is always the same: after committing, `git push` feels like the
 
 This rule has been violated repeatedly. The specific failure pattern: new UI behavior (e.g. "Now Playing" section) gets implemented by changing frontend filtering logic without first writing a failing e2e scenario. The result is the feature ships with zero e2e coverage AND the filtering change breaks 18 existing tests. Both outcomes happened in the same session. The user was angry.
 
+A second recurring failure pattern: infrastructure and "helper" code — repository implementations (`MemoryConfigStore`, `MemoryUserStore.Reset`), seed handlers (`SeedUserHandler`), Vue component additions (AppHeader flyout/drawer) — gets written without unit tests first because it feels like plumbing rather than logic. It is not exempt. Every function, method, branch, and error path requires a failing test before the line of production code that satisfies it. If `go test ./... -cover` shows any function below 80% coverage that isn't a Firestore adapter (covered by integration tests) or external SDK wrapper, that is a violation.
+
 **The outer BDD loop is not optional.** Before touching any production file for a new feature:
-1. Write the Gherkin scenario. Run `npm test`. Confirm it fails for the right reason.
+1. Write the Gherkin scenario. Immediately create stub step definitions so the suite can run (missing steps block all other tests). Run `npm test`. Confirm it fails for the right reason — the new scenario fails, all others pass.
 2. Only then open any `.vue`, `.go`, or `.ts` production file.
 
 If you find yourself writing production code and cannot point to the specific failing e2e scenario that demands it, stop. You are violating this rule.
 
+**After any feature or fix, run `go test ./... -cover` and `npm run test:unit -- --coverage`. Check every function for coverage.** Uncovered functions and branches that aren't Firestore adapters or external SDK wrappers must be covered before declaring the work done. Do not wait for the user to ask.
+
+**Run all three test suites at every commit, not just at the end.** `go test ./...`, `npm run typecheck && npm run test:unit`, and `npm test` must all be green before every commit during a feature build. "I only changed Go code" is not an excuse to skip `npm test` — a feature file with missing step definitions blocks the entire e2e suite and hides regressions in unrelated tests.
+
 **Before declaring any work done — feature OR refactor — run `go test ./...`, `npm run typecheck && npm run test:unit`, and `npm test`. All three must be green.** This applies to refactors and removals too, not just new features — observable behavior can regress without a new scenario failing first.
+
+**`npm test` is a hard gate before any push.** This was violated when the `MemoryUserStore.Reset()` fix was committed and pushed without running `npm test` locally. CI surfaced two regressions: the profile pre-populate scenario (user not in store due to Vue child-before-parent mount race) and the TwoOneBot leaderboard scenario (same root cause). The "never push" rule and the "run tests" rule are one rule: you cannot request a push unless `npm test` has passed in this session with the current code. "I only changed test infrastructure" and "it looked correct by inspection" are not exceptions — code that seems obviously correct has caused CI failures before.
 
 ---
 

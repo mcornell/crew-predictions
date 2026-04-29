@@ -81,7 +81,7 @@
             :class="{ 'lb-pts--active': activeSort === 'upper90' }"
             data-testid="leaderboard-upper90-points"
             data-label="Upper 90 Club"
-          >{{ entry.upper90ClubPoints }}</span>
+          >{{ upper90For(entry) }}</span>
           <span
             class="lb-cell lb-pts"
             :class="{ 'lb-pts--active': activeSort === 'grouchy' }"
@@ -97,36 +97,54 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 
 interface Entry {
-  userID: string
+  userID?: string
   handle: string
   acesRadioPoints: number
-  upper90ClubPoints: number
+  upper90ClubPoints?: number
+  upper90Points?: number
   grouchyPoints: number
-  hasProfile: boolean
+  hasProfile?: boolean
 }
+
+const route = useRoute()
 
 const entries = ref<Entry[]>([])
 const activeSort = ref<'aces' | 'upper90' | 'grouchy'>('aces')
 const loading = ref(true)
 const error = ref<string | null>(null)
 
+function upper90For(e: Entry): number {
+  return e.upper90ClubPoints ?? e.upper90Points ?? 0
+}
+
 const sortedEntries = computed(() => {
-  const key = activeSort.value === 'aces' ? 'acesRadioPoints' : activeSort.value === 'upper90' ? 'upper90ClubPoints' : 'grouchyPoints'
-  return [...entries.value].sort((a, b) => b[key] - a[key])
+  const key = activeSort.value
+  return [...entries.value].sort((a, b) => {
+    if (key === 'aces') return b.acesRadioPoints - a.acesRadioPoints
+    if (key === 'upper90') return upper90For(b) - upper90For(a)
+    return b.grouchyPoints - a.grouchyPoints
+  })
 })
 
 function rankFor(i: number): number {
   if (i === 0) return 1
-  const key = activeSort.value === 'aces' ? 'acesRadioPoints' : activeSort.value === 'upper90' ? 'upper90ClubPoints' : 'grouchyPoints'
-  if (sortedEntries.value[i][key] === sortedEntries.value[i - 1][key]) return rankFor(i - 1)
+  const a = sortedEntries.value[i]
+  const b = sortedEntries.value[i - 1]
+  const key = activeSort.value
+  const av = key === 'aces' ? a.acesRadioPoints : key === 'upper90' ? upper90For(a) : a.grouchyPoints
+  const bv = key === 'aces' ? b.acesRadioPoints : key === 'upper90' ? upper90For(b) : b.grouchyPoints
+  if (av === bv) return rankFor(i - 1)
   return i + 1
 }
 
 onMounted(async () => {
   document.title = 'Leaderboard — Crew Predictions'
-  const res = await fetch('/api/leaderboard')
+  const seasonID = route.params.season as string | undefined
+  const url = seasonID ? `/api/leaderboard/${seasonID}` : '/api/leaderboard'
+  const res = await fetch(url)
   if (res.ok) {
     const data = await res.json()
     entries.value = data.entries ?? []

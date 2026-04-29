@@ -52,6 +52,7 @@ trace.zip
 
 # Local reference docs (not for repo)
 INFRA-LOCAL.md
+HANDOFF.md
 
 # Misc
 *.log
