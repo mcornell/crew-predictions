@@ -283,6 +283,9 @@ body::after {
   align-items: center;
 }
 
+/* Hidden on desktop; shown under each team name on mobile via grid */
+.matchup-team-form { display: none; }
+
 .team-name {
   font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
   font-size: 1.55rem;
@@ -387,18 +390,18 @@ body::after {
 }
 
 .saved-label {
-  font-family: 'Barlow', sans-serif;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-family: 'DM Mono', monospace;
+  font-size: 1rem;
+  font-weight: 400;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   color: var(--muted);
 }
 
 .live-indicator {
   display: inline-block;
   font-family: 'DM Mono', monospace;
-  font-size: 0.65rem;
+  font-size: 1rem;
   font-weight: 600;
   letter-spacing: 0.12em;
   color: var(--gold);
@@ -410,7 +413,7 @@ body::after {
 .match-countdown {
   display: inline-block;
   font-family: 'DM Mono', monospace;
-  font-size: 0.65rem;
+  font-size: 1rem;
   font-weight: 400;
   letter-spacing: 0.08em;
   color: var(--muted);
@@ -439,7 +442,7 @@ body::after {
 .delayed-indicator {
   display: inline-block;
   font-family: 'DM Mono', monospace;
-  font-size: 0.65rem;
+  font-size: 1rem;
   font-weight: 600;
   letter-spacing: 0.12em;
   color: var(--danger);
@@ -1017,6 +1020,21 @@ body::after {
     white-space: normal; overflow: visible; text-overflow: unset;
   }
 
+  /* When form data is present, push away team/score to row 3 */
+  .matchup--has-form > :nth-child(4) { grid-column: 2; grid-row: 3; }
+  .matchup--has-form > :nth-child(5) { grid-column: 1; grid-row: 3; }
+
+  /* Show form under each team name; hide the desktop-only form row */
+  .match-form-row { display: none; }
+  .matchup-team-form {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    grid-column: 1;
+  }
+  .matchup-team-form--home { grid-row: 2; }
+  .matchup-team-form--away { grid-row: 4; }
+
   .team-name { font-size: 1.1rem; }
 
   .score-input {
@@ -1036,6 +1054,15 @@ body::after {
   .match-meta {
     font-size: 0.9rem;
     margin-top: 0.25rem;
+  }
+
+  .live-indicator,
+  .delayed-indicator,
+  .match-countdown,
+  .saved-label,
+  .match-record,
+  .form-letter {
+    font-size: 0.9rem;
   }
 
   .btn-lock {
@@ -1244,7 +1271,7 @@ body::after {
 }
 .match-record {
   font-family: 'DM Mono', monospace;
-  font-size: 0.7rem;
+  font-size: 1rem;
   color: var(--muted);
   letter-spacing: 0.03em;
 }
@@ -1254,7 +1281,7 @@ body::after {
 }
 .form-letter {
   font-family: 'DM Mono', monospace;
-  font-size: 0.65rem;
+  font-size: 1rem;
   font-weight: 500;
   width: 1.1em;
   text-align: center;
