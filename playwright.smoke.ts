@@ -18,6 +18,9 @@ export default defineConfig({
     : [['list'], ['html', { outputFolder: 'smoke-report', open: debug ? 'always' : 'never' }]],
   globalSetup: './e2e/smoke/global-setup.ts',
   globalTeardown: './e2e/smoke/global-teardown.ts',
+  expect: {
+    timeout: 15000,
+  },
   use: {
     baseURL: process.env.STAGING_URL ?? 'https://crew-predictions-staging.web.app',
     headless: !debug,

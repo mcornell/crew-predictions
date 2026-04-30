@@ -68,6 +68,7 @@ Given('the following matches are seeded in order:', async ({ request }, table: a
         state: row.state ?? '',
         home_score: row.homeScore ?? '',
         away_score: row.awayScore ?? '',
+        venue: row.venue ?? '',
       },
     });
   }
@@ -98,6 +99,36 @@ Then('the now playing card should show score {string} to {string}', async ({ pag
   const scores = card.locator('.inline-score');
   await expect(scores.nth(0)).toHaveText(home);
   await expect(scores.nth(1)).toHaveText(away);
+});
+
+Then('the match card for {string} should show venue {string}', async ({ page }, matchId: string, venue: string) => {
+  const card = page.locator(`[data-testid="match-card"][data-match-id="${matchId}"]`);
+  await expect(card.locator('[data-testid="match-venue"]')).toHaveText(venue);
+});
+
+Then('the now playing card for match {string} should show venue {string}', async ({ page }, matchId: string, venue: string) => {
+  const card = page.locator(`[data-testid="now-playing-card"][data-match-id="${matchId}"]`);
+  await expect(card.locator('[data-testid="match-venue"]')).toHaveText(venue);
+});
+
+Then('the result card for match {string} should show venue {string}', async ({ page }, matchId: string, venue: string) => {
+  const card = page.locator(`[data-testid="result-card"][data-match-id="${matchId}"]`);
+  await expect(card.locator('[data-testid="match-venue"]')).toHaveText(venue);
+});
+
+Then('the result card for match {string} should show my pick {string} below the score', async ({ page }, matchId: string, pick: string) => {
+  const card = page.locator(`[data-testid="result-card"][data-match-id="${matchId}"]`);
+  await expect(card.locator('[data-testid="your-pick"]')).toContainText(`Your pick: ${pick}`);
+  const pickAfterMatchup = await card.evaluate((cardEl) => {
+    const info = cardEl.querySelector('.match-info');
+    if (!info) return false;
+    const children = Array.from(info.children);
+    const matchupIdx = children.findIndex(el => el.getAttribute('data-testid') === 'matchup');
+    const pickIdx = children.findIndex(el => el.getAttribute('data-testid') === 'your-pick');
+    // pick must be immediately after matchup (score), before date and venue
+    return pickIdx !== -1 && matchupIdx !== -1 && pickIdx === matchupIdx + 1;
+  });
+  expect(pickAfterMatchup).toBe(true);
 });
 
 Given('the match {string} has already kicked off', async ({ request }, matchId: string) => {

@@ -34,6 +34,7 @@ func (s *FirestoreMatchStore) SaveAll(matches []models.Match) error {
 			"awayScore":    m.AwayScore,
 			"state":        m.State,
 			"displayClock": m.DisplayClock,
+			"venue":        m.Venue,
 		})
 	}
 	batch.Flush()
@@ -69,6 +70,7 @@ func toMatch(snap *firestore.DocumentSnapshot) (models.Match, error) {
 		AwayScore    string    `firestore:"awayScore"`
 		State        string    `firestore:"state"`
 		DisplayClock string    `firestore:"displayClock"`
+		Venue        string    `firestore:"venue"`
 	}
 	if err := snap.DataTo(&doc); err != nil {
 		return models.Match{}, err
@@ -83,5 +85,6 @@ func toMatch(snap *firestore.DocumentSnapshot) (models.Match, error) {
 		AwayScore:    doc.AwayScore,
 		State:        doc.State,
 		DisplayClock: doc.DisplayClock,
+		Venue:        doc.Venue,
 	}, nil
 }

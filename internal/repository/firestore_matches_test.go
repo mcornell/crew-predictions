@@ -47,6 +47,32 @@ func TestFirestoreMatchStore_SaveAllAndGetAll(t *testing.T) {
 	}
 }
 
+func TestFirestoreMatchStore_VenueRoundTrips(t *testing.T) {
+	store := firestoreMatchStoreOrSkip(t)
+
+	if err := store.SaveAll([]models.Match{
+		{ID: "fs-match-venue", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",
+			Kickoff: time.Date(2026, 5, 1, 20, 0, 0, 0, time.UTC),
+			Venue:   "ScottsMiracle-Gro Field"},
+	}); err != nil {
+		t.Fatalf("unexpected error saving: %v", err)
+	}
+
+	got, err := store.GetAll()
+	if err != nil {
+		t.Fatalf("unexpected error retrieving: %v", err)
+	}
+	for _, m := range got {
+		if m.ID == "fs-match-venue" {
+			if m.Venue != "ScottsMiracle-Gro Field" {
+				t.Errorf("expected Venue 'ScottsMiracle-Gro Field', got %q", m.Venue)
+			}
+			return
+		}
+	}
+	t.Error("match fs-match-venue not found in GetAll results")
+}
+
 func TestFirestoreMatchStore_SaveAllOverwritesExisting(t *testing.T) {
 	store := firestoreMatchStoreOrSkip(t)
 

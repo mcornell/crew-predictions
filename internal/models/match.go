@@ -12,4 +12,5 @@ type Match struct {
 	AwayScore    string
 	State        string
 	DisplayClock string
+	Venue        string
 }

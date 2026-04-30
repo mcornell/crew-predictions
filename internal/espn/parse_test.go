@@ -133,6 +133,28 @@ func TestScoreField_ParsesIntegerForm(t *testing.T) {
 	}
 }
 
+func TestParseEvents_PopulatesVenue(t *testing.T) {
+	raw := `{"events":[{"id":"e1","date":"2026-05-01T20:00Z","competitions":[{
+		"competitors":[
+			{"homeAway":"home","score":"0","team":{"displayName":"Columbus Crew"}},
+			{"homeAway":"away","score":"0","team":{"displayName":"FC Dallas"}}
+		],
+		"venue":{"fullName":"ScottsMiracle-Gro Field"},
+		"status":{"displayClock":"","state":"pre","type":{"name":"STATUS_SCHEDULED"}}
+	}]}]}`
+	var data espnResponse
+	if err := json.Unmarshal([]byte(raw), &data); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	records := parseEvents(data)
+	if len(records) != 1 {
+		t.Fatalf("expected 1 record, got %d", len(records))
+	}
+	if records[0].venue != "ScottsMiracle-Gro Field" {
+		t.Errorf("expected venue 'ScottsMiracle-Gro Field', got %q", records[0].venue)
+	}
+}
+
 func TestParseEvents_SkipsEventWithNoCompetitions(t *testing.T) {
 	var data espnResponse
 	if err := json.Unmarshal([]byte(`{"events":[{"id":"e1","date":"2026-05-01T20:00Z","competitions":[]}]}`), &data); err != nil {

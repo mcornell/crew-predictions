@@ -368,3 +368,85 @@ func TestMatchDetailHandler_ReturnsEmptyPredictionsWhenNone(t *testing.T) {
 		t.Errorf("expected 0 predictions, got %d", len(predictions))
 	}
 }
+
+func TestMatchDetailHandler_Returns500WhenMatchStoreFails(t *testing.T) {
+	h := handlers.NewMatchDetailHandler(
+		repository.NewMemoryPredictionStore(),
+		repository.NewMemoryResultStore(),
+		repository.NewErrorGetAllMatchStore(),
+		repository.NewMemoryUserStore(),
+		"Columbus Crew",
+	)
+	req := httptest.NewRequest("GET", "/api/matches/any", nil)
+	req.SetPathValue("matchId", "any")
+	w := httptest.NewRecorder()
+	h.Get(w, req)
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("expected 500, got %d", w.Code)
+	}
+}
+
+func TestMatchDetailHandler_Returns500WhenPredictionStoreFails(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	matchStore.Seed([]models.Match{{
+		ID: "m-pred-err", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",
+		Kickoff: time.Now(), Status: "STATUS_FULL_TIME",
+	}})
+	h := handlers.NewMatchDetailHandler(
+		repository.NewErrorGetByMatchPredictionStore(),
+		repository.NewMemoryResultStore(),
+		matchStore,
+		repository.NewMemoryUserStore(),
+		"Columbus Crew",
+	)
+	req := httptest.NewRequest("GET", "/api/matches/m-pred-err", nil)
+	req.SetPathValue("matchId", "m-pred-err")
+	w := httptest.NewRecorder()
+	h.Get(w, req)
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("expected 500, got %d", w.Code)
+	}
+}
+
+func TestMatchDetailHandler_IncludesVenue(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	matchStore.Seed([]models.Match{{
+		ID:        "m-venue",
+		HomeTeam:  "Columbus Crew",
+		AwayTeam:  "FC Dallas",
+		Kickoff:   time.Now().Add(-24 * time.Hour),
+		Status:    "STATUS_FULL_TIME",
+		HomeScore: "2",
+		AwayScore: "1",
+		Venue:     "ScottsMiracle-Gro Field",
+	}})
+
+	h := handlers.NewMatchDetailHandler(
+		repository.NewMemoryPredictionStore(),
+		repository.NewMemoryResultStore(),
+		matchStore,
+		repository.NewMemoryUserStore(),
+		"Columbus Crew",
+	)
+
+	req := httptest.NewRequest("GET", "/api/matches/m-venue", nil)
+	req.SetPathValue("matchId", "m-venue")
+	w := httptest.NewRecorder()
+	h.Get(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+
+	var resp struct {
+		Match struct {
+			Venue string `json:"venue"`
+		} `json:"match"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatalf("invalid JSON: %v", err)
+	}
+	if resp.Match.Venue != "ScottsMiracle-Gro Field" {
+		t.Errorf("expected venue 'ScottsMiracle-Gro Field', got %q", resp.Match.Venue)
+	}
+}

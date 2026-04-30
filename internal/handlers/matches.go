@@ -28,6 +28,7 @@ type apiMatch struct {
 	AwayScore    string `json:"awayScore"`
 	State        string `json:"state"`
 	DisplayClock string `json:"displayClock,omitempty"`
+	Venue        string `json:"venue,omitempty"`
 }
 
 type apiPrediction struct {
@@ -56,6 +57,7 @@ func (h *MatchesHandler) APIList(w http.ResponseWriter, r *http.Request) {
 			AwayScore:    m.AwayScore,
 			State:        m.State,
 			DisplayClock: m.DisplayClock,
+			Venue:        m.Venue,
 		}
 	}
 

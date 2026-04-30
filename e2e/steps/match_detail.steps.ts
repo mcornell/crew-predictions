@@ -91,3 +91,14 @@ Then('the now playing card for match {string} should link to {string}', async ({
   const href = await card.getAttribute('href');
   expect(href).toContain(expectedPath);
 });
+
+Then('I should see the venue {string} on the match detail page', async ({ page }, venue: string) => {
+  await expect(page.locator('[data-testid="match-detail-venue"]')).toHaveText(venue);
+});
+
+Then('I should see an ESPN link for match {string}', async ({ page }, matchId: string) => {
+  const link = page.locator('[data-testid="espn-link"]');
+  await expect(link).toBeVisible();
+  const href = await link.getAttribute('href');
+  expect(href).toContain(`gameId/${matchId}`);
+});

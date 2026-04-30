@@ -57,6 +57,9 @@ type espnResponse struct {
 					DisplayName string `json:"displayName"`
 				} `json:"team"`
 			} `json:"competitors"`
+			Venue struct {
+				FullName string `json:"fullName"`
+			} `json:"venue"`
 			Status struct {
 				DisplayClock string `json:"displayClock"`
 				State        string `json:"state"`
@@ -78,6 +81,7 @@ type matchRecord struct {
 	status       string
 	state        string
 	displayClock string
+	venue        string
 }
 
 func deriveState(espnState, statusName string) string {
@@ -161,6 +165,7 @@ func parseEvents(data espnResponse) []matchRecord {
 			status:       comp.Status.Type.Name,
 			state:        deriveState(comp.Status.State, comp.Status.Type.Name),
 			displayClock: comp.Status.DisplayClock,
+			venue:        comp.Venue.FullName,
 		})
 	}
 	return records
@@ -229,6 +234,7 @@ func fetchCrewMatchesFrom(base string) ([]models.Match, error) {
 			AwayScore:    r.awayScore,
 			State:        r.state,
 			DisplayClock: r.displayClock,
+			Venue:        r.venue,
 		}
 	}
 	return matches, nil

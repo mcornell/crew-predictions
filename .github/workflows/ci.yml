@@ -62,7 +62,7 @@ jobs:
       - name: Go unit tests
         run: |
           echo "## Go Tests" >> $GITHUB_STEP_SUMMARY
-          gotestsum --junitfile go-results.xml -- -coverprofile=go-coverage.out ./...
+          gotestsum --junitfile go-results.xml -- -coverprofile=go-coverage.out $(go list ./... | grep -v '/node_modules/')
 
       - name: Go test report
         uses: dorny/test-reporter@v3

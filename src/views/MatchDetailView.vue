@@ -18,6 +18,14 @@
         <span class="team-name team-away">{{ match.awayTeam }}</span>
       </div>
       <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
+      <div v-if="match.venue" class="match-meta match-venue" data-testid="match-detail-venue">{{ match.venue }}</div>
+      <a
+        :href="`https://www.espn.com/soccer/match/_/gameId/${match.id}`"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="espn-link"
+        data-testid="espn-link"
+      >View on ESPN ↗</a>
     </div>
 
     <template v-if="sortedPredictions.length > 0">
@@ -118,6 +126,7 @@ interface MatchInfo {
   state?: string
   displayClock?: string
   status?: string
+  venue?: string
 }
 
 interface PredictionEntry {

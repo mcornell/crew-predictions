@@ -8,11 +8,14 @@ async function bootstrap() {
   try {
     const script = document.createElement('script')
     script.src = '/auth/config.js'
-    await new Promise((resolve, reject) => {
-      script.onload = resolve
-      script.onerror = reject
-      document.head.appendChild(script)
-    })
+    await Promise.race([
+      new Promise((resolve, reject) => {
+        script.onload = resolve
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      new Promise(resolve => setTimeout(resolve, 5000)),
+    ])
   } catch {
     // no config served (tests / local dev without server)
   }
