@@ -125,6 +125,16 @@ Then('the match card for {string} should show home form {string}', async ({ page
   await expect(card.locator('[data-testid="home-form"]')).toHaveText(form);
 });
 
+Then('the now playing card for match {string} should show home record {string}', async ({ page }, matchId: string, record: string) => {
+  const card = page.locator(`[data-testid="now-playing-card"][data-match-id="${matchId}"]`);
+  await expect(card.locator('[data-testid="home-record"]')).toHaveText(record);
+});
+
+Then('the now playing card for match {string} should show home form {string}', async ({ page }, matchId: string, form: string) => {
+  const card = page.locator(`[data-testid="now-playing-card"][data-match-id="${matchId}"]`);
+  await expect(card.locator('[data-testid="home-form"]')).toHaveText(form);
+});
+
 Then('the result card for match {string} should show venue {string}', async ({ page }, matchId: string, venue: string) => {
   const card = page.locator(`[data-testid="result-card"][data-match-id="${matchId}"]`);
   await expect(card.locator('[data-testid="match-venue"]')).toHaveText(venue);

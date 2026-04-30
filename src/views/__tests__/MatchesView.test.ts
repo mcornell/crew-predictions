@@ -522,6 +522,28 @@ describe('MatchesView', () => {
     vi.restoreAllMocks()
   })
 
+  it('shows record and form on predicted upcoming match card', async () => {
+    const match = { id: 'match-rf-2', homeTeam: 'Columbus Crew', awayTeam: 'FC Dallas', kickoff: futureKickoff(24), status: 'STATUS_SCHEDULED', state: 'pre', homeScore: '', awayScore: '', homeRecord: '5-3-2', awayRecord: '4-4-2', homeForm: 'WWWLL', awayForm: 'LWDWL' }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ matches: [match], predictions: { 'match-rf-2': { homeGoals: 2, awayGoals: 1 } } }) }))
+    const wrapper = mountMatches(loggedInProvide)
+    await flushPromises()
+    const card = wrapper.find('[data-testid="match-card"][data-match-id="match-rf-2"]')
+    expect(card.find('[data-testid="home-record"]').text()).toBe('5-3-2')
+    expect(card.find('[data-testid="home-form"]').text()).toBe('WWWLL')
+    vi.restoreAllMocks()
+  })
+
+  it('shows record and form on now-playing match card', async () => {
+    const match = { id: 'match-rf-3', homeTeam: 'Columbus Crew', awayTeam: 'FC Dallas', kickoff: pastKickoff(1), status: 'STATUS_IN_PROGRESS', state: 'in', homeScore: '1', awayScore: '0', homeRecord: '5-3-2', awayRecord: '4-4-2', homeForm: 'WWWLL', awayForm: 'LWDWL' }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ matches: [match], predictions: {} }) }))
+    const wrapper = mountMatches()
+    await flushPromises()
+    const card = wrapper.find('[data-testid="now-playing-card"][data-match-id="match-rf-3"]')
+    expect(card.find('[data-testid="home-record"]').text()).toBe('5-3-2')
+    expect(card.find('[data-testid="home-form"]').text()).toBe('WWWLL')
+    vi.restoreAllMocks()
+  })
+
   it('past-kickoff scheduled match has no Predict button', async () => {
     vi.useFakeTimers()
     const pastKickoff = new Date(Date.now() - 5 * 60 * 1000).toISOString()
