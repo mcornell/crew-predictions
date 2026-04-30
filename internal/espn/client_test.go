@@ -246,6 +246,35 @@ func TestFetchCrewMatchesFrom_PopulatesVenue(t *testing.T) {
 	}
 }
 
+func TestFetchCrewMatchesFrom_PopulatesRecordsAndForm(t *testing.T) {
+	payload := `{"events":[{"id":"r1","date":"2026-05-01T23:00Z","competitions":[{"competitors":[{"homeAway":"home","score":{},"team":{"displayName":"Columbus Crew"},"records":[{"type":"total","summary":"5-3-2"}],"form":"WWWLL"},{"homeAway":"away","score":{},"team":{"displayName":"FC Dallas"},"records":[{"type":"total","summary":"4-4-2"}],"form":"LWDWL"}],"venue":{},"status":{"state":"pre","type":{"name":"STATUS_SCHEDULED"}}}]}]}`
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(payload))
+	}))
+	defer srv.Close()
+
+	matches, err := fetchCrewMatchesFrom(srv.URL)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(matches) == 0 {
+		t.Fatal("expected at least one match")
+	}
+	m := matches[0]
+	if m.HomeRecord != "5-3-2" {
+		t.Errorf("HomeRecord: got %q, want %q", m.HomeRecord, "5-3-2")
+	}
+	if m.AwayRecord != "4-4-2" {
+		t.Errorf("AwayRecord: got %q, want %q", m.AwayRecord, "4-4-2")
+	}
+	if m.HomeForm != "WWWLL" {
+		t.Errorf("HomeForm: got %q, want %q", m.HomeForm, "WWWLL")
+	}
+	if m.AwayForm != "LWDWL" {
+		t.Errorf("AwayForm: got %q, want %q", m.AwayForm, "LWDWL")
+	}
+}
+
 func TestFetchCrewMatchesFrom_ReturnsCrewMatchesFromFixtures(t *testing.T) {
 	schedule, err := os.ReadFile("testdata/mls_schedule.json")
 	if err != nil {

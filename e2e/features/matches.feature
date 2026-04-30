@@ -103,6 +103,15 @@ Feature: Match listings
     When I visit the matches page
     Then the result card for match "m-ven-3" should show venue "ScottsMiracle-Gro Field"
 
+  Scenario: Unpredicted upcoming match card shows team records and form
+    Given the following matches are seeded:
+      | id       | homeTeam      | awayTeam  | status           | homeRecord | awayRecord | homeForm | awayForm |
+      | m-form-1 | Columbus Crew | FC Dallas | STATUS_SCHEDULED | 5-3-2      | 4-4-2      | WWWLL    | LWDWL    |
+    And I am not logged in
+    When I visit the matches page
+    Then the match card for "m-form-1" should show home record "5-3-2"
+    And the match card for "m-form-1" should show home form "WWWLL"
+
   Scenario: User's prediction appears at the top of a result card
     Given the following matches are seeded:
       | id       | homeTeam      | awayTeam  | status           | homeScore | awayScore |

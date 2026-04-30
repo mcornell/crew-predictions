@@ -136,6 +136,39 @@ func TestSeedMatchHandler_SavesVenue(t *testing.T) {
 	}
 }
 
+func TestSeedMatchHandler_SavesRecordsAndForm(t *testing.T) {
+	store := repository.NewMemoryMatchStore()
+	h := handlers.NewSeedMatchHandler(store)
+
+	req := httptest.NewRequest(http.MethodPost, "/admin/seed-match",
+		strings.NewReader("id=m1&home_team=Columbus+Crew&away_team=FC+Dallas&kickoff=2026-05-01T19:30:00Z&status=STATUS_SCHEDULED&home_record=5-3-2&away_record=4-4-2&home_form=WWWLL&away_form=LWDWL"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+
+	h.Submit(w, req)
+
+	if w.Code != http.StatusNoContent {
+		t.Errorf("expected 204, got %d", w.Code)
+	}
+	matches, _ := store.GetAll()
+	if len(matches) != 1 {
+		t.Fatalf("expected 1 match, got %d", len(matches))
+	}
+	m := matches[0]
+	if m.HomeRecord != "5-3-2" {
+		t.Errorf("HomeRecord: got %q, want %q", m.HomeRecord, "5-3-2")
+	}
+	if m.AwayRecord != "4-4-2" {
+		t.Errorf("AwayRecord: got %q, want %q", m.AwayRecord, "4-4-2")
+	}
+	if m.HomeForm != "WWWLL" {
+		t.Errorf("HomeForm: got %q, want %q", m.HomeForm, "WWWLL")
+	}
+	if m.AwayForm != "LWDWL" {
+		t.Errorf("AwayForm: got %q, want %q", m.AwayForm, "LWDWL")
+	}
+}
+
 func TestSeedMatchHandler_RejectsBadKickoff(t *testing.T) {
 	h := handlers.NewSeedMatchHandler(repository.NewMemoryMatchStore())
 	req := httptest.NewRequest(http.MethodPost, "/admin/seed-match",

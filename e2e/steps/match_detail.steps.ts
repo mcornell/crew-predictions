@@ -102,3 +102,11 @@ Then('I should see an ESPN link for match {string}', async ({ page }, matchId: s
   const href = await link.getAttribute('href');
   expect(href).toContain(`gameId/${matchId}`);
 });
+
+Then('I should see home record {string} on the match detail page', async ({ page }, record: string) => {
+  await expect(page.locator('[data-testid="home-record"]')).toHaveText(record);
+});
+
+Then('I should see home form {string} on the match detail page', async ({ page }, form: string) => {
+  await expect(page.locator('[data-testid="home-form"]')).toHaveText(form);
+});

@@ -69,6 +69,10 @@ Given('the following matches are seeded in order:', async ({ request }, table: a
         home_score: row.homeScore ?? '',
         away_score: row.awayScore ?? '',
         venue: row.venue ?? '',
+        home_record: row.homeRecord ?? '',
+        away_record: row.awayRecord ?? '',
+        home_form: row.homeForm ?? '',
+        away_form: row.awayForm ?? '',
       },
     });
   }
@@ -109,6 +113,16 @@ Then('the match card for {string} should show venue {string}', async ({ page }, 
 Then('the now playing card for match {string} should show venue {string}', async ({ page }, matchId: string, venue: string) => {
   const card = page.locator(`[data-testid="now-playing-card"][data-match-id="${matchId}"]`);
   await expect(card.locator('[data-testid="match-venue"]')).toHaveText(venue);
+});
+
+Then('the match card for {string} should show home record {string}', async ({ page }, matchId: string, record: string) => {
+  const card = page.locator(`[data-testid="match-card"][data-match-id="${matchId}"]`);
+  await expect(card.locator('[data-testid="home-record"]')).toHaveText(record);
+});
+
+Then('the match card for {string} should show home form {string}', async ({ page }, matchId: string, form: string) => {
+  const card = page.locator(`[data-testid="match-card"][data-match-id="${matchId}"]`);
+  await expect(card.locator('[data-testid="home-form"]')).toHaveText(form);
 });
 
 Then('the result card for match {string} should show venue {string}', async ({ page }, matchId: string, venue: string) => {

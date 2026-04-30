@@ -1227,14 +1227,52 @@ body::after {
 }
 .back-link:hover { color: var(--gold); }
 
+.match-form-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.25rem 0;
+}
+.match-form-team {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.match-form-team--away {
+  flex-direction: row-reverse;
+}
+.match-record {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--muted);
+  letter-spacing: 0.03em;
+}
+.match-form {
+  display: flex;
+  gap: 0.15rem;
+}
+.form-letter {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  font-weight: 500;
+  width: 1.1em;
+  text-align: center;
+  color: var(--muted);
+}
+.form-letter--w { color: var(--gold); }
+.form-letter--l { color: var(--danger); }
+.form-letter--d { color: var(--muted); }
+
 .espn-link {
-  display: inline-block;
+  display: block;
   font-family: 'DM Mono', monospace;
   font-size: 0.75rem;
   color: var(--muted);
   text-decoration: none;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+  text-align: center;
   margin-top: 0.5rem;
 }
 .espn-link:hover { color: var(--gold); }

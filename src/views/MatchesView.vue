@@ -63,6 +63,16 @@
                 <input class="score-input" name="away_goals" type="number" min="0" max="99" v-model="inputs[match.id].away" placeholder="0" />
                 <span class="team-name team-away">{{ match.awayTeam }}</span>
               </div>
+              <div v-if="match.homeRecord || match.homeForm" class="match-form-row">
+                <div class="match-form-team">
+                  <span v-if="match.homeRecord" class="match-record" data-testid="home-record">{{ match.homeRecord }}</span>
+                  <span v-if="match.homeForm" class="match-form" data-testid="home-form"><span v-for="(c, i) in match.homeForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
+                </div>
+                <div class="match-form-team match-form-team--away">
+                  <span v-if="match.awayForm" class="match-form" data-testid="away-form"><span v-for="(c, i) in match.awayForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
+                  <span v-if="match.awayRecord" class="match-record" data-testid="away-record">{{ match.awayRecord }}</span>
+                </div>
+              </div>
               <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
             </template>
           </div>
@@ -135,6 +145,10 @@ interface Match {
   state?: string
   displayClock?: string
   venue?: string
+  homeRecord?: string
+  awayRecord?: string
+  homeForm?: string
+  awayForm?: string
 }
 
 interface Prediction {
