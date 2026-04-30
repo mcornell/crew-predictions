@@ -89,7 +89,7 @@
                   <span v-if="match.awayRecord" class="match-record" data-testid="away-record">{{ match.awayRecord }}</span>
                 </div>
               </div>
-              <div class="match-meta">{{ formatKickoff(match.kickoff) }} — <span class="saved-label">Locked in</span></div>
+              <div class="match-meta">{{ formatKickoff(match.kickoff) }} — <span class="saved-label">🔒</span></div>
             </template>
             <template v-else>
               <div class="matchup matchup--input" data-testid="matchup" :class="{ 'matchup--has-form': match.homeRecord || match.awayRecord || match.homeForm || match.awayForm }">
