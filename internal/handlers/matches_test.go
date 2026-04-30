@@ -137,6 +137,34 @@ func TestAPIMatchesHandler_ReturnsSortedByKickoffAscending(t *testing.T) {
 	}
 }
 
+func TestAPIMatchesHandler_IncludesVenue(t *testing.T) {
+	store := matchStoreWith([]models.Match{
+		{ID: "m-v1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",
+			Kickoff: time.Now(), Venue: "ScottsMiracle-Gro Field"},
+	})
+	mh := handlers.NewMatchesHandler(repository.NewMemoryPredictionStore(), store)
+	req := httptest.NewRequest(http.MethodGet, "/api/matches", nil)
+	w := httptest.NewRecorder()
+
+	mh.APIList(w, req)
+
+	var body struct {
+		Matches []struct {
+			ID    string `json:"id"`
+			Venue string `json:"venue"`
+		} `json:"matches"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+		t.Fatalf("invalid JSON: %v", err)
+	}
+	if len(body.Matches) == 0 {
+		t.Fatal("expected matches in response")
+	}
+	if body.Matches[0].Venue != "ScottsMiracle-Gro Field" {
+		t.Errorf("expected venue 'ScottsMiracle-Gro Field', got %q", body.Matches[0].Venue)
+	}
+}
+
 func TestAPIMatchesHandler_IncludesPredictionForLoggedInUser(t *testing.T) {
 	store := repository.NewMemoryPredictionStore()
 	store.Save(context.Background(), repository.Prediction{
