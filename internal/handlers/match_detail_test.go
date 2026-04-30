@@ -369,6 +369,45 @@ func TestMatchDetailHandler_ReturnsEmptyPredictionsWhenNone(t *testing.T) {
 	}
 }
 
+func TestMatchDetailHandler_Returns500WhenMatchStoreFails(t *testing.T) {
+	h := handlers.NewMatchDetailHandler(
+		repository.NewMemoryPredictionStore(),
+		repository.NewMemoryResultStore(),
+		repository.NewErrorGetAllMatchStore(),
+		repository.NewMemoryUserStore(),
+		"Columbus Crew",
+	)
+	req := httptest.NewRequest("GET", "/api/matches/any", nil)
+	req.SetPathValue("matchId", "any")
+	w := httptest.NewRecorder()
+	h.Get(w, req)
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("expected 500, got %d", w.Code)
+	}
+}
+
+func TestMatchDetailHandler_Returns500WhenPredictionStoreFails(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	matchStore.Seed([]models.Match{{
+		ID: "m-pred-err", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",
+		Kickoff: time.Now(), Status: "STATUS_FULL_TIME",
+	}})
+	h := handlers.NewMatchDetailHandler(
+		repository.NewErrorGetByMatchPredictionStore(),
+		repository.NewMemoryResultStore(),
+		matchStore,
+		repository.NewMemoryUserStore(),
+		"Columbus Crew",
+	)
+	req := httptest.NewRequest("GET", "/api/matches/m-pred-err", nil)
+	req.SetPathValue("matchId", "m-pred-err")
+	w := httptest.NewRecorder()
+	h.Get(w, req)
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("expected 500, got %d", w.Code)
+	}
+}
+
 func TestMatchDetailHandler_IncludesVenue(t *testing.T) {
 	matchStore := repository.NewMemoryMatchStore()
 	matchStore.Seed([]models.Match{{

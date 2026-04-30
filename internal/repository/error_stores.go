@@ -3,6 +3,8 @@ package repository
 import (
 	"context"
 	"fmt"
+
+	"github.com/mcornell/crew-predictions/internal/models"
 )
 
 // ErrorPredictionStore is a test double that always fails on Save.
@@ -201,6 +203,40 @@ func (e *ErrorGetByIDSeasonStore) ListAll(_ context.Context) ([]SeasonSnapshot, 
 func (e *ErrorGetByIDSeasonStore) Exists(_ context.Context, _ string) bool { return false }
 
 func (e *ErrorGetByIDSeasonStore) Reset() {}
+
+// ErrorGetAllMatchStore is a test double that always fails on GetAll.
+type ErrorGetAllMatchStore struct{}
+
+func NewErrorGetAllMatchStore() *ErrorGetAllMatchStore { return &ErrorGetAllMatchStore{} }
+
+func (e *ErrorGetAllMatchStore) GetAll() ([]models.Match, error) {
+	return nil, fmt.Errorf("simulated GetAll failure")
+}
+
+func (e *ErrorGetAllMatchStore) SaveAll(_ []models.Match) error { return nil }
+
+func (e *ErrorGetAllMatchStore) Reset() {}
+
+// ErrorGetByMatchPredictionStore is a test double that always fails on GetByMatch.
+type ErrorGetByMatchPredictionStore struct{}
+
+func NewErrorGetByMatchPredictionStore() *ErrorGetByMatchPredictionStore {
+	return &ErrorGetByMatchPredictionStore{}
+}
+
+func (e *ErrorGetByMatchPredictionStore) Save(_ context.Context, _ Prediction) error { return nil }
+
+func (e *ErrorGetByMatchPredictionStore) GetByMatchAndUser(_ context.Context, _, _ string) (*Prediction, error) {
+	return nil, nil
+}
+
+func (e *ErrorGetByMatchPredictionStore) GetByMatch(_ context.Context, _ string) ([]Prediction, error) {
+	return nil, fmt.Errorf("simulated GetByMatch failure")
+}
+
+func (e *ErrorGetByMatchPredictionStore) GetAll(_ context.Context) ([]Prediction, error) {
+	return nil, nil
+}
 
 // ErrorResultStore is a test double that always fails on SaveResult.
 type ErrorResultStore struct{}
