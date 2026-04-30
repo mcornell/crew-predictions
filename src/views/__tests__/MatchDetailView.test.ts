@@ -399,6 +399,32 @@ describe('MatchDetailView', () => {
     vi.useRealTimers()
   })
 
+  it('shows venue on match detail page', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: { ...mockMatch, venue: 'ScottsMiracle-Gro Field' },
+        predictions: mockPredictions,
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="match-detail-venue"]').text()).toBe('ScottsMiracle-Gro Field')
+  })
+
+  it('shows ESPN link on match detail page', async () => {
+    const router = makeRouter('m-test')
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    const link = wrapper.find('[data-testid="espn-link"]')
+    expect(link.exists()).toBe(true)
+    expect(link.attributes('href')).toContain('gameId/m-test')
+  })
+
   it('clears poll timer on unmount when a poll was scheduled', async () => {
     vi.useFakeTimers()
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({

@@ -481,6 +481,36 @@ describe('MatchesView', () => {
     expect(wrapper.find('[data-testid="error"]').exists()).toBe(true)
   })
 
+  it('shows venue on upcoming match card', async () => {
+    const matchWithVenue = { id: 'match-ven-1', homeTeam: 'Columbus Crew', awayTeam: 'FC Dallas', kickoff: futureKickoff(24), status: 'STATUS_SCHEDULED', state: 'pre', homeScore: '', awayScore: '', venue: 'ScottsMiracle-Gro Field' }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ matches: [matchWithVenue], predictions: {} }) }))
+    const wrapper = mountMatches()
+    await flushPromises()
+    const card = wrapper.find('[data-testid="match-card"][data-match-id="match-ven-1"]')
+    expect(card.find('[data-testid="match-venue"]').text()).toBe('ScottsMiracle-Gro Field')
+    vi.restoreAllMocks()
+  })
+
+  it('shows venue on live match card', async () => {
+    const liveWithVenue = { id: 'match-ven-live', homeTeam: 'Columbus Crew', awayTeam: 'FC Dallas', kickoff: pastKickoff(1), status: 'STATUS_FIRST_HALF', state: 'in', homeScore: '1', awayScore: '0', venue: 'ScottsMiracle-Gro Field' }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ matches: [liveWithVenue], predictions: {} }) }))
+    const wrapper = mountMatches()
+    await flushPromises()
+    const card = wrapper.find('[data-testid="now-playing-card"][data-match-id="match-ven-live"]')
+    expect(card.find('[data-testid="match-venue"]').text()).toBe('ScottsMiracle-Gro Field')
+    vi.restoreAllMocks()
+  })
+
+  it('shows venue on result card', async () => {
+    const resultWithVenue = { id: 'match-ven-result', homeTeam: 'Columbus Crew', awayTeam: 'FC Dallas', kickoff: pastKickoff(96), status: 'STATUS_FULL_TIME', state: 'post', homeScore: '2', awayScore: '1', venue: 'ScottsMiracle-Gro Field' }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ matches: [resultWithVenue], predictions: {} }) }))
+    const wrapper = mountMatches()
+    await flushPromises()
+    const card = wrapper.find('[data-testid="result-card"][data-match-id="match-ven-result"]')
+    expect(card.find('[data-testid="match-venue"]').text()).toBe('ScottsMiracle-Gro Field')
+    vi.restoreAllMocks()
+  })
+
   it('past-kickoff scheduled match has no Predict button', async () => {
     vi.useFakeTimers()
     const pastKickoff = new Date(Date.now() - 5 * 60 * 1000).toISOString()

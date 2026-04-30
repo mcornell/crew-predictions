@@ -26,6 +26,7 @@
               <span class="team-name team-away">{{ match.awayTeam }}</span>
             </div>
             <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
+            <div v-if="match.venue" class="match-meta match-venue" data-testid="match-venue">{{ match.venue }}</div>
           </div>
         </RouterLink>
       </div>
@@ -65,6 +66,7 @@
               <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
             </template>
           </div>
+          <div v-if="match.venue" class="match-meta match-venue" data-testid="match-venue">{{ match.venue }}</div>
           <template v-if="!isLocked(match)">
             <button v-if="savedPredictions[match.id]" class="btn-lock btn-unlock" @click="unlock(match.id)">Unlock</button>
             <button v-else class="btn-lock" @click="submit(match.id)">Predict</button>
@@ -96,6 +98,7 @@
             <div v-if="savedPredictions[match.id]" class="match-meta">
               Your pick: {{ savedPredictions[match.id]!.homeGoals }} – {{ savedPredictions[match.id]!.awayGoals }}
             </div>
+            <div v-if="match.venue" class="match-meta match-venue" data-testid="match-venue">{{ match.venue }}</div>
           </div>
         </RouterLink>
       </div>
@@ -131,6 +134,7 @@ interface Match {
   awayScore: string
   state?: string
   displayClock?: string
+  venue?: string
 }
 
 interface Prediction {
