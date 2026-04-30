@@ -425,6 +425,24 @@ describe('MatchDetailView', () => {
     expect(link.attributes('href')).toContain('gameId/m-test')
   })
 
+  it('shows record and form on match detail page', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: { ...mockMatch, homeRecord: '5-3-2', awayRecord: '4-4-2', homeForm: 'WWWLL', awayForm: 'LWDWL' },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="home-record"]').text()).toBe('5-3-2')
+    expect(wrapper.find('[data-testid="home-form"]').text()).toBe('WWWLL')
+    vi.restoreAllMocks()
+  })
+
   it('clears poll timer on unmount when a poll was scheduled', async () => {
     vi.useFakeTimers()
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({

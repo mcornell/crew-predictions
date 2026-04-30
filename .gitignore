@@ -44,11 +44,14 @@ yarn-error.log*
 .npm/
 .pnpm-debug.log*
 playwright-report/
+playwright-report*.zip
 smoke-report/
+*smoke-report*.zip
 test-results/
+trace-ci/
+trace*.zip
 .playwright-mcp/
 .features-gen/
-trace.zip
 
 # Local reference docs (not for repo)
 INFRA-LOCAL.md

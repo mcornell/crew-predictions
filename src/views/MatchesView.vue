@@ -18,12 +18,30 @@
             <span v-if="match.status === 'STATUS_DELAYED'" class="delayed-indicator" data-testid="delayed-indicator">▊ DELAYED</span>
             <span v-else-if="match.status === 'STATUS_HALFTIME'" class="live-indicator" data-testid="live-indicator">● HT</span>
             <span v-else class="live-indicator" data-testid="live-indicator">● {{ match.displayClock || 'LIVE' }}</span>
-            <div class="matchup matchup--input" data-testid="matchup">
+            <div class="matchup matchup--input" data-testid="matchup" :class="{ 'matchup--has-form': match.homeRecord || match.awayRecord || match.homeForm || match.awayForm }">
               <span class="team-name team-home">{{ match.homeTeam }}</span>
               <span class="inline-score">{{ match.homeScore || '0' }}</span>
               <span class="vs">vs</span>
               <span class="inline-score">{{ match.awayScore || '0' }}</span>
               <span class="team-name team-away">{{ match.awayTeam }}</span>
+              <div v-if="match.homeRecord || match.homeForm" class="matchup-team-form matchup-team-form--home">
+                <span v-if="match.homeRecord" class="match-record">{{ match.homeRecord }}</span>
+                <span v-if="match.homeForm" class="match-form"><span v-for="(c, i) in match.homeForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
+              </div>
+              <div v-if="match.awayRecord || match.awayForm" class="matchup-team-form matchup-team-form--away">
+                <span v-if="match.awayRecord" class="match-record">{{ match.awayRecord }}</span>
+                <span v-if="match.awayForm" class="match-form"><span v-for="(c, i) in match.awayForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
+              </div>
+            </div>
+            <div v-if="match.homeRecord || match.homeForm" class="match-form-row">
+              <div class="match-form-team">
+                <span v-if="match.homeRecord" class="match-record" data-testid="home-record">{{ match.homeRecord }}</span>
+                <span v-if="match.homeForm" class="match-form" data-testid="home-form"><span v-for="(c, i) in match.homeForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
+              </div>
+              <div class="match-form-team match-form-team--away">
+                <span v-if="match.awayForm" class="match-form" data-testid="away-form"><span v-for="(c, i) in match.awayForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
+                <span v-if="match.awayRecord" class="match-record" data-testid="away-record">{{ match.awayRecord }}</span>
+              </div>
             </div>
             <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
             <div v-if="match.venue" class="match-meta match-venue" data-testid="match-venue">{{ match.venue }}</div>
@@ -46,22 +64,58 @@
           <div class="match-info">
             <span class="match-countdown" data-testid="match-countdown">{{ countdowns[match.id] }}</span>
             <template v-if="savedPredictions[match.id]">
-              <div class="matchup matchup--input" data-testid="matchup">
+              <div class="matchup matchup--input" data-testid="matchup" :class="{ 'matchup--has-form': match.homeRecord || match.awayRecord || match.homeForm || match.awayForm }">
                 <span class="team-name team-home">{{ match.homeTeam }}</span>
                 <span class="inline-score">{{ savedPredictions[match.id]!.homeGoals }}</span>
                 <span class="vs">vs</span>
                 <span class="inline-score">{{ savedPredictions[match.id]!.awayGoals }}</span>
                 <span class="team-name team-away">{{ match.awayTeam }}</span>
+                <div v-if="match.homeRecord || match.homeForm" class="matchup-team-form matchup-team-form--home">
+                  <span v-if="match.homeRecord" class="match-record">{{ match.homeRecord }}</span>
+                  <span v-if="match.homeForm" class="match-form"><span v-for="(c, i) in match.homeForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
+                </div>
+                <div v-if="match.awayRecord || match.awayForm" class="matchup-team-form matchup-team-form--away">
+                  <span v-if="match.awayRecord" class="match-record">{{ match.awayRecord }}</span>
+                  <span v-if="match.awayForm" class="match-form"><span v-for="(c, i) in match.awayForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
+                </div>
               </div>
-              <div class="match-meta">{{ formatKickoff(match.kickoff) }} — <span class="saved-label">Locked in</span></div>
+              <div v-if="match.homeRecord || match.homeForm" class="match-form-row">
+                <div class="match-form-team">
+                  <span v-if="match.homeRecord" class="match-record" data-testid="home-record">{{ match.homeRecord }}</span>
+                  <span v-if="match.homeForm" class="match-form" data-testid="home-form"><span v-for="(c, i) in match.homeForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
+                </div>
+                <div class="match-form-team match-form-team--away">
+                  <span v-if="match.awayForm" class="match-form" data-testid="away-form"><span v-for="(c, i) in match.awayForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
+                  <span v-if="match.awayRecord" class="match-record" data-testid="away-record">{{ match.awayRecord }}</span>
+                </div>
+              </div>
+              <div class="match-meta">{{ formatKickoff(match.kickoff) }} — <span class="saved-label">🔒</span></div>
             </template>
             <template v-else>
-              <div class="matchup matchup--input" data-testid="matchup">
+              <div class="matchup matchup--input" data-testid="matchup" :class="{ 'matchup--has-form': match.homeRecord || match.awayRecord || match.homeForm || match.awayForm }">
                 <span class="team-name team-home">{{ match.homeTeam }}</span>
                 <input class="score-input" name="home_goals" type="number" min="0" max="99" v-model="inputs[match.id].home" placeholder="0" />
                 <span class="vs">vs</span>
                 <input class="score-input" name="away_goals" type="number" min="0" max="99" v-model="inputs[match.id].away" placeholder="0" />
                 <span class="team-name team-away">{{ match.awayTeam }}</span>
+                <div v-if="match.homeRecord || match.homeForm" class="matchup-team-form matchup-team-form--home">
+                  <span v-if="match.homeRecord" class="match-record">{{ match.homeRecord }}</span>
+                  <span v-if="match.homeForm" class="match-form"><span v-for="(c, i) in match.homeForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
+                </div>
+                <div v-if="match.awayRecord || match.awayForm" class="matchup-team-form matchup-team-form--away">
+                  <span v-if="match.awayRecord" class="match-record">{{ match.awayRecord }}</span>
+                  <span v-if="match.awayForm" class="match-form"><span v-for="(c, i) in match.awayForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
+                </div>
+              </div>
+              <div v-if="match.homeRecord || match.homeForm" class="match-form-row">
+                <div class="match-form-team">
+                  <span v-if="match.homeRecord" class="match-record" data-testid="home-record">{{ match.homeRecord }}</span>
+                  <span v-if="match.homeForm" class="match-form" data-testid="home-form"><span v-for="(c, i) in match.homeForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
+                </div>
+                <div class="match-form-team match-form-team--away">
+                  <span v-if="match.awayForm" class="match-form" data-testid="away-form"><span v-for="(c, i) in match.awayForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
+                  <span v-if="match.awayRecord" class="match-record" data-testid="away-record">{{ match.awayRecord }}</span>
+                </div>
               </div>
               <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
             </template>
@@ -135,6 +189,10 @@ interface Match {
   state?: string
   displayClock?: string
   venue?: string
+  homeRecord?: string
+  awayRecord?: string
+  homeForm?: string
+  awayForm?: string
 }
 
 interface Prediction {

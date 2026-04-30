@@ -43,6 +43,10 @@ type matchDetailMatch struct {
 	Status       string `json:"status"`
 	DisplayClock string `json:"displayClock,omitempty"`
 	Venue        string `json:"venue,omitempty"`
+	HomeRecord   string `json:"homeRecord,omitempty"`
+	AwayRecord   string `json:"awayRecord,omitempty"`
+	HomeForm     string `json:"homeForm,omitempty"`
+	AwayForm     string `json:"awayForm,omitempty"`
 }
 
 func (h *MatchDetailHandler) Get(w http.ResponseWriter, r *http.Request) {
@@ -68,6 +72,10 @@ func (h *MatchDetailHandler) Get(w http.ResponseWriter, r *http.Request) {
 				Status:       m.Status,
 				DisplayClock: m.DisplayClock,
 				Venue:        m.Venue,
+				HomeRecord:   m.HomeRecord,
+				AwayRecord:   m.AwayRecord,
+				HomeForm:     m.HomeForm,
+				AwayForm:     m.AwayForm,
 			}
 			break
 		}

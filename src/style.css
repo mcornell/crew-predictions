@@ -283,6 +283,9 @@ body::after {
   align-items: center;
 }
 
+/* Hidden on desktop; shown under each team name on mobile via grid */
+.matchup-team-form { display: none; }
+
 .team-name {
   font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
   font-size: 1.55rem;
@@ -387,18 +390,17 @@ body::after {
 }
 
 .saved-label {
-  font-family: 'Barlow', sans-serif;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-family: 'DM Mono', monospace;
+  font-weight: 400;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   color: var(--muted);
 }
 
 .live-indicator {
   display: inline-block;
   font-family: 'DM Mono', monospace;
-  font-size: 0.65rem;
+  font-size: 1rem;
   font-weight: 600;
   letter-spacing: 0.12em;
   color: var(--gold);
@@ -410,7 +412,7 @@ body::after {
 .match-countdown {
   display: inline-block;
   font-family: 'DM Mono', monospace;
-  font-size: 0.65rem;
+  font-size: 1rem;
   font-weight: 400;
   letter-spacing: 0.08em;
   color: var(--muted);
@@ -421,7 +423,6 @@ body::after {
   background: transparent;
   color: var(--muted);
   border: 1px solid var(--border);
-  font-size: 0.7rem;
   letter-spacing: 0.12em;
 }
 
@@ -439,7 +440,7 @@ body::after {
 .delayed-indicator {
   display: inline-block;
   font-family: 'DM Mono', monospace;
-  font-size: 0.65rem;
+  font-size: 1rem;
   font-weight: 600;
   letter-spacing: 0.12em;
   color: var(--danger);
@@ -1017,7 +1018,11 @@ body::after {
     white-space: normal; overflow: visible; text-overflow: unset;
   }
 
-  .team-name { font-size: 1.1rem; }
+  /* When form data is present, push away team/score to row 3 */
+  .matchup--has-form > :nth-child(4) { grid-column: 2; grid-row: 3; }
+  .matchup--has-form > :nth-child(5) { grid-column: 1; grid-row: 3; }
+
+  .team-name { font-size: 1.25rem; }
 
   .score-input {
     width: 44px;
@@ -1036,6 +1041,16 @@ body::after {
   .match-meta {
     font-size: 0.9rem;
     margin-top: 0.25rem;
+  }
+
+  .live-indicator,
+  .delayed-indicator,
+  .match-countdown {
+    font-size: 0.9rem;
+  }
+  .match-record,
+  .form-letter {
+    font-size: 0.8rem;
   }
 
   .btn-lock {
@@ -1227,14 +1242,64 @@ body::after {
 }
 .back-link:hover { color: var(--gold); }
 
+.match-form-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.25rem 0;
+}
+.match-form-team {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.match-form-team--away {
+  flex-direction: row-reverse;
+}
+.match-record {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.9rem;
+  color: var(--muted);
+  letter-spacing: 0.03em;
+}
+.match-form {
+  display: flex;
+  gap: 0.15rem;
+}
+.form-letter {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.9rem;
+  font-weight: 500;
+  width: 1.1em;
+  text-align: center;
+  color: var(--muted);
+}
+.form-letter--w { color: var(--gold); }
+.form-letter--l { color: var(--danger); }
+.form-letter--d { color: var(--muted); }
+
+@media (max-width: 600px) {
+  .match-form-row { display: none; }
+  .matchup-team-form {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    grid-column: 1;
+  }
+  .matchup-team-form--home { grid-row: 2; }
+  .matchup-team-form--away { grid-row: 4; }
+}
+
 .espn-link {
-  display: inline-block;
+  display: block;
   font-family: 'DM Mono', monospace;
   font-size: 0.75rem;
   color: var(--muted);
   text-decoration: none;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+  text-align: center;
   margin-top: 0.5rem;
 }
 .espn-link:hover { color: var(--gold); }

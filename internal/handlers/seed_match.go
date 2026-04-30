@@ -54,7 +54,11 @@ func (h *SeedMatchHandler) Submit(w http.ResponseWriter, r *http.Request) {
 		State:     state,
 		HomeScore: r.FormValue("home_score"),
 		AwayScore: r.FormValue("away_score"),
-		Venue:     r.FormValue("venue"),
+		Venue:      r.FormValue("venue"),
+		HomeRecord: r.FormValue("home_record"),
+		AwayRecord: r.FormValue("away_record"),
+		HomeForm:   r.FormValue("home_form"),
+		AwayForm:   r.FormValue("away_form"),
 	}})
 	w.WriteHeader(http.StatusNoContent)
 }

@@ -56,6 +56,11 @@ type espnResponse struct {
 				Team     struct {
 					DisplayName string `json:"displayName"`
 				} `json:"team"`
+				Records []struct {
+					Type    string `json:"type"`
+					Summary string `json:"summary"`
+				} `json:"records"`
+				Form string `json:"form"`
 			} `json:"competitors"`
 			Venue struct {
 				FullName string `json:"fullName"`
@@ -82,6 +87,10 @@ type matchRecord struct {
 	state        string
 	displayClock string
 	venue        string
+	homeRecord   string
+	awayRecord   string
+	homeForm     string
+	awayForm     string
 }
 
 func deriveState(espnState, statusName string) string {
@@ -144,14 +153,25 @@ func parseEvents(data espnResponse) []matchRecord {
 			continue
 		}
 		comp := event.Competitions[0]
-		var home, away, homeScore, awayScore string
+		var home, away, homeScore, awayScore, homeRecord, awayRecord, homeForm, awayForm string
 		for _, c := range comp.Competitors {
+			record := ""
+			for _, r := range c.Records {
+				if r.Type == "total" {
+					record = r.Summary
+					break
+				}
+			}
 			if c.HomeAway == "home" {
 				home = c.Team.DisplayName
 				homeScore = c.Score.Display
+				homeRecord = record
+				homeForm = c.Form
 			} else {
 				away = c.Team.DisplayName
 				awayScore = c.Score.Display
+				awayRecord = record
+				awayForm = c.Form
 			}
 		}
 		kickoff, _ := parseKickoff(event.Date)
@@ -166,6 +186,10 @@ func parseEvents(data espnResponse) []matchRecord {
 			state:        deriveState(comp.Status.State, comp.Status.Type.Name),
 			displayClock: comp.Status.DisplayClock,
 			venue:        comp.Venue.FullName,
+			homeRecord:   homeRecord,
+			awayRecord:   awayRecord,
+			homeForm:     homeForm,
+			awayForm:     awayForm,
 		})
 	}
 	return records
@@ -235,6 +259,10 @@ func fetchCrewMatchesFrom(base string) ([]models.Match, error) {
 			State:        r.state,
 			DisplayClock: r.displayClock,
 			Venue:        r.venue,
+			HomeRecord:   r.homeRecord,
+			AwayRecord:   r.awayRecord,
+			HomeForm:     r.homeForm,
+			AwayForm:     r.awayForm,
 		}
 	}
 	return matches, nil

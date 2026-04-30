@@ -73,6 +73,42 @@ func TestFirestoreMatchStore_VenueRoundTrips(t *testing.T) {
 	t.Error("match fs-match-venue not found in GetAll results")
 }
 
+func TestFirestoreMatchStore_RecordsAndFormRoundTrip(t *testing.T) {
+	store := firestoreMatchStoreOrSkip(t)
+
+	if err := store.SaveAll([]models.Match{
+		{ID: "fs-match-form", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",
+			Kickoff:    time.Date(2026, 5, 1, 20, 0, 0, 0, time.UTC),
+			HomeRecord: "5-3-2", AwayRecord: "4-4-2",
+			HomeForm: "WWWLL", AwayForm: "LWDWL"},
+	}); err != nil {
+		t.Fatalf("unexpected error saving: %v", err)
+	}
+
+	got, err := store.GetAll()
+	if err != nil {
+		t.Fatalf("unexpected error retrieving: %v", err)
+	}
+	for _, m := range got {
+		if m.ID == "fs-match-form" {
+			if m.HomeRecord != "5-3-2" {
+				t.Errorf("HomeRecord: got %q, want %q", m.HomeRecord, "5-3-2")
+			}
+			if m.AwayRecord != "4-4-2" {
+				t.Errorf("AwayRecord: got %q, want %q", m.AwayRecord, "4-4-2")
+			}
+			if m.HomeForm != "WWWLL" {
+				t.Errorf("HomeForm: got %q, want %q", m.HomeForm, "WWWLL")
+			}
+			if m.AwayForm != "LWDWL" {
+				t.Errorf("AwayForm: got %q, want %q", m.AwayForm, "LWDWL")
+			}
+			return
+		}
+	}
+	t.Error("match fs-match-form not found in GetAll results")
+}
+
 func TestFirestoreMatchStore_SaveAllOverwritesExisting(t *testing.T) {
 	store := firestoreMatchStoreOrSkip(t)
 

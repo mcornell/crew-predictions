@@ -84,6 +84,15 @@ Feature: Match detail page
     When I visit the match detail page for "m-ven-4"
     Then I should see the venue "ScottsMiracle-Gro Field" on the match detail page
 
+  Scenario: Match detail page shows team records and form
+    Given I am not logged in
+    And the following matches are seeded:
+      | id       | homeTeam      | awayTeam  | status           | homeRecord | awayRecord | homeForm | awayForm |
+      | m-form-3 | Columbus Crew | FC Dallas | STATUS_SCHEDULED | 5-3-2      | 4-4-2      | WWWLL    | LWDWL    |
+    When I visit the match detail page for "m-form-3"
+    Then I should see home record "5-3-2" on the match detail page
+    And I should see home form "WWWLL" on the match detail page
+
   Scenario: Match detail page links to ESPN match page
     Given I am not logged in
     And the following matches are seeded:

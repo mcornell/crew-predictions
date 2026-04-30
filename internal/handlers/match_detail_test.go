@@ -450,3 +450,48 @@ func TestMatchDetailHandler_IncludesVenue(t *testing.T) {
 		t.Errorf("expected venue 'ScottsMiracle-Gro Field', got %q", resp.Match.Venue)
 	}
 }
+
+func TestMatchDetailHandler_IncludesRecordsAndForm(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	matchStore.SaveAll([]models.Match{{
+		ID:         "m-rf",
+		HomeTeam:   "Columbus Crew",
+		AwayTeam:   "FC Dallas",
+		Kickoff:    time.Now(),
+		Status:     "STATUS_SCHEDULED",
+		HomeRecord: "5-3-2",
+		AwayRecord: "4-4-2",
+		HomeForm:   "WWWLL",
+		AwayForm:   "LWDWL",
+	}})
+
+	h := handlers.NewMatchDetailHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), matchStore, repository.NewMemoryUserStore(), "Columbus Crew")
+	req := httptest.NewRequest("GET", "/api/matches/m-rf", nil)
+	req.SetPathValue("matchId", "m-rf")
+	w := httptest.NewRecorder()
+	h.Get(w, req)
+
+	var resp struct {
+		Match struct {
+			HomeRecord string `json:"homeRecord"`
+			AwayRecord string `json:"awayRecord"`
+			HomeForm   string `json:"homeForm"`
+			AwayForm   string `json:"awayForm"`
+		} `json:"match"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatalf("invalid JSON: %v", err)
+	}
+	if resp.Match.HomeRecord != "5-3-2" {
+		t.Errorf("HomeRecord: got %q, want %q", resp.Match.HomeRecord, "5-3-2")
+	}
+	if resp.Match.AwayRecord != "4-4-2" {
+		t.Errorf("AwayRecord: got %q, want %q", resp.Match.AwayRecord, "4-4-2")
+	}
+	if resp.Match.HomeForm != "WWWLL" {
+		t.Errorf("HomeForm: got %q, want %q", resp.Match.HomeForm, "WWWLL")
+	}
+	if resp.Match.AwayForm != "LWDWL" {
+		t.Errorf("AwayForm: got %q, want %q", resp.Match.AwayForm, "LWDWL")
+	}
+}

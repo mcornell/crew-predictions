@@ -35,6 +35,10 @@ func (s *FirestoreMatchStore) SaveAll(matches []models.Match) error {
 			"state":        m.State,
 			"displayClock": m.DisplayClock,
 			"venue":        m.Venue,
+			"homeRecord":   m.HomeRecord,
+			"awayRecord":   m.AwayRecord,
+			"homeForm":     m.HomeForm,
+			"awayForm":     m.AwayForm,
 		})
 	}
 	batch.Flush()
@@ -71,6 +75,10 @@ func toMatch(snap *firestore.DocumentSnapshot) (models.Match, error) {
 		State        string    `firestore:"state"`
 		DisplayClock string    `firestore:"displayClock"`
 		Venue        string    `firestore:"venue"`
+		HomeRecord   string    `firestore:"homeRecord"`
+		AwayRecord   string    `firestore:"awayRecord"`
+		HomeForm     string    `firestore:"homeForm"`
+		AwayForm     string    `firestore:"awayForm"`
 	}
 	if err := snap.DataTo(&doc); err != nil {
 		return models.Match{}, err
@@ -86,5 +94,9 @@ func toMatch(snap *firestore.DocumentSnapshot) (models.Match, error) {
 		State:        doc.State,
 		DisplayClock: doc.DisplayClock,
 		Venue:        doc.Venue,
+		HomeRecord:   doc.HomeRecord,
+		AwayRecord:   doc.AwayRecord,
+		HomeForm:     doc.HomeForm,
+		AwayForm:     doc.AwayForm,
 	}, nil
 }

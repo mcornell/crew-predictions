@@ -165,6 +165,47 @@ func TestAPIMatchesHandler_IncludesVenue(t *testing.T) {
 	}
 }
 
+func TestAPIMatchesHandler_IncludesRecordsAndForm(t *testing.T) {
+	store := matchStoreWith([]models.Match{
+		{ID: "m-rf1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",
+			Kickoff: time.Now(), HomeRecord: "5-3-2", AwayRecord: "4-4-2",
+			HomeForm: "WWWLL", AwayForm: "LWDWL"},
+	})
+	mh := handlers.NewMatchesHandler(repository.NewMemoryPredictionStore(), store)
+	req := httptest.NewRequest(http.MethodGet, "/api/matches", nil)
+	w := httptest.NewRecorder()
+
+	mh.APIList(w, req)
+
+	var body struct {
+		Matches []struct {
+			HomeRecord string `json:"homeRecord"`
+			AwayRecord string `json:"awayRecord"`
+			HomeForm   string `json:"homeForm"`
+			AwayForm   string `json:"awayForm"`
+		} `json:"matches"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+		t.Fatalf("invalid JSON: %v", err)
+	}
+	if len(body.Matches) == 0 {
+		t.Fatal("expected matches in response")
+	}
+	m := body.Matches[0]
+	if m.HomeRecord != "5-3-2" {
+		t.Errorf("HomeRecord: got %q, want %q", m.HomeRecord, "5-3-2")
+	}
+	if m.AwayRecord != "4-4-2" {
+		t.Errorf("AwayRecord: got %q, want %q", m.AwayRecord, "4-4-2")
+	}
+	if m.HomeForm != "WWWLL" {
+		t.Errorf("HomeForm: got %q, want %q", m.HomeForm, "WWWLL")
+	}
+	if m.AwayForm != "LWDWL" {
+		t.Errorf("AwayForm: got %q, want %q", m.AwayForm, "LWDWL")
+	}
+}
+
 func TestAPIMatchesHandler_IncludesPredictionForLoggedInUser(t *testing.T) {
 	store := repository.NewMemoryPredictionStore()
 	store.Save(context.Background(), repository.Prediction{

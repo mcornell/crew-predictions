@@ -13,4 +13,8 @@ type Match struct {
 	State        string
 	DisplayClock string
 	Venue        string
+	HomeRecord   string
+	AwayRecord   string
+	HomeForm     string
+	AwayForm     string
 }
