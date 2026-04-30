@@ -111,4 +111,4 @@ Feature: Match listings
     And I am logged in as "BlackAndGold@bsky.mock"
     And I have a seeded prediction of 1-0 for match "m-pick-1"
     When I visit the matches page
-    Then the result card for match "m-pick-1" should show my pick "1 – 0" above the score
+    Then the result card for match "m-pick-1" should show my pick "1 – 0" below the score

@@ -116,18 +116,19 @@ Then('the result card for match {string} should show venue {string}', async ({ p
   await expect(card.locator('[data-testid="match-venue"]')).toHaveText(venue);
 });
 
-Then('the result card for match {string} should show my pick {string} above the score', async ({ page }, matchId: string, pick: string) => {
+Then('the result card for match {string} should show my pick {string} below the score', async ({ page }, matchId: string, pick: string) => {
   const card = page.locator(`[data-testid="result-card"][data-match-id="${matchId}"]`);
   await expect(card.locator('[data-testid="your-pick"]')).toContainText(`Your pick: ${pick}`);
-  const pickBeforeMatchup = await card.evaluate((cardEl) => {
+  const pickAfterMatchup = await card.evaluate((cardEl) => {
     const info = cardEl.querySelector('.match-info');
     if (!info) return false;
     const children = Array.from(info.children);
-    const pickIdx = children.findIndex(el => el.getAttribute('data-testid') === 'your-pick');
     const matchupIdx = children.findIndex(el => el.getAttribute('data-testid') === 'matchup');
-    return pickIdx !== -1 && matchupIdx !== -1 && pickIdx < matchupIdx;
+    const pickIdx = children.findIndex(el => el.getAttribute('data-testid') === 'your-pick');
+    // pick must be immediately after matchup (score), before date and venue
+    return pickIdx !== -1 && matchupIdx !== -1 && pickIdx === matchupIdx + 1;
   });
-  expect(pickBeforeMatchup).toBe(true);
+  expect(pickAfterMatchup).toBe(true);
 });
 
 Given('the match {string} has already kicked off', async ({ request }, matchId: string) => {
