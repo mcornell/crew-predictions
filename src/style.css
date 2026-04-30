@@ -391,7 +391,7 @@ body::after {
 
 .saved-label {
   font-family: 'DM Mono', monospace;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -424,7 +424,6 @@ body::after {
   background: transparent;
   color: var(--muted);
   border: 1px solid var(--border);
-  font-size: 0.7rem;
   letter-spacing: 0.12em;
 }
 
@@ -1024,17 +1023,6 @@ body::after {
   .matchup--has-form > :nth-child(4) { grid-column: 2; grid-row: 3; }
   .matchup--has-form > :nth-child(5) { grid-column: 1; grid-row: 3; }
 
-  /* Show form under each team name; hide the desktop-only form row */
-  .match-form-row { display: none; }
-  .matchup-team-form {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    grid-column: 1;
-  }
-  .matchup-team-form--home { grid-row: 2; }
-  .matchup-team-form--away { grid-row: 4; }
-
   .team-name { font-size: 1.1rem; }
 
   .score-input {
@@ -1059,10 +1047,12 @@ body::after {
   .live-indicator,
   .delayed-indicator,
   .match-countdown,
-  .saved-label,
+  .saved-label {
+    font-size: 0.9rem;
+  }
   .match-record,
   .form-letter {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
   }
 
   .btn-lock {
@@ -1271,7 +1261,7 @@ body::after {
 }
 .match-record {
   font-family: 'DM Mono', monospace;
-  font-size: 1rem;
+  font-size: 0.9rem;
   color: var(--muted);
   letter-spacing: 0.03em;
 }
@@ -1281,7 +1271,7 @@ body::after {
 }
 .form-letter {
   font-family: 'DM Mono', monospace;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 500;
   width: 1.1em;
   text-align: center;
@@ -1290,6 +1280,18 @@ body::after {
 .form-letter--w { color: var(--gold); }
 .form-letter--l { color: var(--danger); }
 .form-letter--d { color: var(--muted); }
+
+@media (max-width: 600px) {
+  .match-form-row { display: none; }
+  .matchup-team-form {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    grid-column: 1;
+  }
+  .matchup-team-form--home { grid-row: 2; }
+  .matchup-team-form--away { grid-row: 4; }
+}
 
 .espn-link {
   display: block;
