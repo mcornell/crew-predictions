@@ -113,6 +113,29 @@ func TestSeedMatchHandler_RejectsEmptyID(t *testing.T) {
 	}
 }
 
+func TestSeedMatchHandler_SavesVenue(t *testing.T) {
+	store := repository.NewMemoryMatchStore()
+	h := handlers.NewSeedMatchHandler(store)
+
+	req := httptest.NewRequest(http.MethodPost, "/admin/seed-match",
+		strings.NewReader("id=m1&home_team=Columbus+Crew&away_team=FC+Dallas&kickoff=2026-05-01T19:30:00Z&status=STATUS_SCHEDULED&venue=ScottsMiracle-Gro+Field"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+
+	h.Submit(w, req)
+
+	if w.Code != http.StatusNoContent {
+		t.Errorf("expected 204, got %d", w.Code)
+	}
+	matches, err := store.GetAll()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(matches) != 1 || matches[0].Venue != "ScottsMiracle-Gro Field" {
+		t.Errorf("expected venue 'ScottsMiracle-Gro Field', got %+v", matches)
+	}
+}
+
 func TestSeedMatchHandler_RejectsBadKickoff(t *testing.T) {
 	h := handlers.NewSeedMatchHandler(repository.NewMemoryMatchStore())
 	req := httptest.NewRequest(http.MethodPost, "/admin/seed-match",
