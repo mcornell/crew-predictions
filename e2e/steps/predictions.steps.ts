@@ -28,6 +28,7 @@ Given('the following matches are seeded:', async ({ request }, table: any) => {
         state: row.state ?? '',
         home_score: row.homeScore ?? '',
         away_score: row.awayScore ?? '',
+        venue: row.venue ?? '',
       },
     });
   }

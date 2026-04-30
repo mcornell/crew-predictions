@@ -77,3 +77,38 @@ Feature: Match listings
     And I am not logged in
     When I visit the matches page
     Then I should not see a "Predict" button
+
+  Scenario: Upcoming match card shows venue name
+    Given the following matches are seeded:
+      | id      | homeTeam      | awayTeam  | status           | venue                   |
+      | m-ven-1 | Columbus Crew | FC Dallas | STATUS_SCHEDULED | ScottsMiracle-Gro Field |
+    And I am not logged in
+    When I visit the matches page
+    Then the match card for "m-ven-1" should show venue "ScottsMiracle-Gro Field"
+
+  Scenario: Live match card shows venue name
+    Given the following matches are seeded:
+      | id      | homeTeam      | awayTeam  | status             | state | venue                   |
+      | m-ven-2 | Columbus Crew | FC Dallas | STATUS_IN_PROGRESS | in    | ScottsMiracle-Gro Field |
+    And I am not logged in
+    When I visit the matches page
+    Then the now playing card for match "m-ven-2" should show venue "ScottsMiracle-Gro Field"
+
+  Scenario: Result card shows venue name
+    Given the following matches are seeded:
+      | id      | homeTeam      | awayTeam  | status           | homeScore | awayScore | venue                   |
+      | m-ven-3 | Columbus Crew | FC Dallas | STATUS_FULL_TIME | 2         | 1         | ScottsMiracle-Gro Field |
+    And the final score for match "m-ven-3" was 2-1 with Columbus home
+    And I am not logged in
+    When I visit the matches page
+    Then the result card for match "m-ven-3" should show venue "ScottsMiracle-Gro Field"
+
+  Scenario: User's prediction appears at the top of a result card
+    Given the following matches are seeded:
+      | id       | homeTeam      | awayTeam  | status           | homeScore | awayScore |
+      | m-pick-1 | Columbus Crew | FC Dallas | STATUS_FULL_TIME | 2         | 1         |
+    And the final score for match "m-pick-1" was 2-1 with Columbus home
+    And I am logged in as "BlackAndGold@bsky.mock"
+    And I have a seeded prediction of 1-0 for match "m-pick-1"
+    When I visit the matches page
+    Then the result card for match "m-pick-1" should show my pick "1 – 0" above the score

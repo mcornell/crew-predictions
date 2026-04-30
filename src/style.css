@@ -1227,6 +1227,18 @@ body::after {
 }
 .back-link:hover { color: var(--gold); }
 
+.espn-link {
+  display: inline-block;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-decoration: none;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-top: 0.5rem;
+}
+.espn-link:hover { color: var(--gold); }
+
 .match-detail-header {
   margin-bottom: 1.5rem;
   padding-bottom: 1.25rem;

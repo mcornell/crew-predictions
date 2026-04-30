@@ -74,3 +74,21 @@ Feature: Match detail page
       | m-live2 | Columbus Crew | Philadelphia Union | STATUS_IN_PROGRESS | in    |
     When I visit the matches page
     Then the now playing card for match "m-live2" should link to "/matches/m-live2"
+
+  Scenario: Match detail page shows venue name
+    Given I am not logged in
+    And the following matches are seeded:
+      | id      | homeTeam      | awayTeam  | status           | homeScore | awayScore | venue                   |
+      | m-ven-4 | Columbus Crew | FC Dallas | STATUS_FULL_TIME | 2         | 1         | ScottsMiracle-Gro Field |
+    And the final score for match "m-ven-4" was 2-1 with Columbus home
+    When I visit the match detail page for "m-ven-4"
+    Then I should see the venue "ScottsMiracle-Gro Field" on the match detail page
+
+  Scenario: Match detail page links to ESPN match page
+    Given I am not logged in
+    And the following matches are seeded:
+      | id      | homeTeam      | awayTeam  | status           | homeScore | awayScore |
+      | m-espn  | Columbus Crew | FC Dallas | STATUS_FULL_TIME | 2         | 1         |
+    And the final score for match "m-espn" was 2-1 with Columbus home
+    When I visit the match detail page for "m-espn"
+    Then I should see an ESPN link for match "m-espn"

@@ -87,6 +87,9 @@
           data-testid="result-card"
         >
           <div class="match-info">
+            <div v-if="savedPredictions[match.id]" class="match-meta" data-testid="your-pick">
+              Your pick: {{ savedPredictions[match.id]!.homeGoals }} – {{ savedPredictions[match.id]!.awayGoals }}
+            </div>
             <div class="matchup matchup--input" data-testid="matchup">
               <span class="team-name team-home">{{ match.homeTeam }}</span>
               <span class="inline-score">{{ match.homeScore || '–' }}</span>
@@ -95,9 +98,6 @@
               <span class="team-name team-away">{{ match.awayTeam }}</span>
             </div>
             <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
-            <div v-if="savedPredictions[match.id]" class="match-meta">
-              Your pick: {{ savedPredictions[match.id]!.homeGoals }} – {{ savedPredictions[match.id]!.awayGoals }}
-            </div>
             <div v-if="match.venue" class="match-meta match-venue" data-testid="match-venue">{{ match.venue }}</div>
           </div>
         </RouterLink>
