@@ -234,6 +234,7 @@ func fetchCrewMatchesFrom(base string) ([]models.Match, error) {
 			AwayScore:    r.awayScore,
 			State:        r.state,
 			DisplayClock: r.displayClock,
+			Venue:        r.venue,
 		}
 	}
 	return matches, nil

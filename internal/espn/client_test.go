@@ -227,6 +227,25 @@ func TestFetchCrewMatchesFrom_HalftimeDisplayClock(t *testing.T) {
 	}
 }
 
+func TestFetchCrewMatchesFrom_PopulatesVenue(t *testing.T) {
+	payload := `{"events":[{"id":"v1","date":"2026-05-01T23:00Z","competitions":[{"competitors":[{"homeAway":"home","score":{},"team":{"displayName":"Columbus Crew"}},{"homeAway":"away","score":{},"team":{"displayName":"FC Dallas"}}],"venue":{"fullName":"ScottsMiracle-Gro Field"},"status":{"state":"pre","type":{"name":"STATUS_SCHEDULED"}}}]}]}`
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(payload))
+	}))
+	defer srv.Close()
+
+	matches, err := fetchCrewMatchesFrom(srv.URL)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(matches) == 0 {
+		t.Fatal("expected at least one match")
+	}
+	if matches[0].Venue != "ScottsMiracle-Gro Field" {
+		t.Errorf("expected Venue 'ScottsMiracle-Gro Field', got %q", matches[0].Venue)
+	}
+}
+
 func TestFetchCrewMatchesFrom_ReturnsCrewMatchesFromFixtures(t *testing.T) {
 	schedule, err := os.ReadFile("testdata/mls_schedule.json")
 	if err != nil {
