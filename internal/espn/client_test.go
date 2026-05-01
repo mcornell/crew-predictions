@@ -316,6 +316,72 @@ func TestFetchSummaryFrom_ParsesKeyEvent(t *testing.T) {
 	}
 }
 
+// TestFetchSummaryFrom_RealFixtures parses captured ESPN /summary responses
+// for six completed Crew matches that span the variations we observed:
+// goal subtypes (header, volley), penalty---scored/saved, own-goal + red-card,
+// and a USOC match where ESPN reports no attendance. Re-fetch fixtures with
+//
+//	curl -s 'https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/summary?event=<id>' \
+//	  | jq '{gameInfo,keyEvents,boxscore,header,rosters,standings,leaders,headToHeadGames,meta,format}' \
+//	  > internal/espn/testdata/summary_<id>.json
+func TestFetchSummaryFrom_RealFixtures(t *testing.T) {
+	cases := []struct {
+		matchID            string
+		label              string
+		expectedAttendance int
+		minEvents          int
+		requiredTypes      []string
+	}{
+		{"761573", "Philadelphia (own goal + red card)", 19903, 19, []string{"goal", "own-goal", "red-card", "yellow-card"}},
+		{"761499", "Toronto (header goal)", 15384, 20, []string{"goal---header"}},
+		{"761451", "Portland (volley goal)", 22210, 21, []string{"goal---volley"}},
+		{"761552", "Revolution (penalty scored)", 16257, 18, []string{"penalty---scored"}},
+		{"761461", "Sporting KC (penalty saved)", 18522, 19, []string{"penalty---saved"}},
+		{"401869714", "USOC vs Knoxville (no attendance)", 0, 20, []string{"goal---header", "substitution"}},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.label, func(t *testing.T) {
+			payload, err := os.ReadFile("testdata/summary_" + tc.matchID + ".json")
+			if err != nil {
+				t.Fatalf("read fixture: %v", err)
+			}
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Write(payload)
+			}))
+			defer srv.Close()
+
+			summary, err := fetchSummaryFrom(srv.URL, tc.matchID)
+			if err != nil {
+				t.Fatalf("fetchSummaryFrom: %v", err)
+			}
+			if summary.Attendance != tc.expectedAttendance {
+				t.Errorf("Attendance: got %d, want %d", summary.Attendance, tc.expectedAttendance)
+			}
+			if len(summary.Events) < tc.minEvents {
+				t.Errorf("Events: got %d, want at least %d", len(summary.Events), tc.minEvents)
+			}
+			seen := map[string]bool{}
+			for _, e := range summary.Events {
+				seen[e.TypeID] = true
+			}
+			for _, want := range tc.requiredTypes {
+				if !seen[want] {
+					t.Errorf("expected event type %q not found; got types %v", want, mapKeys(seen))
+				}
+			}
+		})
+	}
+}
+
+func mapKeys(m map[string]bool) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	return out
+}
+
 func TestFetchSummaryFrom_ReturnsErrorOnNetworkFailure(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 	srv.Close()
