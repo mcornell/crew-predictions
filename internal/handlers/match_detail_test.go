@@ -565,6 +565,105 @@ func TestMatchDetailHandler_SkipsLazyFetchWhenAttendanceAlreadySet(t *testing.T)
 	}
 }
 
+func TestMatchDetailHandler_IncludesEventsInResponse(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	matchStore.Seed([]models.Match{{
+		ID: "m-events", HomeTeam: "Columbus Crew", AwayTeam: "Philadelphia Union",
+		Kickoff: time.Now().Add(-3 * time.Hour), Status: "STATUS_FULL_TIME",
+		State: "post", HomeScore: "2", AwayScore: "0", Attendance: 0,
+	}})
+
+	fetcher := func(_ string) (models.MatchSummary, error) {
+		return models.MatchSummary{
+			Attendance: 19903,
+			Events: []models.MatchEvent{
+				{Clock: "4'", TypeID: "goal", Team: "Columbus Crew", Players: []string{"Max Arfsten"}},
+				{Clock: "90'+4'", TypeID: "red-card", Team: "Philadelphia Union", Players: []string{"Japhet Sery"}},
+			},
+		}, nil
+	}
+
+	h := handlers.NewMatchDetailHandler(
+		repository.NewMemoryPredictionStore(),
+		repository.NewMemoryResultStore(),
+		matchStore,
+		repository.NewMemoryUserStore(),
+		"Columbus Crew",
+		fetcher,
+	)
+	req := httptest.NewRequest("GET", "/api/matches/m-events", nil)
+	req.SetPathValue("matchId", "m-events")
+	w := httptest.NewRecorder()
+	h.Get(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var resp struct {
+		Match struct {
+			Events []struct {
+				Clock   string   `json:"clock"`
+				TypeID  string   `json:"typeID"`
+				Team    string   `json:"team"`
+				Players []string `json:"players"`
+			} `json:"events"`
+		} `json:"match"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatalf("invalid JSON: %v", err)
+	}
+	if len(resp.Match.Events) != 2 {
+		t.Errorf("expected 2 events, got %d", len(resp.Match.Events))
+	}
+	if resp.Match.Events[0].TypeID != "goal" {
+		t.Errorf("expected first event typeID=goal, got %q", resp.Match.Events[0].TypeID)
+	}
+}
+
+func TestMatchDetailHandler_WritesEventsBackToStore(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	matchStore.Seed([]models.Match{{
+		ID: "m-ev-wb", HomeTeam: "Columbus Crew", AwayTeam: "Philadelphia Union",
+		Kickoff: time.Now().Add(-3 * time.Hour), Status: "STATUS_FULL_TIME",
+		State: "post", HomeScore: "2", AwayScore: "0", Attendance: 0,
+	}})
+
+	fetcher := func(_ string) (models.MatchSummary, error) {
+		return models.MatchSummary{
+			Attendance: 5000,
+			Events:     []models.MatchEvent{{Clock: "10'", TypeID: "goal", Team: "Columbus Crew", Players: []string{"Player A"}}},
+		}, nil
+	}
+
+	h := handlers.NewMatchDetailHandler(
+		repository.NewMemoryPredictionStore(),
+		repository.NewMemoryResultStore(),
+		matchStore,
+		repository.NewMemoryUserStore(),
+		"Columbus Crew",
+		fetcher,
+	)
+	req := httptest.NewRequest("GET", "/api/matches/m-ev-wb", nil)
+	req.SetPathValue("matchId", "m-ev-wb")
+	w := httptest.NewRecorder()
+	h.Get(w, req)
+
+	matches, _ := matchStore.GetAll()
+	var found models.Match
+	for _, m := range matches {
+		if m.ID == "m-ev-wb" {
+			found = m
+		}
+	}
+	if len(found.Events) != 1 {
+		t.Errorf("expected events written back to store, got %d events", len(found.Events))
+	}
+	if found.Events[0].TypeID != "goal" {
+		t.Errorf("expected written-back event typeID=goal, got %q", found.Events[0].TypeID)
+	}
+}
+
 func TestMatchDetailHandler_IncludesRecordsAndForm(t *testing.T) {
 	matchStore := repository.NewMemoryMatchStore()
 	matchStore.SaveAll([]models.Match{{

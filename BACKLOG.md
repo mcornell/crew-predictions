@@ -26,6 +26,8 @@
 
 ### Test Infrastructure
 
+- [ ] **Reevaluate e2e scenario structure** — audit the BDD suite for coverage vs. test count. Goal: each scenario should be atomic (isolated, no shared state) but scoped to a coherent UI component — e.g. "the match prediction box shows everything expected" (team names, score inputs, submit button, locked state) as one scenario rather than a separate test per element. Avoid grouping unrelated features just because they share a page. Expect this to reduce total scenario count while keeping each one focused and diagnostic. Candidate areas: match card variants (upcoming, live, result), prediction input box, match detail predictions table.
+
 - [ ] **Per-worker server isolation** — current parallelism runs two Playwright projects (`auth` + `app`) against a shared server. If the app group grows too slow, give each worker its own Go server instance on a separate port so they don't share in-memory state.
 
 

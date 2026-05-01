@@ -22,10 +22,10 @@ type Match struct {
 }
 
 type MatchEvent struct {
-	Clock   string
-	TypeID  string
-	Team    string
-	Players []string
+	Clock   string   `json:"clock"`
+	TypeID  string   `json:"typeID"`
+	Team    string   `json:"team"`
+	Players []string `json:"players"`
 }
 
 type MatchSummary struct {

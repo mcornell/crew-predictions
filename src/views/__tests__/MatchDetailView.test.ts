@@ -475,6 +475,85 @@ describe('MatchDetailView', () => {
     expect(wrapper.find('[data-testid="match-detail-attendance"]').exists()).toBe(false)
   })
 
+  it('shows event timeline when match has displayable events', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: {
+          ...mockMatch,
+          events: [
+            { clock: "4'", typeID: 'goal', team: 'Columbus Crew', players: ['Max Arfsten'] },
+            { clock: "90'+4'", typeID: 'red-card', team: 'Philadelphia Union', players: ['Japhet Sery'] },
+          ],
+        },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="match-events"]').exists()).toBe(true)
+    expect(wrapper.findAll('[data-testid="match-event"]')).toHaveLength(2)
+  })
+
+  it('does not show event timeline when match has no events', async () => {
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="match-events"]').exists()).toBe(false)
+  })
+
+  it('filters out non-displayable event types (kickoff, halftime, start-2nd-half, end-regular-time)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: {
+          ...mockMatch,
+          events: [
+            { clock: '', typeID: 'kickoff', team: '', players: [] },
+            { clock: "4'", typeID: 'goal', team: 'Columbus Crew', players: ['Max Arfsten'] },
+            { clock: '', typeID: 'halftime', team: '', players: [] },
+            { clock: '', typeID: 'start-2nd-half', team: '', players: [] },
+            { clock: '', typeID: 'end-regular-time', team: '', players: [] },
+          ],
+        },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    expect(wrapper.findAll('[data-testid="match-event"]')).toHaveLength(1)
+  })
+
+  it('renders substitution with on and off players', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: {
+          ...mockMatch,
+          events: [
+            { clock: "63'", typeID: 'substitution', team: 'Columbus Crew', players: ['Steven Moreira', 'Hugo Picard'] },
+          ],
+        },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    const eventEl = wrapper.find('[data-testid="match-event"]')
+    expect(eventEl.text()).toContain('Steven Moreira')
+    expect(eventEl.text()).toContain('Hugo Picard')
+  })
+
   it('clears poll timer on unmount when a poll was scheduled', async () => {
     vi.useFakeTimers()
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({

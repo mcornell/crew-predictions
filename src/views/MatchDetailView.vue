@@ -38,6 +38,24 @@
       <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
       <div v-if="match.venue" class="match-meta match-venue" data-testid="match-detail-venue">{{ match.venue }}</div>
       <div v-if="match.attendance" class="match-meta match-attendance" data-testid="match-detail-attendance">{{ formatAttendance(match.attendance) }}</div>
+      <div v-if="displayableEvents.length > 0" class="match-events" data-testid="match-events">
+        <div
+          v-for="(event, i) in displayableEvents"
+          :key="i"
+          class="match-event"
+          :class="`match-event--${event.typeID}`"
+          data-testid="match-event"
+        >
+          <span class="event-clock">{{ event.clock }}</span>
+          <span class="event-type">{{ event.typeID }}</span>
+          <span class="event-team">{{ event.team }}</span>
+          <span v-if="event.typeID === 'substitution'" class="event-players">
+            <span class="sub-on">{{ event.players[0] }} ↑</span>
+            <span v-if="event.players[1]" class="sub-off">{{ event.players[1] }} ↓</span>
+          </span>
+          <span v-else class="event-players">{{ event.players.join(', ') }}</span>
+        </div>
+      </div>
       <a
         :href="`https://www.espn.com/soccer/match/_/gameId/${match.id}`"
         target="_blank"
@@ -135,6 +153,13 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { isInActiveWindow, msUntilActiveWindow, POLL_INTERVAL_MS } from '../utils/pollScheduler'
 
+interface MatchEvent {
+  clock: string
+  typeID: string
+  team: string
+  players: string[]
+}
+
 interface MatchInfo {
   id: string
   homeTeam: string
@@ -151,7 +176,10 @@ interface MatchInfo {
   homeForm?: string
   awayForm?: string
   attendance?: number
+  events?: MatchEvent[]
 }
+
+const NON_DISPLAYABLE_EVENTS = new Set(['kickoff', 'halftime', 'start-2nd-half', 'end-regular-time'])
 
 interface PredictionEntry {
   userID: string
@@ -173,6 +201,10 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 
 const isLive = computed(() => match.value?.state === 'in')
+
+const displayableEvents = computed(() =>
+  (match.value?.events ?? []).filter(e => !NON_DISPLAYABLE_EVENTS.has(e.typeID))
+)
 
 const sortedPredictions = computed(() => {
   const key = activeFormat.value === 'acesRadio' ? 'acesRadioPoints' : activeFormat.value === 'upper90Club' ? 'upper90ClubPoints' : 'grouchyPoints'
