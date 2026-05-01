@@ -84,3 +84,28 @@ func TestUpper90Club_ColumbusIsHome(t *testing.T) {
 		t.Errorf("expected 1 for correct Columbus home goals, got %d", got)
 	}
 }
+
+func TestUpper90Club_ColumbusIsHome_ExactScore(t *testing.T) {
+	// Columbus is home, exact 2-1 prediction matches actual 2-1 → +3
+	got := scoring.Upper90Club(scoring.Result{Home: 2, Away: 1}, scoring.Prediction{Home: 2, Away: 1}, true)
+	if got != 3 {
+		t.Errorf("expected 3 for exact score with Columbus at home, got %d", got)
+	}
+}
+
+func TestUpper90Club_ColumbusIsHome_CorrectOutcomeAndOpponentGoals(t *testing.T) {
+	// Columbus is home and wins 3-1; pick 4-1: correct outcome + correct
+	// opponent (away) goals, wrong Crew home goals → +2.
+	got := scoring.Upper90Club(scoring.Result{Home: 3, Away: 1}, scoring.Prediction{Home: 4, Away: 1}, true)
+	if got != 2 {
+		t.Errorf("expected 2 for correct outcome + opponent goals (Columbus home), got %d", got)
+	}
+}
+
+func TestUpper90Club_ColumbusIsHome_CorrectWinnerOnly(t *testing.T) {
+	// Columbus is home and wins 3-1; pick 2-0: correct outcome only → +1.
+	got := scoring.Upper90Club(scoring.Result{Home: 3, Away: 1}, scoring.Prediction{Home: 2, Away: 0}, true)
+	if got != 1 {
+		t.Errorf("expected 1 for correct winner only (Columbus home), got %d", got)
+	}
+}

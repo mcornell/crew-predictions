@@ -38,13 +38,16 @@ func (h *ResultsHandler) Submit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "goals must be between 0 and 99", http.StatusBadRequest)
 		return
 	}
-	h.store.SaveResult(r.Context(), repository.Result{
+	if err := h.store.SaveResult(r.Context(), repository.Result{
 		MatchID:   matchID,
 		HomeTeam:  r.FormValue("home_team"),
 		AwayTeam:  r.FormValue("away_team"),
 		HomeGoals: home,
 		AwayGoals: away,
-	})
+	}); err != nil {
+		http.Error(w, "could not save result", http.StatusInternalServerError)
+		return
+	}
 	h.recalcFn(r.Context())
 	w.WriteHeader(http.StatusNoContent)
 }

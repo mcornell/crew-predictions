@@ -114,6 +114,25 @@ func TestResultsHandler_RejectsEmptyMatchID(t *testing.T) {
 	}
 }
 
+func TestResultsHandler_Returns500WhenSaveFails(t *testing.T) {
+	called := 0
+	recalcFn := func(_ context.Context) { called++ }
+	// ErrorResultStore returns an error from SaveResult; a working handler
+	// must propagate that as a 5xx and skip the recalc callback.
+	rh := handlers.NewResultsHandler(repository.NewErrorResultStore(), recalcFn)
+	req := httptest.NewRequest(http.MethodPost, "/admin/results",
+		strings.NewReader("match_id=m-fail&home_goals=2&away_goals=0"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	rh.Submit(w, req)
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("expected 500 when SaveResult fails, got %d", w.Code)
+	}
+	if called != 0 {
+		t.Errorf("expected recalcFn NOT called when save fails, was called %d times", called)
+	}
+}
+
 func TestResultsHandler_RejectsBadAwayGoals(t *testing.T) {
 	rh := handlers.NewResultsHandler(repository.NewMemoryResultStore(), noopRecalc)
 	req := httptest.NewRequest(http.MethodPost, "/admin/results",
