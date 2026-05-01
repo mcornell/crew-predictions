@@ -316,6 +316,31 @@ func TestFetchSummaryFrom_ParsesKeyEvent(t *testing.T) {
 	}
 }
 
+func TestFetchSummaryFrom_ReturnsErrorOnNetworkFailure(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv.Close()
+
+	_, err := fetchSummaryFrom(srv.URL, "x")
+	if err == nil {
+		t.Error("expected error on network failure, got nil")
+	}
+}
+
+func TestFetchSummaryFrom_ReturnsEmptySummaryOnNonOK(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	summary, err := fetchSummaryFrom(srv.URL, "x")
+	if err != nil {
+		t.Fatalf("expected nil error on non-OK, got %v", err)
+	}
+	if summary.Attendance != 0 {
+		t.Errorf("expected zero attendance on non-OK, got %d", summary.Attendance)
+	}
+}
+
 func TestFetchCrewMatchesFrom_ReturnsCrewMatchesFromFixtures(t *testing.T) {
 	schedule, err := os.ReadFile("testdata/mls_schedule.json")
 	if err != nil {
