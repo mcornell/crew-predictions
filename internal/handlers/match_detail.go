@@ -6,20 +6,24 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/mcornell/crew-predictions/internal/models"
 	"github.com/mcornell/crew-predictions/internal/repository"
 	"github.com/mcornell/crew-predictions/internal/scoring"
 )
 
+type SummaryFetcher func(matchID string) (models.MatchSummary, error)
+
 type MatchDetailHandler struct {
-	predictions repository.PredictionStore
-	results     repository.ResultStore
-	matches     repository.MatchStore
-	users       repository.UserStore
-	targetTeam  string
+	predictions    repository.PredictionStore
+	results        repository.ResultStore
+	matches        repository.MatchStore
+	users          repository.UserStore
+	targetTeam     string
+	summaryFetcher SummaryFetcher
 }
 
-func NewMatchDetailHandler(predictions repository.PredictionStore, results repository.ResultStore, matches repository.MatchStore, users repository.UserStore, targetTeam string) *MatchDetailHandler {
-	return &MatchDetailHandler{predictions: predictions, results: results, matches: matches, users: users, targetTeam: targetTeam}
+func NewMatchDetailHandler(predictions repository.PredictionStore, results repository.ResultStore, matches repository.MatchStore, users repository.UserStore, targetTeam string, fetcher SummaryFetcher) *MatchDetailHandler {
+	return &MatchDetailHandler{predictions: predictions, results: results, matches: matches, users: users, targetTeam: targetTeam, summaryFetcher: fetcher}
 }
 
 type matchDetailPrediction struct {
@@ -33,20 +37,25 @@ type matchDetailPrediction struct {
 }
 
 type matchDetailMatch struct {
-	ID           string `json:"id"`
-	HomeTeam     string `json:"homeTeam"`
-	AwayTeam     string `json:"awayTeam"`
-	Kickoff      string `json:"kickoff"`
-	HomeScore    string `json:"homeScore"`
-	AwayScore    string `json:"awayScore"`
-	State        string `json:"state"`
-	Status       string `json:"status"`
-	DisplayClock string `json:"displayClock,omitempty"`
-	Venue        string `json:"venue,omitempty"`
-	HomeRecord   string `json:"homeRecord,omitempty"`
-	AwayRecord   string `json:"awayRecord,omitempty"`
-	HomeForm     string `json:"homeForm,omitempty"`
-	AwayForm     string `json:"awayForm,omitempty"`
+	ID           string              `json:"id"`
+	HomeTeam     string              `json:"homeTeam"`
+	AwayTeam     string              `json:"awayTeam"`
+	Kickoff      string              `json:"kickoff"`
+	HomeScore    string              `json:"homeScore"`
+	AwayScore    string              `json:"awayScore"`
+	State        string              `json:"state"`
+	Status       string              `json:"status"`
+	DisplayClock string              `json:"displayClock,omitempty"`
+	Venue        string              `json:"venue,omitempty"`
+	HomeRecord   string              `json:"homeRecord,omitempty"`
+	AwayRecord   string              `json:"awayRecord,omitempty"`
+	HomeForm     string              `json:"homeForm,omitempty"`
+	AwayForm     string              `json:"awayForm,omitempty"`
+	HomeLogo     string              `json:"homeLogo,omitempty"`
+	AwayLogo     string              `json:"awayLogo,omitempty"`
+	Attendance   int                 `json:"attendance,omitempty"`
+	Referee      string              `json:"referee,omitempty"`
+	Events       []models.MatchEvent `json:"events,omitempty"`
 }
 
 func (h *MatchDetailHandler) Get(w http.ResponseWriter, r *http.Request) {
@@ -59,8 +68,19 @@ func (h *MatchDetailHandler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var found *matchDetailMatch
-	for _, m := range allMatches {
+	for i, m := range allMatches {
 		if m.ID == matchID {
+			if h.summaryFetcher != nil && m.State == "post" && m.Attendance == 0 {
+				if summary, err := h.summaryFetcher(matchID); err == nil && (summary.Attendance > 0 || len(summary.Events) > 0) {
+					allMatches[i].Attendance = summary.Attendance
+					allMatches[i].Events = summary.Events
+					allMatches[i].HomeLogo = summary.HomeLogo
+					allMatches[i].AwayLogo = summary.AwayLogo
+					allMatches[i].Referee = summary.Referee
+					_ = h.matches.SaveAll(allMatches)
+					m = allMatches[i]
+				}
+			}
 			found = &matchDetailMatch{
 				ID:           m.ID,
 				HomeTeam:     m.HomeTeam,
@@ -76,6 +96,11 @@ func (h *MatchDetailHandler) Get(w http.ResponseWriter, r *http.Request) {
 				AwayRecord:   m.AwayRecord,
 				HomeForm:     m.HomeForm,
 				AwayForm:     m.AwayForm,
+				HomeLogo:     m.HomeLogo,
+				AwayLogo:     m.AwayLogo,
+				Attendance:   m.Attendance,
+				Referee:      m.Referee,
+				Events:       m.Events,
 			}
 			break
 		}

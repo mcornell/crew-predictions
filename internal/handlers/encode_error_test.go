@@ -106,6 +106,7 @@ func TestMatchDetailHandler_LogsEncodeError(t *testing.T) {
 		matchStore,
 		repository.NewMemoryUserStore(),
 		"Columbus Crew",
+		nil,
 	)
 	req := httptest.NewRequest(http.MethodGet, "/api/matches/m1", nil)
 	req.SetPathValue("matchId", "m1")

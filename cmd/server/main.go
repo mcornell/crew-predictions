@@ -157,7 +157,7 @@ func main() {
 	ssh := handlers.NewSeasonsHandler(configStore)
 	mux.Handle("GET /api/seasons", rateLimitMw(http.HandlerFunc(ssh.APIList)))
 	mux.Handle("GET /api/profile/{userID}", rateLimitMw(http.HandlerFunc(prh.Get)))
-	mdh := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew")
+	mdh := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew", espn.FetchSummary)
 	mux.HandleFunc("GET /api/matches/{matchId}", mdh.Get)
 	if os.Getenv("TEST_MODE") != "1" && os.Getenv("ADMIN_KEY") == "" {
 		log.Fatal("ADMIN_KEY env var must be set in production")

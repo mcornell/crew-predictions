@@ -275,6 +275,151 @@ func TestFetchCrewMatchesFrom_PopulatesRecordsAndForm(t *testing.T) {
 	}
 }
 
+func TestFetchSummaryFrom_ReturnsAttendance(t *testing.T) {
+	payload := `{"gameInfo":{"attendance":19903},"keyEvents":[]}`
+	srv := serveJSON(t, payload)
+	defer srv.Close()
+
+	summary, err := fetchSummaryFrom(srv.URL, "761573")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if summary.Attendance != 19903 {
+		t.Errorf("expected Attendance 19903, got %d", summary.Attendance)
+	}
+}
+
+func TestFetchSummaryFrom_ParsesKeyEvent(t *testing.T) {
+	payload := `{"gameInfo":{"attendance":0},"keyEvents":[{"clock":{"displayValue":"15'"},"type":{"type":"goal"},"team":{"displayName":"Columbus Crew"},"participants":[{"athlete":{"displayName":"Cucho Hernandez"}}]}]}`
+	srv := serveJSON(t, payload)
+	defer srv.Close()
+
+	summary, err := fetchSummaryFrom(srv.URL, "x")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(summary.Events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(summary.Events))
+	}
+	e := summary.Events[0]
+	if e.Clock != "15'" {
+		t.Errorf("Clock: got %q, want %q", e.Clock, "15'")
+	}
+	if e.TypeID != "goal" {
+		t.Errorf("TypeID: got %q, want %q", e.TypeID, "goal")
+	}
+	if e.Team != "Columbus Crew" {
+		t.Errorf("Team: got %q, want %q", e.Team, "Columbus Crew")
+	}
+	if len(e.Players) != 1 || e.Players[0] != "Cucho Hernandez" {
+		t.Errorf("Players: got %v, want [Cucho Hernandez]", e.Players)
+	}
+}
+
+// TestFetchSummaryFrom_RealFixtures parses captured ESPN /summary responses
+// for six completed Crew matches that span the variations we observed:
+// goal subtypes (header, volley), penalty---scored/saved, own-goal + red-card,
+// and a USOC match where ESPN reports no attendance. Re-fetch fixtures with
+//
+//	curl -s 'https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/summary?event=<id>' \
+//	  | jq '{gameInfo,keyEvents,boxscore,header,rosters,standings,leaders,headToHeadGames,meta,format}' \
+//	  > internal/espn/testdata/summary_<id>.json
+func TestFetchSummaryFrom_RealFixtures(t *testing.T) {
+	cases := []struct {
+		matchID            string
+		label              string
+		expectedAttendance int
+		expectedReferee    string // empty when ESPN returned no officials
+		minEvents          int
+		requiredTypes      []string
+	}{
+		{"761573", "Philadelphia (own goal + red card)", 19903, "", 19, []string{"goal", "own-goal", "red-card", "yellow-card"}},
+		{"761499", "Toronto (header goal)", 15384, "Pierre-Luc Lauziere", 20, []string{"goal---header"}},
+		{"761451", "Portland (volley goal)", 22210, "", 21, []string{"goal---volley"}},
+		{"761552", "Revolution (penalty scored)", 16257, "Timothy Ford", 18, []string{"penalty---scored"}},
+		{"761461", "Sporting KC (penalty saved)", 18522, "Sergii Demianchuk", 19, []string{"penalty---saved"}},
+		{"401869714", "USOC vs Knoxville (no attendance)", 0, "Nabil Bensalah", 20, []string{"goal---header", "substitution"}},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.label, func(t *testing.T) {
+			payload, err := os.ReadFile("testdata/summary_" + tc.matchID + ".json")
+			if err != nil {
+				t.Fatalf("read fixture: %v", err)
+			}
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Write(payload)
+			}))
+			defer srv.Close()
+
+			summary, err := fetchSummaryFrom(srv.URL, tc.matchID)
+			if err != nil {
+				t.Fatalf("fetchSummaryFrom: %v", err)
+			}
+			if summary.Attendance != tc.expectedAttendance {
+				t.Errorf("Attendance: got %d, want %d", summary.Attendance, tc.expectedAttendance)
+			}
+			if summary.Referee != tc.expectedReferee {
+				t.Errorf("Referee: got %q, want %q", summary.Referee, tc.expectedReferee)
+			}
+			if !strings.Contains(summary.HomeLogo, "espncdn.com/i/teamlogos/soccer") {
+				t.Errorf("HomeLogo: expected ESPN team logo URL, got %q", summary.HomeLogo)
+			}
+			if !strings.Contains(summary.AwayLogo, "espncdn.com/i/teamlogos/soccer") {
+				t.Errorf("AwayLogo: expected ESPN team logo URL, got %q", summary.AwayLogo)
+			}
+			if summary.HomeLogo == summary.AwayLogo {
+				t.Errorf("HomeLogo and AwayLogo are identical: %q", summary.HomeLogo)
+			}
+			if len(summary.Events) < tc.minEvents {
+				t.Errorf("Events: got %d, want at least %d", len(summary.Events), tc.minEvents)
+			}
+			seen := map[string]bool{}
+			for _, e := range summary.Events {
+				seen[e.TypeID] = true
+			}
+			for _, want := range tc.requiredTypes {
+				if !seen[want] {
+					t.Errorf("expected event type %q not found; got types %v", want, mapKeys(seen))
+				}
+			}
+		})
+	}
+}
+
+func mapKeys(m map[string]bool) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	return out
+}
+
+func TestFetchSummaryFrom_ReturnsErrorOnNetworkFailure(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv.Close()
+
+	_, err := fetchSummaryFrom(srv.URL, "x")
+	if err == nil {
+		t.Error("expected error on network failure, got nil")
+	}
+}
+
+func TestFetchSummaryFrom_ReturnsEmptySummaryOnNonOK(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	summary, err := fetchSummaryFrom(srv.URL, "x")
+	if err != nil {
+		t.Fatalf("expected nil error on non-OK, got %v", err)
+	}
+	if summary.Attendance != 0 {
+		t.Errorf("expected zero attendance on non-OK, got %d", summary.Attendance)
+	}
+}
+
 func TestFetchCrewMatchesFrom_ReturnsCrewMatchesFromFixtures(t *testing.T) {
 	schedule, err := os.ReadFile("testdata/mls_schedule.json")
 	if err != nil {

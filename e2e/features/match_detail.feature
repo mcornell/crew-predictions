@@ -101,3 +101,37 @@ Feature: Match detail page
     And the final score for match "m-espn" was 2-1 with Columbus home
     When I visit the match detail page for "m-espn"
     Then I should see an ESPN link for match "m-espn"
+
+  Scenario: Match detail page lazy-fetches attendance from ESPN for a known completed match
+    Given I am not logged in
+    And the following matches are seeded in order:
+      | id     | homeTeam      | awayTeam          | kickoffOffset | status           | state | homeScore | awayScore |
+      | 761573 | Columbus Crew | Philadelphia Union | -120          | STATUS_FULL_TIME | post  | 2         | 0         |
+    When I visit the match detail page for "761573"
+    Then I should see the attendance "19,903" on the match detail page
+
+  Scenario: Match detail page shows event timeline for a completed match
+    Given I am not logged in
+    And the following matches are seeded in order:
+      | id     | homeTeam      | awayTeam          | kickoffOffset | status           | state | homeScore | awayScore |
+      | 761573 | Columbus Crew | Philadelphia Union | -120          | STATUS_FULL_TIME | post  | 2         | 0         |
+    When I visit the match detail page for "761573"
+    Then I should see the event timeline on the match detail page
+    And I should see at least one event in the timeline
+
+  Scenario: Match detail page shows team logos for a completed match
+    Given I am not logged in
+    And the following matches are seeded in order:
+      | id     | homeTeam      | awayTeam          | kickoffOffset | status           | state | homeScore | awayScore |
+      | 761573 | Columbus Crew | Philadelphia Union | -120          | STATUS_FULL_TIME | post  | 2         | 0         |
+    When I visit the match detail page for "761573"
+    Then I should see the home team logo on the match detail page
+    And I should see the away team logo on the match detail page
+
+  Scenario: Match detail page shows the referee for a completed match
+    Given I am not logged in
+    And the following matches are seeded in order:
+      | id     | homeTeam   | awayTeam      | kickoffOffset | status           | state | homeScore | awayScore |
+      | 761499 | Toronto FC | Columbus Crew | -120          | STATUS_FULL_TIME | post  | 0         | 2         |
+    When I visit the match detail page for "761499"
+    Then I should see the referee on the match detail page

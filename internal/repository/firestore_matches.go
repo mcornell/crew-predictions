@@ -25,6 +25,15 @@ func (s *FirestoreMatchStore) SaveAll(matches []models.Match) error {
 	batch := s.client.BulkWriter(ctx)
 	for _, m := range matches {
 		ref := s.client.Collection("matches").Doc(m.ID)
+		events := make([]map[string]any, len(m.Events))
+		for i, e := range m.Events {
+			events[i] = map[string]any{
+				"clock":   e.Clock,
+				"typeID":  e.TypeID,
+				"team":    e.Team,
+				"players": e.Players,
+			}
+		}
 		batch.Set(ref, map[string]any{
 			"homeTeam":     m.HomeTeam,
 			"awayTeam":     m.AwayTeam,
@@ -39,6 +48,11 @@ func (s *FirestoreMatchStore) SaveAll(matches []models.Match) error {
 			"awayRecord":   m.AwayRecord,
 			"homeForm":     m.HomeForm,
 			"awayForm":     m.AwayForm,
+			"homeLogo":     m.HomeLogo,
+			"awayLogo":     m.AwayLogo,
+			"attendance":   m.Attendance,
+			"referee":      m.Referee,
+			"events":       events,
 		})
 	}
 	batch.Flush()
@@ -79,9 +93,28 @@ func toMatch(snap *firestore.DocumentSnapshot) (models.Match, error) {
 		AwayRecord   string    `firestore:"awayRecord"`
 		HomeForm     string    `firestore:"homeForm"`
 		AwayForm     string    `firestore:"awayForm"`
+		HomeLogo     string    `firestore:"homeLogo"`
+		AwayLogo     string    `firestore:"awayLogo"`
+		Attendance   int64     `firestore:"attendance"`
+		Referee      string    `firestore:"referee"`
+		Events       []struct {
+			Clock   string   `firestore:"clock"`
+			TypeID  string   `firestore:"typeID"`
+			Team    string   `firestore:"team"`
+			Players []string `firestore:"players"`
+		} `firestore:"events"`
 	}
 	if err := snap.DataTo(&doc); err != nil {
 		return models.Match{}, err
+	}
+	events := make([]models.MatchEvent, len(doc.Events))
+	for i, e := range doc.Events {
+		events[i] = models.MatchEvent{
+			Clock:   e.Clock,
+			TypeID:  e.TypeID,
+			Team:    e.Team,
+			Players: e.Players,
+		}
 	}
 	return models.Match{
 		ID:           snap.Ref.ID,
@@ -98,5 +131,10 @@ func toMatch(snap *firestore.DocumentSnapshot) (models.Match, error) {
 		AwayRecord:   doc.AwayRecord,
 		HomeForm:     doc.HomeForm,
 		AwayForm:     doc.AwayForm,
+		HomeLogo:     doc.HomeLogo,
+		AwayLogo:     doc.AwayLogo,
+		Attendance:   int(doc.Attendance),
+		Referee:      doc.Referee,
+		Events:       events,
 	}, nil
 }

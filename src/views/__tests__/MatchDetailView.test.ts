@@ -443,6 +443,279 @@ describe('MatchDetailView', () => {
     vi.restoreAllMocks()
   })
 
+  it('shows formatted attendance when match has attendance', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: { ...mockMatch, attendance: 19903 },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="match-detail-attendance"]').text()).toBe('19,903')
+  })
+
+  it('does not show attendance element when attendance is 0', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: { ...mockMatch, attendance: 0 },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="match-detail-attendance"]').exists()).toBe(false)
+  })
+
+  it('shows event timeline when match has displayable events', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: {
+          ...mockMatch,
+          events: [
+            { clock: "4'", typeID: 'goal', team: 'Columbus Crew', players: ['Max Arfsten'] },
+            { clock: "90'+4'", typeID: 'red-card', team: 'Philadelphia Union', players: ['Japhet Sery'] },
+          ],
+        },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="match-events"]').exists()).toBe(true)
+    expect(wrapper.findAll('[data-testid="match-event"]')).toHaveLength(2)
+  })
+
+  it('does not show event timeline when match has no events', async () => {
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="match-events"]').exists()).toBe(false)
+  })
+
+  it('filters out non-displayable event types (kickoff, halftime, start-2nd-half, end-regular-time)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: {
+          ...mockMatch,
+          events: [
+            { clock: '', typeID: 'kickoff', team: '', players: [] },
+            { clock: "4'", typeID: 'goal', team: 'Columbus Crew', players: ['Max Arfsten'] },
+            { clock: '', typeID: 'halftime', team: '', players: [] },
+            { clock: '', typeID: 'start-2nd-half', team: '', players: [] },
+            { clock: '', typeID: 'end-regular-time', team: '', players: [] },
+          ],
+        },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    expect(wrapper.findAll('[data-testid="match-event"]')).toHaveLength(1)
+  })
+
+  it('groups consecutive substitutions at the same minute and team into one row', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: {
+          ...mockMatch,
+          events: [
+            { clock: "74'", typeID: 'substitution', team: 'Columbus Crew', players: ['Kevin Gbamblé', 'Hugo Picard'] },
+            { clock: "74'", typeID: 'substitution', team: 'Columbus Crew', players: ['Chase Adams', 'Dániel Gazdag'] },
+            { clock: "78'", typeID: 'substitution', team: 'FC Dallas', players: ['Kyle Linhares', 'Braudilio Rodrigues'] },
+          ],
+        },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    const rows = wrapper.findAll('[data-testid="match-event"]')
+    // Two same-team-same-clock home subs collapse into one row; FC Dallas sub is its own row.
+    expect(rows).toHaveLength(2)
+    expect(rows[0].text()).toContain('Gbamblé')
+    expect(rows[0].text()).toContain('Adams')
+  })
+
+  it('does not group substitutions across different minutes or teams', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: {
+          ...mockMatch,
+          events: [
+            { clock: "74'", typeID: 'substitution', team: 'Columbus Crew', players: ['A', 'B'] },
+            { clock: "75'", typeID: 'substitution', team: 'Columbus Crew', players: ['C', 'D'] }, // different clock
+            { clock: "75'", typeID: 'substitution', team: 'FC Dallas', players: ['E', 'F'] },     // different team
+          ],
+        },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    expect(wrapper.findAll('[data-testid="match-event"]')).toHaveLength(3)
+  })
+
+  it('shows only the goal scorer, not assisting players', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: {
+          ...mockMatch,
+          events: [
+            // ESPN sends scorer + assister in participants[]; we only want the scorer.
+            { clock: "10'", typeID: 'goal', team: 'Columbus Crew', players: ['Hugo Picard', 'Yevhen Cheberko'] },
+          ],
+        },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    const eventEl = wrapper.find('[data-testid="match-event"]')
+    expect(eventEl.text()).toContain('Picard')
+    expect(eventEl.text()).not.toContain('Cheberko')
+  })
+
+  it('renders substitution with full names of both on and off players', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: {
+          ...mockMatch,
+          events: [
+            { clock: "63'", typeID: 'substitution', team: 'Columbus Crew', players: ['Steven Moreira', 'Hugo Picard'] },
+          ],
+        },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    const eventEl = wrapper.find('[data-testid="match-event"]')
+    expect(eventEl.text()).toContain('Steven Moreira')
+    expect(eventEl.text()).toContain('Hugo Picard')
+  })
+
+  it('renders the goal scorer with their full name (no string parsing)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: {
+          ...mockMatch,
+          // Names ESPN classifies inconsistently — full name should always win.
+          events: [
+            { clock: "10'", typeID: 'goal', team: 'Columbus Crew', players: ['Wessam Abou Ali'] },
+            { clock: "20'", typeID: 'goal', team: 'Columbus Crew', players: ['Philippe Ndinga Ossibadjouo'] },
+            { clock: "30'", typeID: 'substitution', team: 'Columbus Crew', players: ['Teddy Baker', 'John Murphy Jr.'] },
+          ],
+        },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    const text = wrapper.text()
+    expect(text).toContain('Wessam Abou Ali')
+    expect(text).toContain('Philippe Ndinga Ossibadjouo')
+    expect(text).toContain('Teddy Baker')
+    expect(text).toContain('John Murphy Jr.')
+  })
+
+  it('renders home and away team logos when present', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: {
+          ...mockMatch,
+          homeLogo: 'https://a.espncdn.com/i/teamlogos/soccer/500/183.png',
+          awayLogo: 'https://a.espncdn.com/i/teamlogos/soccer/500/10739.png',
+        },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    const home = wrapper.find('[data-testid="home-logo"]')
+    const away = wrapper.find('[data-testid="away-logo"]')
+    expect(home.exists()).toBe(true)
+    expect(away.exists()).toBe(true)
+    expect(home.attributes('src')).toContain('183.png')
+    expect(away.attributes('src')).toContain('10739.png')
+  })
+
+  it('does not render logos when match has no logo URLs', async () => {
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="home-logo"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="away-logo"]').exists()).toBe(false)
+  })
+
+  it('shows the referee when present on match', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: { ...mockMatch, referee: 'Pierre-Luc Lauziere' },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    const ref = wrapper.find('[data-testid="match-referee"]')
+    expect(ref.exists()).toBe(true)
+    expect(ref.text()).toContain('Pierre-Luc Lauziere')
+  })
+
+  it('does not render the referee element when match has no referee', async () => {
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="match-referee"]').exists()).toBe(false)
+  })
+
   it('clears poll timer on unmount when a poll was scheduled', async () => {
     vi.useFakeTimers()
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({

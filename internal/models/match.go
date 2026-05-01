@@ -17,4 +17,24 @@ type Match struct {
 	AwayRecord   string
 	HomeForm     string
 	AwayForm     string
+	HomeLogo     string
+	AwayLogo     string
+	Attendance   int
+	Referee      string
+	Events       []MatchEvent
+}
+
+type MatchEvent struct {
+	Clock   string   `json:"clock"`
+	TypeID  string   `json:"typeID"`
+	Team    string   `json:"team"`
+	Players []string `json:"players"`
+}
+
+type MatchSummary struct {
+	Attendance int
+	HomeLogo   string
+	AwayLogo   string
+	Referee    string
+	Events     []MatchEvent
 }

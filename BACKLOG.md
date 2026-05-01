@@ -20,11 +20,19 @@
 ### Infrastructure
 
 
+### Infrastructure (sequenced after current PR + PR4 live-events work)
+
+- [ ] **Cache team logos in Firebase Cloud Storage (snapshot at match time)** — current refs+logos PR hot-links to ESPN's CDN (`https://a.espncdn.com/i/teamlogos/soccer/500/<teamID>.png`). Replace with first-encounter caching: when `MatchDetailHandler` lazy-fetches a summary and gets ESPN logo URLs, server downloads bytes once per team, uploads to `gs://crew-predictions.firebasestorage.app/team-logos/<teamID>.png` (publicly readable), stores our Storage URL in `match.HomeLogo` / `AwayLogo`. On subsequent matches with the same team, reuse cached version — never re-download. Gives "logo at time of match" snapshot semantics: ESPN rebrands later don't change our historical match displays. Add `internal/teamlogos/cache.go` with `EnsureCached(ctx, teamID, espnURL) (publicURL, error)`. Migration: one-shot script to walk existing match docs and re-cache any with ESPN URLs. Cost: storage ~1.2MB/year, egress trivially small after Hosting CDN warms.
+
 ### Security
 
 - [ ] **App Check** — register Crew Predictions web app with reCAPTCHA v3 attestation provider; enforce on Cloud Firestore and Authentication. Note: does not cover Go/Cloud Run endpoints (those are protected by session cookies). Wire `initializeAppCheck()` into `src/firebase.ts` before enforcing.
 
 ### Test Infrastructure
+
+- [ ] **Reevaluate e2e scenario structure** — audit the BDD suite for coverage vs. test count. Goal: each scenario should be atomic (isolated, no shared state) but scoped to a coherent UI component — e.g. "the match prediction box shows everything expected" (team names, score inputs, submit button, locked state) as one scenario rather than a separate test per element. Avoid grouping unrelated features just because they share a page. Expect this to reduce total scenario count while keeping each one focused and diagnostic. Candidate areas: match card variants (upcoming, live, result), prediction input box, match detail predictions table.
+
+- [ ] **Real-fixture coverage for schedule/scoreboard parser** — `internal/espn/client_test.go` currently tests `fetchCrewMatchesFrom` against hand-rolled `crewEventJSON()` strings plus two MLS-only fixtures (`mls_schedule.json`, `mls_scoreboard.json`). Capture per-competition fixtures from historical Crew matches: 2024 Concacaf Champions Cup (Crew won the trophy), 2025 Leagues Cup, USOC 2026 (after May 19 match 401871130 plus prior rounds). Save as `usa_open_*.json`, `concacaf_champions_*.json`, `concacaf_leagues_cup_*.json` and add table-driven tests asserting league-specific shapes. Mirrors what `TestFetchSummaryFrom_RealFixtures` does for the `/summary` endpoint. Goal: catch regressions in record/form parsing for tournament matches before they hit production.
 
 - [ ] **Per-worker server isolation** — current parallelism runs two Playwright projects (`auth` + `app`) against a shared server. If the app group grows too slow, give each worker its own Go server instance on a separate port so they don't share in-memory state.
 

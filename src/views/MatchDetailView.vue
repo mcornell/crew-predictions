@@ -1,5 +1,5 @@
 <template>
-  <div class="page">
+  <div class="page page--match-detail">
     <RouterLink to="/matches" class="back-link" data-testid="back-link">← All Matches</RouterLink>
 
     <p v-if="loading" data-testid="loading" class="status-msg">Loading…</p>
@@ -11,11 +11,17 @@
         <span v-else class="live-indicator">● {{ match.displayClock || 'LIVE' }}</span>
       </div>
       <div class="matchup matchup--input" data-testid="match-score" :class="{ 'matchup--has-form': match.homeRecord || match.awayRecord || match.homeForm || match.awayForm }">
-        <span class="team-name team-home">{{ match.homeTeam }}</span>
+        <span class="team-name team-home">
+          <img v-if="match.homeLogo" :src="match.homeLogo" alt="" class="team-logo" data-testid="home-logo" loading="lazy" />
+          <span class="team-label">{{ match.homeTeam }}</span>
+        </span>
         <span class="inline-score">{{ match.homeScore || '–' }}</span>
         <span class="vs">vs</span>
         <span class="inline-score">{{ match.awayScore || '–' }}</span>
-        <span class="team-name team-away">{{ match.awayTeam }}</span>
+        <span class="team-name team-away">
+          <img v-if="match.awayLogo" :src="match.awayLogo" alt="" class="team-logo" data-testid="away-logo" loading="lazy" />
+          <span class="team-label">{{ match.awayTeam }}</span>
+        </span>
         <div v-if="match.homeRecord || match.homeForm" class="matchup-team-form matchup-team-form--home">
           <span v-if="match.homeRecord" class="match-record">{{ match.homeRecord }}</span>
           <span v-if="match.homeForm" class="match-form"><span v-for="(c, i) in match.homeForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
@@ -37,6 +43,29 @@
       </div>
       <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
       <div v-if="match.venue" class="match-meta match-venue" data-testid="match-detail-venue">{{ match.venue }}</div>
+      <div v-if="match.attendance" class="match-meta match-attendance" data-testid="match-detail-attendance">{{ formatAttendance(match.attendance) }}</div>
+      <div v-if="match.referee" class="match-meta match-referee" data-testid="match-referee">Referee: {{ match.referee }}</div>
+      <div v-if="groupedEvents.length > 0" class="match-events" data-testid="match-events">
+        <div
+          v-for="(event, i) in groupedEvents"
+          :key="i"
+          class="match-event"
+          :class="[`match-event--${event.typeID}`, `match-event--${eventSide(event)}`]"
+          data-testid="match-event"
+        >
+          <div class="event-detail">
+            <span class="event-icon" :aria-label="event.typeID">{{ eventIcon(event.typeID) }}</span>
+            <span v-if="event.typeID === 'substitution' && event.subs" class="event-players event-subs">
+              <span v-for="(pair, j) in event.subs" :key="j" class="sub-pair">
+                <span class="sub-on">{{ pair.on }}<span class="sub-arrow">↑</span></span>
+                <span v-if="pair.off" class="sub-off">{{ pair.off }}<span class="sub-arrow">↓</span></span>
+              </span>
+            </span>
+            <span v-else class="event-players">{{ event.players[0] || '' }}</span>
+          </div>
+          <span class="event-clock">{{ event.clock }}</span>
+        </div>
+      </div>
       <a
         :href="`https://www.espn.com/soccer/match/_/gameId/${match.id}`"
         target="_blank"
@@ -134,6 +163,13 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { isInActiveWindow, msUntilActiveWindow, POLL_INTERVAL_MS } from '../utils/pollScheduler'
 
+interface MatchEvent {
+  clock: string
+  typeID: string
+  team: string
+  players: string[]
+}
+
 interface MatchInfo {
   id: string
   homeTeam: string
@@ -149,7 +185,26 @@ interface MatchInfo {
   awayRecord?: string
   homeForm?: string
   awayForm?: string
+  homeLogo?: string
+  awayLogo?: string
+  attendance?: number
+  referee?: string
+  events?: MatchEvent[]
 }
+
+const NON_DISPLAYABLE_EVENTS = new Set(['kickoff', 'halftime', 'start-2nd-half', 'end-regular-time'])
+
+const GOAL_TYPES = new Set(['goal', 'goal---header', 'goal---volley', 'own-goal', 'penalty---scored'])
+
+function eventIcon(typeID: string): string {
+  if (GOAL_TYPES.has(typeID)) return '⚽'
+  if (typeID === 'yellow-card') return '🟨'
+  if (typeID === 'red-card') return '🟥'
+  if (typeID === 'penalty---saved') return '🧤'
+  if (typeID === 'substitution') return '🔄'
+  return ''
+}
+
 
 interface PredictionEntry {
   userID: string
@@ -172,6 +227,39 @@ const error = ref<string | null>(null)
 
 const isLive = computed(() => match.value?.state === 'in')
 
+const displayableEvents = computed(() =>
+  (match.value?.events ?? []).filter(e => !NON_DISPLAYABLE_EVENTS.has(e.typeID))
+)
+
+interface DisplayEvent extends MatchEvent {
+  subs?: Array<{ on: string; off: string }>
+}
+
+const groupedEvents = computed<DisplayEvent[]>(() => {
+  const out: DisplayEvent[] = []
+  for (const ev of displayableEvents.value) {
+    const last = out[out.length - 1]
+    const isSub = ev.typeID === 'substitution'
+    if (
+      isSub && last && last.typeID === 'substitution' &&
+      last.clock === ev.clock && last.team === ev.team
+    ) {
+      last.subs!.push({ on: ev.players[0] ?? '', off: ev.players[1] ?? '' })
+      continue
+    }
+    if (isSub) {
+      out.push({ ...ev, subs: [{ on: ev.players[0] ?? '', off: ev.players[1] ?? '' }] })
+    } else {
+      out.push({ ...ev })
+    }
+  }
+  return out
+})
+
+function eventSide(event: MatchEvent): 'home' | 'away' {
+  return match.value && event.team === match.value.homeTeam ? 'home' : 'away'
+}
+
 const sortedPredictions = computed(() => {
   const key = activeFormat.value === 'acesRadio' ? 'acesRadioPoints' : activeFormat.value === 'upper90Club' ? 'upper90ClubPoints' : 'grouchyPoints'
   return [...predictions.value].sort((a, b) => b[key] - a[key])
@@ -182,6 +270,10 @@ function rankFor(i: number): number {
   const key = activeFormat.value === 'acesRadio' ? 'acesRadioPoints' : activeFormat.value === 'upper90Club' ? 'upper90ClubPoints' : 'grouchyPoints'
   if (sortedPredictions.value[i][key] === sortedPredictions.value[i - 1][key]) return rankFor(i - 1)
   return i + 1
+}
+
+function formatAttendance(n: number): string {
+  return n.toLocaleString('en-US')
 }
 
 function formatKickoff(iso: string): string {
