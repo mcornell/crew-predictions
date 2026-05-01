@@ -531,12 +531,63 @@ describe('MatchDetailView', () => {
     expect(wrapper.findAll('[data-testid="match-event"]')).toHaveLength(1)
   })
 
-  it('renders substitution with on and off players', async () => {
+  it('groups consecutive substitutions at the same minute and team into one row', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({
         match: {
           ...mockMatch,
+          events: [
+            { clock: "74'", typeID: 'substitution', team: 'Columbus Crew', players: ['Kevin Gbamblé', 'Hugo Picard'] },
+            { clock: "74'", typeID: 'substitution', team: 'Columbus Crew', players: ['Chase Adams', 'Dániel Gazdag'] },
+            { clock: "78'", typeID: 'substitution', team: 'FC Dallas', players: ['Kyle Linhares', 'Braudilio Rodrigues'] },
+          ],
+        },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    const rows = wrapper.findAll('[data-testid="match-event"]')
+    // Two same-team-same-clock home subs collapse into one row; FC Dallas sub is its own row.
+    expect(rows).toHaveLength(2)
+    expect(rows[0].text()).toContain('Gbamblé')
+    expect(rows[0].text()).toContain('Adams')
+  })
+
+  it('does not group substitutions across different minutes or teams', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: {
+          ...mockMatch,
+          events: [
+            { clock: "74'", typeID: 'substitution', team: 'Columbus Crew', players: ['A', 'B'] },
+            { clock: "75'", typeID: 'substitution', team: 'Columbus Crew', players: ['C', 'D'] }, // different clock
+            { clock: "75'", typeID: 'substitution', team: 'FC Dallas', players: ['E', 'F'] },     // different team
+          ],
+        },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    expect(wrapper.findAll('[data-testid="match-event"]')).toHaveLength(3)
+  })
+
+  it('renders substitution with on and off players (surnames only)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: {
+          ...mockMatch,
+          // Crew is the home team in mockMatch — set team to home so the event renders.
           events: [
             { clock: "63'", typeID: 'substitution', team: 'Columbus Crew', players: ['Steven Moreira', 'Hugo Picard'] },
           ],
@@ -550,8 +601,8 @@ describe('MatchDetailView', () => {
     const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
     await flushPromises()
     const eventEl = wrapper.find('[data-testid="match-event"]')
-    expect(eventEl.text()).toContain('Steven Moreira')
-    expect(eventEl.text()).toContain('Hugo Picard')
+    expect(eventEl.text()).toContain('Moreira')
+    expect(eventEl.text()).toContain('Picard')
   })
 
   it('renders home and away team logos when present', async () => {

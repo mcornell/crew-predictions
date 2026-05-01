@@ -1,5 +1,5 @@
 <template>
-  <div class="page">
+  <div class="page page--match-detail">
     <RouterLink to="/matches" class="back-link" data-testid="back-link">← All Matches</RouterLink>
 
     <p v-if="loading" data-testid="loading" class="status-msg">Loading…</p>
@@ -12,14 +12,14 @@
       </div>
       <div class="matchup matchup--input" data-testid="match-score" :class="{ 'matchup--has-form': match.homeRecord || match.awayRecord || match.homeForm || match.awayForm }">
         <span class="team-name team-home">
-          <img v-if="match.homeLogo" :src="match.homeLogo" :alt="`${match.homeTeam} logo`" class="team-logo" data-testid="home-logo" loading="lazy" />
+          <img v-if="match.homeLogo" :src="match.homeLogo" alt="" class="team-logo" data-testid="home-logo" loading="lazy" />
           <span class="team-label">{{ match.homeTeam }}</span>
         </span>
         <span class="inline-score">{{ match.homeScore || '–' }}</span>
         <span class="vs">vs</span>
         <span class="inline-score">{{ match.awayScore || '–' }}</span>
         <span class="team-name team-away">
-          <img v-if="match.awayLogo" :src="match.awayLogo" :alt="`${match.awayTeam} logo`" class="team-logo" data-testid="away-logo" loading="lazy" />
+          <img v-if="match.awayLogo" :src="match.awayLogo" alt="" class="team-logo" data-testid="away-logo" loading="lazy" />
           <span class="team-label">{{ match.awayTeam }}</span>
         </span>
         <div v-if="match.homeRecord || match.homeForm" class="matchup-team-form matchup-team-form--home">
@@ -45,9 +45,9 @@
       <div v-if="match.venue" class="match-meta match-venue" data-testid="match-detail-venue">{{ match.venue }}</div>
       <div v-if="match.attendance" class="match-meta match-attendance" data-testid="match-detail-attendance">{{ formatAttendance(match.attendance) }}</div>
       <div v-if="match.referee" class="match-meta match-referee" data-testid="match-referee">Referee: {{ match.referee }}</div>
-      <div v-if="displayableEvents.length > 0" class="match-events" data-testid="match-events">
+      <div v-if="groupedEvents.length > 0" class="match-events" data-testid="match-events">
         <div
-          v-for="(event, i) in displayableEvents"
+          v-for="(event, i) in groupedEvents"
           :key="i"
           class="match-event"
           :class="[`match-event--${event.typeID}`, `match-event--${eventSide(event)}`]"
@@ -55,22 +55,13 @@
         >
           <div class="event-detail">
             <span class="event-icon" :aria-label="event.typeID">{{ eventIcon(event.typeID) }}</span>
-            <span v-if="event.typeID === 'substitution'" class="event-players">
-              <span class="sub-on">
-                <span class="full-name">{{ event.players[0] }}</span>
-                <span class="short-name">{{ surname(event.players[0] || '') }}</span>
-                <span class="sub-arrow">↑</span>
-              </span>
-              <span v-if="event.players[1]" class="sub-off">
-                <span class="full-name">{{ event.players[1] }}</span>
-                <span class="short-name">{{ surname(event.players[1]) }}</span>
-                <span class="sub-arrow">↓</span>
+            <span v-if="event.typeID === 'substitution' && event.subs" class="event-players event-subs">
+              <span v-for="(pair, j) in event.subs" :key="j" class="sub-pair">
+                <span class="sub-on">{{ surname(pair.on) }}<span class="sub-arrow">↑</span></span>
+                <span v-if="pair.off" class="sub-off">{{ surname(pair.off) }}<span class="sub-arrow">↓</span></span>
               </span>
             </span>
-            <span v-else class="event-players">
-              <span class="full-name">{{ event.players.join(', ') }}</span>
-              <span class="short-name">{{ event.players.map(surname).join(', ') }}</span>
-            </span>
+            <span v-else class="event-players">{{ event.players.map(surname).join(', ') }}</span>
           </div>
           <span class="event-clock">{{ event.clock }}</span>
         </div>
@@ -243,6 +234,31 @@ const isLive = computed(() => match.value?.state === 'in')
 const displayableEvents = computed(() =>
   (match.value?.events ?? []).filter(e => !NON_DISPLAYABLE_EVENTS.has(e.typeID))
 )
+
+interface DisplayEvent extends MatchEvent {
+  subs?: Array<{ on: string; off: string }>
+}
+
+const groupedEvents = computed<DisplayEvent[]>(() => {
+  const out: DisplayEvent[] = []
+  for (const ev of displayableEvents.value) {
+    const last = out[out.length - 1]
+    const isSub = ev.typeID === 'substitution'
+    if (
+      isSub && last && last.typeID === 'substitution' &&
+      last.clock === ev.clock && last.team === ev.team
+    ) {
+      last.subs!.push({ on: ev.players[0] ?? '', off: ev.players[1] ?? '' })
+      continue
+    }
+    if (isSub) {
+      out.push({ ...ev, subs: [{ on: ev.players[0] ?? '', off: ev.players[1] ?? '' }] })
+    } else {
+      out.push({ ...ev })
+    }
+  }
+  return out
+})
 
 function eventSide(event: MatchEvent): 'home' | 'away' {
   return match.value && event.team === match.value.homeTeam ? 'home' : 'away'
