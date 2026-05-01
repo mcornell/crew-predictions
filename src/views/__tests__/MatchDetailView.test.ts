@@ -475,6 +475,59 @@ describe('MatchDetailView', () => {
     expect(wrapper.find('[data-testid="match-detail-attendance"]').exists()).toBe(false)
   })
 
+  it('shows an events toggle button when the match has events', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: {
+          ...mockMatch,
+          events: [
+            { clock: "10'", typeID: 'goal', team: 'Columbus Crew', players: ['Hugo Picard'] },
+          ],
+        },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="events-toggle"]').exists()).toBe(true)
+  })
+
+  it('does not show events toggle when match has no events', async () => {
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="events-toggle"]').exists()).toBe(false)
+  })
+
+  it('events block starts collapsed and toggle expands it', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: {
+          ...mockMatch,
+          events: [
+            { clock: "10'", typeID: 'goal', team: 'Columbus Crew', players: ['Hugo Picard'] },
+          ],
+        },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    const events = wrapper.find('[data-testid="match-events"]')
+    expect(events.classes()).toContain('match-events--collapsed')
+    await wrapper.find('[data-testid="events-toggle"]').trigger('click')
+    expect(events.classes()).not.toContain('match-events--collapsed')
+  })
+
   it('shows event timeline when match has displayable events', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
