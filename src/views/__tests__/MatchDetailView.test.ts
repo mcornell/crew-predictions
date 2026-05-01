@@ -443,6 +443,38 @@ describe('MatchDetailView', () => {
     vi.restoreAllMocks()
   })
 
+  it('shows formatted attendance when match has attendance', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: { ...mockMatch, attendance: 19903 },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="match-detail-attendance"]').text()).toBe('19,903')
+  })
+
+  it('does not show attendance element when attendance is 0', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: { ...mockMatch, attendance: 0 },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="match-detail-attendance"]').exists()).toBe(false)
+  })
+
   it('clears poll timer on unmount when a poll was scheduled', async () => {
     vi.useFakeTimers()
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({

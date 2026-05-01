@@ -37,6 +37,7 @@
       </div>
       <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
       <div v-if="match.venue" class="match-meta match-venue" data-testid="match-detail-venue">{{ match.venue }}</div>
+      <div v-if="match.attendance" class="match-meta match-attendance" data-testid="match-detail-attendance">{{ formatAttendance(match.attendance) }}</div>
       <a
         :href="`https://www.espn.com/soccer/match/_/gameId/${match.id}`"
         target="_blank"
@@ -149,6 +150,7 @@ interface MatchInfo {
   awayRecord?: string
   homeForm?: string
   awayForm?: string
+  attendance?: number
 }
 
 interface PredictionEntry {
@@ -182,6 +184,10 @@ function rankFor(i: number): number {
   const key = activeFormat.value === 'acesRadio' ? 'acesRadioPoints' : activeFormat.value === 'upper90Club' ? 'upper90ClubPoints' : 'grouchyPoints'
   if (sortedPredictions.value[i][key] === sortedPredictions.value[i - 1][key]) return rankFor(i - 1)
   return i + 1
+}
+
+function formatAttendance(n: number): string {
+  return n.toLocaleString('en-US')
 }
 
 function formatKickoff(iso: string): string {
