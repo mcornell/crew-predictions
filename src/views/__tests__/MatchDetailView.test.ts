@@ -581,6 +581,56 @@ describe('MatchDetailView', () => {
     expect(wrapper.findAll('[data-testid="match-event"]')).toHaveLength(3)
   })
 
+  it('shows only the goal scorer, not assisting players', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: {
+          ...mockMatch,
+          events: [
+            // ESPN sends scorer + assister in participants[]; we only want the scorer.
+            { clock: "10'", typeID: 'goal', team: 'Columbus Crew', players: ['Hugo Picard', 'Yevhen Cheberko'] },
+          ],
+        },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    const eventEl = wrapper.find('[data-testid="match-event"]')
+    expect(eventEl.text()).toContain('Picard')
+    expect(eventEl.text()).not.toContain('Cheberko')
+  })
+
+  it('keeps name suffixes (Jr., Sr., II, III) attached to the surname', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: {
+          ...mockMatch,
+          events: [
+            { clock: "45'", typeID: 'substitution', team: 'Columbus Crew', players: ['Teddy Baker', 'John Murphy Jr.'] },
+            { clock: "60'", typeID: 'substitution', team: 'Columbus Crew', players: ['Carlos Sanchez II', 'Edinson Cavani Sr.'] },
+          ],
+        },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    const text = wrapper.text()
+    expect(text).toContain('Baker')
+    expect(text).toContain('Murphy Jr.')   // not just "Jr."
+    expect(text).toContain('Sanchez II')
+    expect(text).toContain('Cavani Sr.')
+  })
+
   it('renders substitution with on and off players (surnames only)', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,

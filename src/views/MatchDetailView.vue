@@ -61,7 +61,7 @@
                 <span v-if="pair.off" class="sub-off">{{ surname(pair.off) }}<span class="sub-arrow">↓</span></span>
               </span>
             </span>
-            <span v-else class="event-players">{{ event.players.map(surname).join(', ') }}</span>
+            <span v-else class="event-players">{{ surname(event.players[0] || '') }}</span>
           </div>
           <span class="event-clock">{{ event.clock }}</span>
         </div>
@@ -205,9 +205,15 @@ function eventIcon(typeID: string): string {
   return ''
 }
 
+const NAME_SUFFIXES = new Set(['Jr.', 'Jr', 'Sr.', 'Sr', 'II', 'III', 'IV', 'V'])
+
 function surname(fullName: string): string {
   const parts = fullName.trim().split(/\s+/)
-  return parts[parts.length - 1] || fullName
+  if (parts.length <= 1) return fullName
+  if (NAME_SUFFIXES.has(parts[parts.length - 1])) {
+    return parts.slice(-2).join(' ')
+  }
+  return parts[parts.length - 1]
 }
 
 interface PredictionEntry {
