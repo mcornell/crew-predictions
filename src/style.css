@@ -1416,7 +1416,8 @@ body::after {
 .match-event--away .event-subs { align-items: flex-start; }
 
 .sub-pair {
-  display: inline-flex;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.4rem;
 }
@@ -1425,6 +1426,7 @@ body::after {
   display: inline-flex;
   align-items: center;
   gap: 0.15rem;
+  white-space: nowrap;     /* never break a single player's name */
 }
 
 .sub-arrow { color: var(--muted); margin-left: 0.1rem; }
