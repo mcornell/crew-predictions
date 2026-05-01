@@ -1338,6 +1338,29 @@ body::after {
 
 /* --- match event timeline --- */
 
+/* Toggle to expand/collapse the timeline on mobile. Hidden on desktop
+   where vertical room is plentiful and the timeline always shows. */
+.events-toggle {
+  display: none;
+  margin: 0.75rem auto 0.25rem;
+  padding: 0.4rem 0.9rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.events-toggle:hover {
+  color: var(--gold, #fedd00);
+  border-color: var(--gold, #fedd00);
+}
+
 .match-events {
   margin-top: 1rem;
   display: flex;
@@ -1445,6 +1468,10 @@ body::after {
     align-items: inherit;
     gap: 0.05rem;
   }
+
+  /* Show the toggle and respect collapsed state on mobile. */
+  .events-toggle { display: block; }
+  .match-events--collapsed { display: none; }
 }
 
 .match-detail-live-bar {

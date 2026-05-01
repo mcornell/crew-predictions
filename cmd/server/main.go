@@ -185,6 +185,7 @@ func main() {
 			matchStore, resultStore, refreshFetcher,
 			func(d time.Duration, f func()) { time.AfterFunc(d, f) },
 		)
+		matchPoller.SetSummaryFetcher(espn.FetchSummary)
 	}
 
 	twoOneBot := bot.New(predStore, userStore, "Columbus Crew")
@@ -232,6 +233,9 @@ psh := handlers.NewPollScoresHandler(matchStore, resultStore, refreshFetcher, re
 		seedMH := handlers.NewSeedMatchHandler(memMatchStore)
 		mux.HandleFunc("POST /admin/seed-match", seedMH.Submit)
 		log.Printf("test seed endpoint registered at POST /admin/seed-match")
+		seedMEH := handlers.NewSeedMatchEventsHandler(memMatchStore)
+		mux.HandleFunc("POST /admin/seed-match-events", seedMEH.Submit)
+		log.Printf("test seed endpoint registered at POST /admin/seed-match-events")
 		seedSH := handlers.NewSeedSeasonHandler(seasonStore)
 		mux.HandleFunc("POST /admin/seed-season", seedSH.Submit)
 		log.Printf("test seed endpoint registered at POST /admin/seed-season")

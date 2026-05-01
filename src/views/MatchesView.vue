@@ -45,6 +45,21 @@
             </div>
             <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
             <div v-if="match.venue" class="match-meta match-venue" data-testid="match-venue">{{ match.venue }}</div>
+            <div v-if="liveCardEvents(match).length > 0" class="match-events" data-testid="match-events">
+              <div
+                v-for="(event, i) in liveCardEvents(match)"
+                :key="i"
+                class="match-event"
+                :class="[`match-event--${event.typeID}`, `match-event--${eventSide(match, event)}`]"
+                data-testid="match-event"
+              >
+                <div class="event-detail">
+                  <span class="event-icon" :aria-label="event.typeID">{{ eventIcon(event.typeID) }}</span>
+                  <span class="event-players">{{ event.players[0] || '' }}</span>
+                </div>
+                <span class="event-clock">{{ event.clock }}</span>
+              </div>
+            </div>
           </div>
         </RouterLink>
       </div>
@@ -178,6 +193,13 @@ import type { Ref } from 'vue'
 const currentUser = inject<Ref<{ handle: string; emailVerified: boolean } | null>>('currentUser', ref(null))
 const router = useRouter()
 
+interface MatchEvent {
+  clock: string
+  typeID: string
+  team: string
+  players: string[]
+}
+
 interface Match {
   id: string
   homeTeam: string
@@ -193,6 +215,26 @@ interface Match {
   awayRecord?: string
   homeForm?: string
   awayForm?: string
+  events?: MatchEvent[]
+}
+
+const LIVE_CARD_EVENT_TYPES = new Set([
+  'goal', 'goal---header', 'goal---volley', 'own-goal', 'penalty---scored',
+  'yellow-card', 'red-card',
+])
+
+function liveCardEvents(match: Match): MatchEvent[] {
+  return (match.events ?? []).filter(e => LIVE_CARD_EVENT_TYPES.has(e.typeID))
+}
+
+function eventIcon(typeID: string): string {
+  if (typeID === 'yellow-card') return '🟨'
+  if (typeID === 'red-card') return '🟥'
+  return '⚽'
+}
+
+function eventSide(match: Match, event: MatchEvent): 'home' | 'away' {
+  return event.team === match.homeTeam ? 'home' : 'away'
 }
 
 interface Prediction {

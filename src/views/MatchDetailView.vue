@@ -45,7 +45,14 @@
       <div v-if="match.venue" class="match-meta match-venue" data-testid="match-detail-venue">{{ match.venue }}</div>
       <div v-if="match.attendance" class="match-meta match-attendance" data-testid="match-detail-attendance">{{ formatAttendance(match.attendance) }}</div>
       <div v-if="match.referee" class="match-meta match-referee" data-testid="match-referee">Referee: {{ match.referee }}</div>
-      <div v-if="groupedEvents.length > 0" class="match-events" data-testid="match-events">
+      <button
+        v-if="groupedEvents.length > 0"
+        class="events-toggle"
+        data-testid="events-toggle"
+        :aria-expanded="eventsExpanded ? 'true' : 'false'"
+        @click="eventsExpanded = !eventsExpanded"
+      >{{ eventsExpanded ? 'Hide events ↑' : 'Show events ↓' }}</button>
+      <div v-if="groupedEvents.length > 0" class="match-events" :class="{ 'match-events--collapsed': !eventsExpanded }" data-testid="match-events">
         <div
           v-for="(event, i) in groupedEvents"
           :key="i"
@@ -226,6 +233,7 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 
 const isLive = computed(() => match.value?.state === 'in')
+const eventsExpanded = ref(false)
 
 const displayableEvents = computed(() =>
   (match.value?.events ?? []).filter(e => !NON_DISPLAYABLE_EVENTS.has(e.typeID))

@@ -130,6 +130,41 @@ Then('the now playing card for match {string} should show home record {string}',
   await expect(card.locator('[data-testid="home-record"]')).toHaveText(record);
 });
 
+Given('the following events are seeded for match {string}:', async ({ request }, matchId: string, table: any) => {
+  const events = table.hashes().map((row: any) => ({
+    clock: row.clock,
+    typeID: row.typeID,
+    team: row.team,
+    players: row.players ? row.players.split(',').map((p: string) => p.trim()) : [],
+  }));
+  const res = await request.post('/admin/seed-match-events', {
+    data: { matchID: matchId, events },
+  });
+  if (!res.ok()) {
+    throw new Error(`seed-match-events failed: ${res.status()} ${await res.text()}`);
+  }
+});
+
+Then('the now playing card for match {string} should show event content', async ({ page }, matchId: string) => {
+  const card = page.locator(`[data-testid="now-playing-card"][data-match-id="${matchId}"]`);
+  await expect(card.locator('[data-testid="match-events"]')).toBeVisible();
+});
+
+Then('the now playing card for match {string} should show {string}', async ({ page }, matchId: string, text: string) => {
+  const card = page.locator(`[data-testid="now-playing-card"][data-match-id="${matchId}"]`);
+  await expect(card).toContainText(text);
+});
+
+Then('the now playing card for match {string} should not show an events block', async ({ page }, matchId: string) => {
+  const card = page.locator(`[data-testid="now-playing-card"][data-match-id="${matchId}"]`);
+  await expect(card.locator('[data-testid="match-events"]')).toHaveCount(0);
+});
+
+Then('the now playing card for match {string} should not show {string}', async ({ page }, matchId: string, text: string) => {
+  const card = page.locator(`[data-testid="now-playing-card"][data-match-id="${matchId}"]`);
+  await expect(card).not.toContainText(text);
+});
+
 Then('the now playing card for match {string} should show home form {string}', async ({ page }, matchId: string, form: string) => {
   const card = page.locator(`[data-testid="now-playing-card"][data-match-id="${matchId}"]`);
   await expect(card.locator('[data-testid="home-form"]')).toHaveText(form);
