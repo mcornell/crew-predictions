@@ -605,89 +605,12 @@ describe('MatchDetailView', () => {
     expect(eventEl.text()).not.toContain('Cheberko')
   })
 
-  it('keeps surname particles (Abou, de, van) attached to the surname', async () => {
+  it('renders substitution with full names of both on and off players', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({
         match: {
           ...mockMatch,
-          events: [
-            { clock: "10'", typeID: 'goal', team: 'Columbus Crew', players: ['Wessam Abou Ali'] },
-            { clock: "23'", typeID: 'goal', team: 'Columbus Crew', players: ['Frenkie de Jong'] },
-            { clock: "45'", typeID: 'goal', team: 'Columbus Crew', players: ['Virgil van Dijk'] },
-          ],
-        },
-        predictions: [],
-        scoringFormats: mockScoringFormats,
-      }),
-    }))
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
-    const text = wrapper.text()
-    expect(text).toContain('Abou Ali')   // not just "Ali"
-    expect(text).toContain('de Jong')    // not just "Jong"
-    expect(text).toContain('van Dijk')   // not just "Dijk"
-  })
-
-  it('does not treat first-name "Ben" as a surname particle', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({
-        match: {
-          ...mockMatch,
-          // Ben Bender is a real Crew player; "Ben" is a first name, "Bender" is the surname.
-          events: [
-            { clock: "10'", typeID: 'yellow-card', team: 'Columbus Crew', players: ['Ben Bender'] },
-          ],
-        },
-        predictions: [],
-        scoringFormats: mockScoringFormats,
-      }),
-    }))
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
-    const eventEl = wrapper.find('[data-testid="match-event"]')
-    expect(eventEl.text()).toContain('Bender')
-    expect(eventEl.text()).not.toContain('Ben Bender')   // surname only, not first name
-  })
-
-  it('keeps name suffixes (Jr., Sr., II, III) attached to the surname', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({
-        match: {
-          ...mockMatch,
-          events: [
-            { clock: "45'", typeID: 'substitution', team: 'Columbus Crew', players: ['Teddy Baker', 'John Murphy Jr.'] },
-            { clock: "60'", typeID: 'substitution', team: 'Columbus Crew', players: ['Carlos Sanchez II', 'Edinson Cavani Sr.'] },
-          ],
-        },
-        predictions: [],
-        scoringFormats: mockScoringFormats,
-      }),
-    }))
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
-    const text = wrapper.text()
-    expect(text).toContain('Baker')
-    expect(text).toContain('Murphy Jr.')   // not just "Jr."
-    expect(text).toContain('Sanchez II')
-    expect(text).toContain('Cavani Sr.')
-  })
-
-  it('renders substitution with on and off players (surnames only)', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({
-        match: {
-          ...mockMatch,
-          // Crew is the home team in mockMatch — set team to home so the event renders.
           events: [
             { clock: "63'", typeID: 'substitution', team: 'Columbus Crew', players: ['Steven Moreira', 'Hugo Picard'] },
           ],
@@ -701,8 +624,36 @@ describe('MatchDetailView', () => {
     const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
     await flushPromises()
     const eventEl = wrapper.find('[data-testid="match-event"]')
-    expect(eventEl.text()).toContain('Moreira')
-    expect(eventEl.text()).toContain('Picard')
+    expect(eventEl.text()).toContain('Steven Moreira')
+    expect(eventEl.text()).toContain('Hugo Picard')
+  })
+
+  it('renders the goal scorer with their full name (no string parsing)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: {
+          ...mockMatch,
+          // Names ESPN classifies inconsistently — full name should always win.
+          events: [
+            { clock: "10'", typeID: 'goal', team: 'Columbus Crew', players: ['Wessam Abou Ali'] },
+            { clock: "20'", typeID: 'goal', team: 'Columbus Crew', players: ['Philippe Ndinga Ossibadjouo'] },
+            { clock: "30'", typeID: 'substitution', team: 'Columbus Crew', players: ['Teddy Baker', 'John Murphy Jr.'] },
+          ],
+        },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    const text = wrapper.text()
+    expect(text).toContain('Wessam Abou Ali')
+    expect(text).toContain('Philippe Ndinga Ossibadjouo')
+    expect(text).toContain('Teddy Baker')
+    expect(text).toContain('John Murphy Jr.')
   })
 
   it('renders home and away team logos when present', async () => {

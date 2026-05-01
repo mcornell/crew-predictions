@@ -57,11 +57,11 @@
             <span class="event-icon" :aria-label="event.typeID">{{ eventIcon(event.typeID) }}</span>
             <span v-if="event.typeID === 'substitution' && event.subs" class="event-players event-subs">
               <span v-for="(pair, j) in event.subs" :key="j" class="sub-pair">
-                <span class="sub-on">{{ surname(pair.on) }}<span class="sub-arrow">↑</span></span>
-                <span v-if="pair.off" class="sub-off">{{ surname(pair.off) }}<span class="sub-arrow">↓</span></span>
+                <span class="sub-on">{{ pair.on }}<span class="sub-arrow">↑</span></span>
+                <span v-if="pair.off" class="sub-off">{{ pair.off }}<span class="sub-arrow">↓</span></span>
               </span>
             </span>
-            <span v-else class="event-players">{{ surname(event.players[0] || '') }}</span>
+            <span v-else class="event-players">{{ event.players[0] || '' }}</span>
           </div>
           <span class="event-clock">{{ event.clock }}</span>
         </div>
@@ -205,32 +205,6 @@ function eventIcon(typeID: string): string {
   return ''
 }
 
-const NAME_SUFFIXES = new Set(['Jr.', 'Jr', 'Sr.', 'Sr', 'II', 'III', 'IV', 'V'])
-
-// Multi-word surname particles. Match lowercase. Excludes ambiguous tokens
-// like "ben"/"bin" that are commonly first names in our context.
-const SURNAME_PARTICLES = new Set([
-  'abu', 'abou', 'abdel', 'abdul', 'ibn',
-  'de', 'del', 'da', 'do', 'dos', 'das',
-  'van', 'von',
-])
-
-function surname(fullName: string): string {
-  const parts = fullName.trim().split(/\s+/)
-  if (parts.length <= 1) return fullName
-  let endIdx = parts.length - 1
-  // Pull suffix (Jr., Sr., II...) into the surname's tail end.
-  if (NAME_SUFFIXES.has(parts[endIdx])) {
-    endIdx -= 1
-    if (endIdx < 0) return fullName
-  }
-  // Walk back through any leading particles (de, van, Abou, etc.).
-  let startIdx = endIdx
-  while (startIdx > 0 && SURNAME_PARTICLES.has(parts[startIdx - 1].toLowerCase())) {
-    startIdx -= 1
-  }
-  return parts.slice(startIdx).join(' ')
-}
 
 interface PredictionEntry {
   userID: string

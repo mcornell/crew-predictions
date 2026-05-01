@@ -1427,15 +1427,19 @@ body::after {
 .sub-on .sub-arrow { color: var(--gold, #fedd00); }
 
 @media (max-width: 600px) {
-  /* Keep the desktop 3-column layout (clock centered) but tighten spacing. */
+  /* Keep the desktop 3-column layout (clock centered) but tighten spacing
+     and shrink the font so longer full names like "Sékou Tidiany Bangoura"
+     have a chance to fit on a single line within the column. */
   .match-event {
-    column-gap: 0.4rem;
-    font-size: 0.9rem;
+    column-gap: 0.35rem;
+    font-size: 0.78rem;
   }
-  .event-icon { font-size: 1rem; }
+  .event-icon { font-size: 0.9rem; }
+  .event-clock { font-size: 0.75rem; }
 
   /* Mobile columns are narrow; always stack the on/off pair vertically
-     so a long sub like "Bender ↑ / Ossibadjouo ↓" reads cleanly. */
+     so a long sub like "Ben Bender ↑ / Philippe Ndinga Ossibadjouo ↓"
+     reads cleanly. */
   .sub-pair {
     flex-direction: column;
     align-items: inherit;
