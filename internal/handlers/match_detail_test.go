@@ -45,7 +45,7 @@ func TestMatchDetailHandler_ReturnsPredictionsWithScores(t *testing.T) {
 		AwayGoals: 1,
 	})
 
-	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew")
+	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew", nil)
 
 	req := httptest.NewRequest("GET", "/api/matches/m-test", nil)
 	req.SetPathValue("matchId", "m-test")
@@ -102,7 +102,7 @@ func TestMatchDetailHandler_IncludesGrouchyPoints(t *testing.T) {
 		MatchID: "m-grouchy", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", HomeGoals: 2, AwayGoals: 0,
 	})
 
-	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, repository.NewMemoryUserStore(), "Columbus Crew")
+	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, repository.NewMemoryUserStore(), "Columbus Crew", nil)
 	req := httptest.NewRequest("GET", "/api/matches/m-grouchy", nil)
 	req.SetPathValue("matchId", "m-grouchy")
 	w := httptest.NewRecorder()
@@ -127,7 +127,7 @@ func TestMatchDetailHandler_ScoringFormatsIncludesGrouchy(t *testing.T) {
 		HomeScore: "1", AwayScore: "0",
 	}})
 
-	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, repository.NewMemoryUserStore(), "Columbus Crew")
+	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, repository.NewMemoryUserStore(), "Columbus Crew", nil)
 	req := httptest.NewRequest("GET", "/api/matches/m-fmt", nil)
 	req.SetPathValue("matchId", "m-fmt")
 	w := httptest.NewRecorder()
@@ -166,7 +166,7 @@ func TestMatchDetailHandler_UsesCurrentHandleFromUserStore(t *testing.T) {
 	predStore.Save(ctx, repository.Prediction{MatchID: "m-handle", UserID: "google:u1", HomeGoals: 1, AwayGoals: 0})
 	userStore.Upsert(ctx, repository.User{UserID: "google:u1", Handle: "BlackAndGold"})
 
-	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew")
+	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew", nil)
 
 	req := httptest.NewRequest("GET", "/api/matches/m-handle", nil)
 	req.SetPathValue("matchId", "m-handle")
@@ -196,7 +196,7 @@ func TestMatchDetailHandler_ShowsEmptyHandleWhenUserNotInStore(t *testing.T) {
 	}})
 	predStore.Save(ctx, repository.Prediction{MatchID: "m-no-user", UserID: "google:orphan", HomeGoals: 1, AwayGoals: 0})
 
-	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew")
+	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew", nil)
 	req := httptest.NewRequest("GET", "/api/matches/m-no-user", nil)
 	req.SetPathValue("matchId", "m-no-user")
 	w := httptest.NewRecorder()
@@ -229,7 +229,7 @@ func TestMatchDetailHandler_LiveMatchProjectsScores(t *testing.T) {
 	predStore.Save(ctx, repository.Prediction{MatchID: "m-live", UserID: "u1", HomeGoals: 2, AwayGoals: 0})
 	predStore.Save(ctx, repository.Prediction{MatchID: "m-live", UserID: "u2", HomeGoals: 1, AwayGoals: 1})
 
-	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew")
+	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew", nil)
 	req := httptest.NewRequest("GET", "/api/matches/m-live", nil)
 	req.SetPathValue("matchId", "m-live")
 	w := httptest.NewRecorder()
@@ -278,7 +278,7 @@ func TestMatchDetailHandler_LiveMatchWithNoScoreDoesNotProject(t *testing.T) {
 	}})
 	predStore.Save(ctx, repository.Prediction{MatchID: "m-live-noscore", UserID: "u1", HomeGoals: 1, AwayGoals: 0})
 
-	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, repository.NewMemoryUserStore(), "Columbus Crew")
+	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, repository.NewMemoryUserStore(), "Columbus Crew", nil)
 	req := httptest.NewRequest("GET", "/api/matches/m-live-noscore", nil)
 	req.SetPathValue("matchId", "m-live-noscore")
 	w := httptest.NewRecorder()
@@ -297,7 +297,7 @@ func TestMatchDetailHandler_Returns404ForUnknownMatch(t *testing.T) {
 	matchStore := repository.NewMemoryMatchStore()
 	userStore := repository.NewMemoryUserStore()
 
-	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew")
+	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew", nil)
 
 	req := httptest.NewRequest("GET", "/api/matches/no-such-match", nil)
 	req.SetPathValue("matchId", "no-such-match")
@@ -322,6 +322,7 @@ func TestMatchDetailHandler_LiveMatchWithNonNumericScoreDoesNotProject(t *testin
 		matchStore,
 		repository.NewMemoryUserStore(),
 		"Columbus Crew",
+		nil,
 	)
 	req := httptest.NewRequest("GET", "/api/matches/m-live-nan", nil)
 	req.SetPathValue("matchId", "m-live-nan")
@@ -350,7 +351,7 @@ func TestMatchDetailHandler_ReturnsEmptyPredictionsWhenNone(t *testing.T) {
 		AwayScore: "0",
 	}})
 
-	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, repository.NewMemoryUserStore(), "Columbus Crew")
+	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, repository.NewMemoryUserStore(), "Columbus Crew", nil)
 
 	req := httptest.NewRequest("GET", "/api/matches/m-empty", nil)
 	req.SetPathValue("matchId", "m-empty")
@@ -376,6 +377,7 @@ func TestMatchDetailHandler_Returns500WhenMatchStoreFails(t *testing.T) {
 		repository.NewErrorGetAllMatchStore(),
 		repository.NewMemoryUserStore(),
 		"Columbus Crew",
+		nil,
 	)
 	req := httptest.NewRequest("GET", "/api/matches/any", nil)
 	req.SetPathValue("matchId", "any")
@@ -398,6 +400,7 @@ func TestMatchDetailHandler_Returns500WhenPredictionStoreFails(t *testing.T) {
 		matchStore,
 		repository.NewMemoryUserStore(),
 		"Columbus Crew",
+		nil,
 	)
 	req := httptest.NewRequest("GET", "/api/matches/m-pred-err", nil)
 	req.SetPathValue("matchId", "m-pred-err")
@@ -427,6 +430,7 @@ func TestMatchDetailHandler_IncludesVenue(t *testing.T) {
 		matchStore,
 		repository.NewMemoryUserStore(),
 		"Columbus Crew",
+		nil,
 	)
 
 	req := httptest.NewRequest("GET", "/api/matches/m-venue", nil)
@@ -451,6 +455,116 @@ func TestMatchDetailHandler_IncludesVenue(t *testing.T) {
 	}
 }
 
+func TestMatchDetailHandler_LazyFetchesAttendanceForPostMatch(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	matchStore.Seed([]models.Match{{
+		ID: "m-post", HomeTeam: "Columbus Crew", AwayTeam: "Philadelphia Union",
+		Kickoff: time.Now().Add(-3 * time.Hour), Status: "STATUS_FULL_TIME",
+		State: "post", HomeScore: "2", AwayScore: "0", Attendance: 0,
+	}})
+
+	fetcher := func(_ string) (models.MatchSummary, error) {
+		return models.MatchSummary{Attendance: 19903}, nil
+	}
+
+	h := handlers.NewMatchDetailHandler(
+		repository.NewMemoryPredictionStore(),
+		repository.NewMemoryResultStore(),
+		matchStore,
+		repository.NewMemoryUserStore(),
+		"Columbus Crew",
+		fetcher,
+	)
+	req := httptest.NewRequest("GET", "/api/matches/m-post", nil)
+	req.SetPathValue("matchId", "m-post")
+	w := httptest.NewRecorder()
+	h.Get(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+	var resp struct {
+		Match struct {
+			Attendance int `json:"attendance"`
+		} `json:"match"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatalf("invalid JSON: %v", err)
+	}
+	if resp.Match.Attendance != 19903 {
+		t.Errorf("expected attendance 19903, got %d", resp.Match.Attendance)
+	}
+}
+
+func TestMatchDetailHandler_WritesAttendanceBackToStore(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	matchStore.Seed([]models.Match{{
+		ID: "m-wb", HomeTeam: "Columbus Crew", AwayTeam: "Philadelphia Union",
+		Kickoff: time.Now().Add(-3 * time.Hour), Status: "STATUS_FULL_TIME",
+		State: "post", HomeScore: "2", AwayScore: "0", Attendance: 0,
+	}})
+
+	fetcher := func(_ string) (models.MatchSummary, error) {
+		return models.MatchSummary{Attendance: 5000}, nil
+	}
+
+	h := handlers.NewMatchDetailHandler(
+		repository.NewMemoryPredictionStore(),
+		repository.NewMemoryResultStore(),
+		matchStore,
+		repository.NewMemoryUserStore(),
+		"Columbus Crew",
+		fetcher,
+	)
+	req := httptest.NewRequest("GET", "/api/matches/m-wb", nil)
+	req.SetPathValue("matchId", "m-wb")
+	w := httptest.NewRecorder()
+	h.Get(w, req)
+
+	matches, _ := matchStore.GetAll()
+	var found models.Match
+	for _, m := range matches {
+		if m.ID == "m-wb" {
+			found = m
+		}
+	}
+	if found.Attendance != 5000 {
+		t.Errorf("expected attendance written back as 5000, got %d", found.Attendance)
+	}
+}
+
+func TestMatchDetailHandler_SkipsLazyFetchWhenAttendanceAlreadySet(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	matchStore.Seed([]models.Match{{
+		ID: "m-cached", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",
+		Kickoff: time.Now().Add(-3 * time.Hour), Status: "STATUS_FULL_TIME",
+		State: "post", HomeScore: "1", AwayScore: "0", Attendance: 9999,
+	}})
+
+	callCount := 0
+	fetcher := func(_ string) (models.MatchSummary, error) {
+		callCount++
+		return models.MatchSummary{Attendance: 0}, nil
+	}
+
+	h := handlers.NewMatchDetailHandler(
+		repository.NewMemoryPredictionStore(),
+		repository.NewMemoryResultStore(),
+		matchStore,
+		repository.NewMemoryUserStore(),
+		"Columbus Crew",
+		fetcher,
+	)
+	req := httptest.NewRequest("GET", "/api/matches/m-cached", nil)
+	req.SetPathValue("matchId", "m-cached")
+	w := httptest.NewRecorder()
+	h.Get(w, req)
+
+	if callCount != 0 {
+		t.Errorf("expected fetcher not called when attendance already set, called %d times", callCount)
+	}
+}
+
 func TestMatchDetailHandler_IncludesRecordsAndForm(t *testing.T) {
 	matchStore := repository.NewMemoryMatchStore()
 	matchStore.SaveAll([]models.Match{{
@@ -465,7 +579,7 @@ func TestMatchDetailHandler_IncludesRecordsAndForm(t *testing.T) {
 		AwayForm:   "LWDWL",
 	}})
 
-	h := handlers.NewMatchDetailHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), matchStore, repository.NewMemoryUserStore(), "Columbus Crew")
+	h := handlers.NewMatchDetailHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), matchStore, repository.NewMemoryUserStore(), "Columbus Crew", nil)
 	req := httptest.NewRequest("GET", "/api/matches/m-rf", nil)
 	req.SetPathValue("matchId", "m-rf")
 	w := httptest.NewRecorder()

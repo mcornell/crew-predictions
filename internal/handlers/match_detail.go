@@ -6,20 +6,24 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/mcornell/crew-predictions/internal/models"
 	"github.com/mcornell/crew-predictions/internal/repository"
 	"github.com/mcornell/crew-predictions/internal/scoring"
 )
 
+type SummaryFetcher func(matchID string) (models.MatchSummary, error)
+
 type MatchDetailHandler struct {
-	predictions repository.PredictionStore
-	results     repository.ResultStore
-	matches     repository.MatchStore
-	users       repository.UserStore
-	targetTeam  string
+	predictions    repository.PredictionStore
+	results        repository.ResultStore
+	matches        repository.MatchStore
+	users          repository.UserStore
+	targetTeam     string
+	summaryFetcher SummaryFetcher
 }
 
-func NewMatchDetailHandler(predictions repository.PredictionStore, results repository.ResultStore, matches repository.MatchStore, users repository.UserStore, targetTeam string) *MatchDetailHandler {
-	return &MatchDetailHandler{predictions: predictions, results: results, matches: matches, users: users, targetTeam: targetTeam}
+func NewMatchDetailHandler(predictions repository.PredictionStore, results repository.ResultStore, matches repository.MatchStore, users repository.UserStore, targetTeam string, fetcher SummaryFetcher) *MatchDetailHandler {
+	return &MatchDetailHandler{predictions: predictions, results: results, matches: matches, users: users, targetTeam: targetTeam, summaryFetcher: fetcher}
 }
 
 type matchDetailPrediction struct {
@@ -47,6 +51,7 @@ type matchDetailMatch struct {
 	AwayRecord   string `json:"awayRecord,omitempty"`
 	HomeForm     string `json:"homeForm,omitempty"`
 	AwayForm     string `json:"awayForm,omitempty"`
+	Attendance   int    `json:"attendance,omitempty"`
 }
 
 func (h *MatchDetailHandler) Get(w http.ResponseWriter, r *http.Request) {
@@ -59,8 +64,15 @@ func (h *MatchDetailHandler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var found *matchDetailMatch
-	for _, m := range allMatches {
+	for i, m := range allMatches {
 		if m.ID == matchID {
+			if h.summaryFetcher != nil && m.State == "post" && m.Attendance == 0 {
+				if summary, err := h.summaryFetcher(matchID); err == nil && summary.Attendance > 0 {
+					allMatches[i].Attendance = summary.Attendance
+					_ = h.matches.SaveAll(allMatches)
+					m = allMatches[i]
+				}
+			}
 			found = &matchDetailMatch{
 				ID:           m.ID,
 				HomeTeam:     m.HomeTeam,
@@ -76,6 +88,7 @@ func (h *MatchDetailHandler) Get(w http.ResponseWriter, r *http.Request) {
 				AwayRecord:   m.AwayRecord,
 				HomeForm:     m.HomeForm,
 				AwayForm:     m.AwayForm,
+				Attendance:   m.Attendance,
 			}
 			break
 		}
