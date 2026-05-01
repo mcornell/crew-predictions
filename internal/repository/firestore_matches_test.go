@@ -109,6 +109,32 @@ func TestFirestoreMatchStore_RecordsAndFormRoundTrip(t *testing.T) {
 	t.Error("match fs-match-form not found in GetAll results")
 }
 
+func TestFirestoreMatchStore_AttendanceRoundTrips(t *testing.T) {
+	store := firestoreMatchStoreOrSkip(t)
+
+	if err := store.SaveAll([]models.Match{
+		{ID: "fs-match-attendance", HomeTeam: "Columbus Crew", AwayTeam: "Philadelphia Union",
+			Kickoff: time.Date(2026, 4, 25, 23, 0, 0, 0, time.UTC),
+			State:   "post", Status: "STATUS_FULL_TIME", Attendance: 19903},
+	}); err != nil {
+		t.Fatalf("unexpected error saving: %v", err)
+	}
+
+	got, err := store.GetAll()
+	if err != nil {
+		t.Fatalf("unexpected error retrieving: %v", err)
+	}
+	for _, m := range got {
+		if m.ID == "fs-match-attendance" {
+			if m.Attendance != 19903 {
+				t.Errorf("expected Attendance 19903, got %d", m.Attendance)
+			}
+			return
+		}
+	}
+	t.Error("match fs-match-attendance not found in GetAll results")
+}
+
 func TestFirestoreMatchStore_SaveAllOverwritesExisting(t *testing.T) {
 	store := firestoreMatchStoreOrSkip(t)
 
