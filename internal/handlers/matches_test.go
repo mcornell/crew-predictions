@@ -165,6 +165,42 @@ func TestAPIMatchesHandler_IncludesVenue(t *testing.T) {
 	}
 }
 
+func TestAPIMatchesHandler_IncludesEventsForLiveMatches(t *testing.T) {
+	store := matchStoreWith([]models.Match{
+		{ID: "m-evts", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",
+			Kickoff: time.Now(), State: "in",
+			Events: []models.MatchEvent{
+				{Clock: "23'", TypeID: "goal", Team: "Columbus Crew", Players: []string{"Hugo Picard"}},
+				{Clock: "39'", TypeID: "yellow-card", Team: "FC Dallas", Players: []string{"Some Player"}},
+			}},
+	})
+	mh := handlers.NewMatchesHandler(repository.NewMemoryPredictionStore(), store)
+	req := httptest.NewRequest(http.MethodGet, "/api/matches", nil)
+	w := httptest.NewRecorder()
+	mh.APIList(w, req)
+
+	var body struct {
+		Matches []struct {
+			ID     string `json:"id"`
+			Events []struct {
+				Clock   string   `json:"clock"`
+				TypeID  string   `json:"typeID"`
+				Team    string   `json:"team"`
+				Players []string `json:"players"`
+			} `json:"events"`
+		} `json:"matches"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+		t.Fatalf("invalid JSON: %v", err)
+	}
+	if len(body.Matches) == 0 || len(body.Matches[0].Events) != 2 {
+		t.Fatalf("expected 2 events on the live match, got %d", len(body.Matches[0].Events))
+	}
+	if body.Matches[0].Events[0].TypeID != "goal" {
+		t.Errorf("expected first event typeID=goal, got %q", body.Matches[0].Events[0].TypeID)
+	}
+}
+
 func TestAPIMatchesHandler_IncludesRecordsAndForm(t *testing.T) {
 	store := matchStoreWith([]models.Match{
 		{ID: "m-rf1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",

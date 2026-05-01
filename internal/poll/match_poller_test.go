@@ -26,6 +26,57 @@ func newPoller(matchStore repository.MatchStore, resultStore repository.ResultSt
 	return poll.NewMatchPoller(matchStore, resultStore, fetcher, timer)
 }
 
+func TestMatchPoller_Tick_FetchesSummaryAndPersistsEventsForLiveMatch(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	matchStore.Seed([]models.Match{{
+		ID: "m-live", HomeTeam: "Crew", AwayTeam: "FC Dallas",
+		Kickoff: time.Now().Add(-30 * time.Minute), State: "in", Status: "STATUS_IN_PROGRESS",
+	}})
+
+	scoreboardMatch := models.Match{
+		ID: "m-live", HomeTeam: "Crew", AwayTeam: "FC Dallas",
+		Kickoff: time.Now().Add(-30 * time.Minute), State: "in", Status: "STATUS_IN_PROGRESS",
+		HomeScore: "1", AwayScore: "0",
+	}
+	scoreboardFetcher := func() ([]models.Match, error) { return []models.Match{scoreboardMatch}, nil }
+	summaryCalls := 0
+	summaryFetcher := func(id string) (models.MatchSummary, error) {
+		summaryCalls++
+		return models.MatchSummary{
+			Events: []models.MatchEvent{
+				{Clock: "23'", TypeID: "goal", Team: "Crew", Players: []string{"Hugo Picard"}},
+			},
+		}, nil
+	}
+
+	p := poll.NewMatchPoller(matchStore, repository.NewMemoryResultStore(), scoreboardFetcher, immediateTimer)
+	p.SetSummaryFetcher(summaryFetcher)
+	p.Schedule([]models.Match{scoreboardMatch}) // activates the match
+	p.Tick(context.Background())
+
+	if summaryCalls != 1 {
+		t.Errorf("expected summaryFetcher called exactly once, got %d", summaryCalls)
+	}
+	stored, _ := matchStore.GetAll()
+	if len(stored) == 0 || len(stored[0].Events) != 1 || stored[0].Events[0].Players[0] != "Hugo Picard" {
+		t.Errorf("expected events persisted to store; got %+v", stored)
+	}
+}
+
+func TestMatchPoller_Tick_DoesNotCallSummaryWhenNoneConfigured(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	scoreboardMatch := models.Match{
+		ID: "m-no-sum", HomeTeam: "Crew", AwayTeam: "FC Dallas",
+		Kickoff: time.Now().Add(-30 * time.Minute), State: "in", Status: "STATUS_IN_PROGRESS",
+	}
+	matchStore.Seed([]models.Match{scoreboardMatch})
+	fetcher := func() ([]models.Match, error) { return []models.Match{scoreboardMatch}, nil }
+	p := poll.NewMatchPoller(matchStore, repository.NewMemoryResultStore(), fetcher, immediateTimer)
+	p.Schedule([]models.Match{scoreboardMatch})
+	// Should not panic with nil summaryFetcher.
+	p.Tick(context.Background())
+}
+
 func TestMatchPoller_ScheduleSetsPositiveDelayForFutureKickoff(t *testing.T) {
 	var delays []time.Duration
 	p := newPoller(repository.NewMemoryMatchStore(), repository.NewMemoryResultStore(), nil, capturingTimer(&delays))

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"sort"
 
+	"github.com/mcornell/crew-predictions/internal/models"
 	"github.com/mcornell/crew-predictions/internal/repository"
 )
 
@@ -19,20 +20,21 @@ func NewMatchesHandler(store repository.PredictionStore, matchStore repository.M
 }
 
 type apiMatch struct {
-	ID           string `json:"id"`
-	HomeTeam     string `json:"homeTeam"`
-	AwayTeam     string `json:"awayTeam"`
-	Kickoff      string `json:"kickoff"`
-	Status       string `json:"status"`
-	HomeScore    string `json:"homeScore"`
-	AwayScore    string `json:"awayScore"`
-	State        string `json:"state"`
-	DisplayClock string `json:"displayClock,omitempty"`
-	Venue        string `json:"venue,omitempty"`
-	HomeRecord   string `json:"homeRecord,omitempty"`
-	AwayRecord   string `json:"awayRecord,omitempty"`
-	HomeForm     string `json:"homeForm,omitempty"`
-	AwayForm     string `json:"awayForm,omitempty"`
+	ID           string              `json:"id"`
+	HomeTeam     string              `json:"homeTeam"`
+	AwayTeam     string              `json:"awayTeam"`
+	Kickoff      string              `json:"kickoff"`
+	Status       string              `json:"status"`
+	HomeScore    string              `json:"homeScore"`
+	AwayScore    string              `json:"awayScore"`
+	State        string              `json:"state"`
+	DisplayClock string              `json:"displayClock,omitempty"`
+	Venue        string              `json:"venue,omitempty"`
+	HomeRecord   string              `json:"homeRecord,omitempty"`
+	AwayRecord   string              `json:"awayRecord,omitempty"`
+	HomeForm     string              `json:"homeForm,omitempty"`
+	AwayForm     string              `json:"awayForm,omitempty"`
+	Events       []models.MatchEvent `json:"events,omitempty"`
 }
 
 type apiPrediction struct {
@@ -66,6 +68,7 @@ func (h *MatchesHandler) APIList(w http.ResponseWriter, r *http.Request) {
 			AwayRecord:   m.AwayRecord,
 			HomeForm:     m.HomeForm,
 			AwayForm:     m.AwayForm,
+			Events:       m.Events,
 		}
 	}
 

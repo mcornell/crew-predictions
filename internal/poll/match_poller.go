@@ -11,15 +11,25 @@ import (
 )
 
 type MatchPoller struct {
-	matchStore    repository.MatchStore
-	resultStore   repository.ResultStore
-	fetcher       func() ([]models.Match, error)
-	onResultSaved func(ctx context.Context)
+	matchStore     repository.MatchStore
+	resultStore    repository.ResultStore
+	fetcher        func() ([]models.Match, error)
+	summaryFetcher func(matchID string) (models.MatchSummary, error)
+	onResultSaved  func(ctx context.Context)
 
 	mu        sync.Mutex
 	scheduled map[string]bool
 	active    map[string]bool
 	timerFunc func(time.Duration, func())
+}
+
+// SetSummaryFetcher registers a function used to retrieve event/attendance
+// data for active matches. When set, Tick will call it once per active match
+// per tick and persist the returned events back to the match store.
+func (p *MatchPoller) SetSummaryFetcher(fn func(matchID string) (models.MatchSummary, error)) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.summaryFetcher = fn
 }
 
 // SetOnResultSaved registers a callback invoked after each result is saved during Tick.
@@ -117,14 +127,62 @@ func (p *MatchPoller) Tick(ctx context.Context) {
 		slog.Error("poller: ESPN fetch failed", "error", err)
 		return
 	}
-	if err := p.matchStore.SaveAll(matches); err != nil {
-		slog.Error("poller: store update failed", "error", err)
-		return
-	}
 
 	byID := make(map[string]models.Match, len(matches))
 	for _, m := range matches {
 		byID[m.ID] = m
+	}
+
+	p.mu.Lock()
+	summaryFetcher := p.summaryFetcher
+	activeIDs := make([]string, 0, len(p.active))
+	for id := range p.active {
+		activeIDs = append(activeIDs, id)
+	}
+	p.mu.Unlock()
+
+	// Enrich active matches with /summary data (events, attendance, refs, logos)
+	// before persisting. One ESPN call per active match per tick — typically
+	// one match at a time for Crew predictions.
+	if summaryFetcher != nil {
+		for _, id := range activeIDs {
+			m, ok := byID[id]
+			if !ok {
+				continue
+			}
+			summary, err := summaryFetcher(id)
+			if err != nil {
+				slog.Warn("poller: summary fetch failed", "matchID", id, "error", err)
+				continue
+			}
+			if summary.Attendance > 0 {
+				m.Attendance = summary.Attendance
+			}
+			if summary.HomeLogo != "" {
+				m.HomeLogo = summary.HomeLogo
+			}
+			if summary.AwayLogo != "" {
+				m.AwayLogo = summary.AwayLogo
+			}
+			if summary.Referee != "" {
+				m.Referee = summary.Referee
+			}
+			if len(summary.Events) > 0 {
+				m.Events = summary.Events
+			}
+			byID[id] = m
+		}
+		// Rebuild matches slice with enriched copies.
+		for i, m := range matches {
+			if enriched, ok := byID[m.ID]; ok {
+				matches[i] = enriched
+			}
+		}
+	}
+
+	if err := p.matchStore.SaveAll(matches); err != nil {
+		slog.Error("poller: store update failed", "error", err)
+		return
 	}
 
 	p.mu.Lock()

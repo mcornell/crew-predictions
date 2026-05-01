@@ -94,6 +94,41 @@ Feature: Match listings
     When I visit the matches page
     Then the now playing card for match "m-ven-2" should show venue "ScottsMiracle-Gro Field"
 
+  Scenario: Live match card shows goals and cards inline
+    Given the following matches are seeded:
+      | id     | homeTeam      | awayTeam  | status             | state | homeScore | awayScore |
+      | m-evts | Columbus Crew | FC Dallas | STATUS_IN_PROGRESS | in    | 1         | 0         |
+    And the following events are seeded for match "m-evts":
+      | clock | typeID      | team          | players      |
+      | 23'   | goal        | Columbus Crew | Hugo Picard  |
+      | 39'   | yellow-card | FC Dallas     | Some Player  |
+    And I am not logged in
+    When I visit the matches page
+    Then the now playing card for match "m-evts" should show event content
+    And the now playing card for match "m-evts" should show "Hugo Picard"
+    And the now playing card for match "m-evts" should show "Some Player"
+
+  Scenario: Live match card hides events block when no events have occurred
+    Given the following matches are seeded:
+      | id      | homeTeam      | awayTeam  | status             | state | homeScore | awayScore |
+      | m-noevt | Columbus Crew | FC Dallas | STATUS_IN_PROGRESS | in    | 0         | 0         |
+    And I am not logged in
+    When I visit the matches page
+    Then the now playing card for match "m-noevt" should not show an events block
+
+  Scenario: Live match card does not show substitutions on Now Playing
+    Given the following matches are seeded:
+      | id     | homeTeam      | awayTeam  | status             | state | homeScore | awayScore |
+      | m-sub  | Columbus Crew | FC Dallas | STATUS_IN_PROGRESS | in    | 1         | 0         |
+    And the following events are seeded for match "m-sub":
+      | clock | typeID       | team          | players                       |
+      | 23'   | goal         | Columbus Crew | Hugo Picard                   |
+      | 60'   | substitution | Columbus Crew | Sub In Player, Sub Off Player |
+    And I am not logged in
+    When I visit the matches page
+    Then the now playing card for match "m-sub" should show "Hugo Picard"
+    And the now playing card for match "m-sub" should not show "Sub In Player"
+
   Scenario: Result card shows venue name
     Given the following matches are seeded:
       | id      | homeTeam      | awayTeam  | status           | homeScore | awayScore | venue                   |
