@@ -50,17 +50,29 @@
           v-for="(event, i) in displayableEvents"
           :key="i"
           class="match-event"
-          :class="`match-event--${event.typeID}`"
+          :class="[`match-event--${event.typeID}`, `match-event--${eventSide(event)}`]"
           data-testid="match-event"
         >
+          <div class="event-detail">
+            <span class="event-icon" :aria-label="event.typeID">{{ eventIcon(event.typeID) }}</span>
+            <span v-if="event.typeID === 'substitution'" class="event-players">
+              <span class="sub-on">
+                <span class="full-name">{{ event.players[0] }}</span>
+                <span class="short-name">{{ surname(event.players[0] || '') }}</span>
+                <span class="sub-arrow">↑</span>
+              </span>
+              <span v-if="event.players[1]" class="sub-off">
+                <span class="full-name">{{ event.players[1] }}</span>
+                <span class="short-name">{{ surname(event.players[1]) }}</span>
+                <span class="sub-arrow">↓</span>
+              </span>
+            </span>
+            <span v-else class="event-players">
+              <span class="full-name">{{ event.players.join(', ') }}</span>
+              <span class="short-name">{{ event.players.map(surname).join(', ') }}</span>
+            </span>
+          </div>
           <span class="event-clock">{{ event.clock }}</span>
-          <span class="event-type">{{ event.typeID }}</span>
-          <span class="event-team">{{ event.team }}</span>
-          <span v-if="event.typeID === 'substitution'" class="event-players">
-            <span class="sub-on">{{ event.players[0] }} ↑</span>
-            <span v-if="event.players[1]" class="sub-off">{{ event.players[1] }} ↓</span>
-          </span>
-          <span v-else class="event-players">{{ event.players.join(', ') }}</span>
         </div>
       </div>
       <a
@@ -191,6 +203,22 @@ interface MatchInfo {
 
 const NON_DISPLAYABLE_EVENTS = new Set(['kickoff', 'halftime', 'start-2nd-half', 'end-regular-time'])
 
+const GOAL_TYPES = new Set(['goal', 'goal---header', 'goal---volley', 'own-goal', 'penalty---scored'])
+
+function eventIcon(typeID: string): string {
+  if (GOAL_TYPES.has(typeID)) return '⚽'
+  if (typeID === 'yellow-card') return '🟨'
+  if (typeID === 'red-card') return '🟥'
+  if (typeID === 'penalty---saved') return '🧤'
+  if (typeID === 'substitution') return '🔄'
+  return ''
+}
+
+function surname(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/)
+  return parts[parts.length - 1] || fullName
+}
+
 interface PredictionEntry {
   userID: string
   handle: string
@@ -215,6 +243,10 @@ const isLive = computed(() => match.value?.state === 'in')
 const displayableEvents = computed(() =>
   (match.value?.events ?? []).filter(e => !NON_DISPLAYABLE_EVENTS.has(e.typeID))
 )
+
+function eventSide(event: MatchEvent): 'home' | 'away' {
+  return match.value && event.team === match.value.homeTeam ? 'home' : 'away'
+}
 
 const sortedPredictions = computed(() => {
   const key = activeFormat.value === 'acesRadio' ? 'acesRadioPoints' : activeFormat.value === 'upper90Club' ? 'upper90ClubPoints' : 'grouchyPoints'
