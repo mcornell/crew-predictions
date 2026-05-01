@@ -1358,6 +1358,7 @@ body::after {
 
 .event-clock {
   grid-column: 2;
+  grid-row: 1;
   font-family: 'DM Mono', monospace;
   color: var(--muted);
   font-size: 0.85rem;
@@ -1389,12 +1390,14 @@ body::after {
    same goal — icons innermost, names outermost. Mirror layout. */
 .match-event--home .event-detail {
   grid-column: 1;
+  grid-row: 1;
   flex-direction: row-reverse;
   justify-content: flex-start;
 }
 
 .match-event--away .event-detail {
   grid-column: 3;
+  grid-row: 1;
   justify-content: flex-start;
 }
 
