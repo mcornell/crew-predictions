@@ -329,15 +329,16 @@ func TestFetchSummaryFrom_RealFixtures(t *testing.T) {
 		matchID            string
 		label              string
 		expectedAttendance int
+		expectedReferee    string // empty when ESPN returned no officials
 		minEvents          int
 		requiredTypes      []string
 	}{
-		{"761573", "Philadelphia (own goal + red card)", 19903, 19, []string{"goal", "own-goal", "red-card", "yellow-card"}},
-		{"761499", "Toronto (header goal)", 15384, 20, []string{"goal---header"}},
-		{"761451", "Portland (volley goal)", 22210, 21, []string{"goal---volley"}},
-		{"761552", "Revolution (penalty scored)", 16257, 18, []string{"penalty---scored"}},
-		{"761461", "Sporting KC (penalty saved)", 18522, 19, []string{"penalty---saved"}},
-		{"401869714", "USOC vs Knoxville (no attendance)", 0, 20, []string{"goal---header", "substitution"}},
+		{"761573", "Philadelphia (own goal + red card)", 19903, "", 19, []string{"goal", "own-goal", "red-card", "yellow-card"}},
+		{"761499", "Toronto (header goal)", 15384, "Pierre-Luc Lauziere", 20, []string{"goal---header"}},
+		{"761451", "Portland (volley goal)", 22210, "", 21, []string{"goal---volley"}},
+		{"761552", "Revolution (penalty scored)", 16257, "Timothy Ford", 18, []string{"penalty---scored"}},
+		{"761461", "Sporting KC (penalty saved)", 18522, "Sergii Demianchuk", 19, []string{"penalty---saved"}},
+		{"401869714", "USOC vs Knoxville (no attendance)", 0, "Nabil Bensalah", 20, []string{"goal---header", "substitution"}},
 	}
 
 	for _, tc := range cases {
@@ -357,6 +358,18 @@ func TestFetchSummaryFrom_RealFixtures(t *testing.T) {
 			}
 			if summary.Attendance != tc.expectedAttendance {
 				t.Errorf("Attendance: got %d, want %d", summary.Attendance, tc.expectedAttendance)
+			}
+			if summary.Referee != tc.expectedReferee {
+				t.Errorf("Referee: got %q, want %q", summary.Referee, tc.expectedReferee)
+			}
+			if !strings.Contains(summary.HomeLogo, "espncdn.com/i/teamlogos/soccer") {
+				t.Errorf("HomeLogo: expected ESPN team logo URL, got %q", summary.HomeLogo)
+			}
+			if !strings.Contains(summary.AwayLogo, "espncdn.com/i/teamlogos/soccer") {
+				t.Errorf("AwayLogo: expected ESPN team logo URL, got %q", summary.AwayLogo)
+			}
+			if summary.HomeLogo == summary.AwayLogo {
+				t.Errorf("HomeLogo and AwayLogo are identical: %q", summary.HomeLogo)
 			}
 			if len(summary.Events) < tc.minEvents {
 				t.Errorf("Events: got %d, want at least %d", len(summary.Events), tc.minEvents)

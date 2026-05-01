@@ -122,3 +122,17 @@ Then('I should see the event timeline on the match detail page', async ({ page }
 Then('I should see at least one event in the timeline', async ({ page }) => {
   await expect(page.locator('[data-testid="match-event"]').first()).toBeVisible();
 });
+
+Then('I should see the home team logo on the match detail page', async ({ page }) => {
+  await expect(page.locator('[data-testid="home-logo"]')).toBeVisible({ timeout: 15000 });
+});
+
+Then('I should see the away team logo on the match detail page', async ({ page }) => {
+  await expect(page.locator('[data-testid="away-logo"]')).toBeVisible({ timeout: 15000 });
+});
+
+Then('I should see the referee on the match detail page', async ({ page }) => {
+  const ref = page.locator('[data-testid="match-referee"]');
+  await expect(ref).toBeVisible({ timeout: 15000 });
+  await expect(ref).not.toHaveText('');
+});

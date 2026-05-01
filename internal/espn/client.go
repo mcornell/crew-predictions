@@ -271,7 +271,19 @@ func fetchCrewMatchesFrom(base string) ([]models.Match, error) {
 type espnSummaryResponse struct {
 	GameInfo struct {
 		Attendance int `json:"attendance"`
+		Officials  []struct {
+			DisplayName string `json:"displayName"`
+			Order       int    `json:"order"`
+		} `json:"officials"`
 	} `json:"gameInfo"`
+	Boxscore struct {
+		Teams []struct {
+			HomeAway string `json:"homeAway"`
+			Team     struct {
+				Logo string `json:"logo"`
+			} `json:"team"`
+		} `json:"teams"`
+	} `json:"boxscore"`
 	KeyEvents []struct {
 		Clock struct {
 			DisplayValue string `json:"displayValue"`
@@ -320,8 +332,24 @@ func fetchSummaryFrom(base, matchID string) (models.MatchSummary, error) {
 			Players: players,
 		})
 	}
+	var homeLogo, awayLogo string
+	for _, t := range data.Boxscore.Teams {
+		switch t.HomeAway {
+		case "home":
+			homeLogo = t.Team.Logo
+		case "away":
+			awayLogo = t.Team.Logo
+		}
+	}
+	var referee string
+	if len(data.GameInfo.Officials) > 0 {
+		referee = data.GameInfo.Officials[0].DisplayName
+	}
 	return models.MatchSummary{
 		Attendance: data.GameInfo.Attendance,
+		HomeLogo:   homeLogo,
+		AwayLogo:   awayLogo,
+		Referee:    referee,
 		Events:     events,
 	}, nil
 }

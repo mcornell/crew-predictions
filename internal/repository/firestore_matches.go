@@ -48,7 +48,10 @@ func (s *FirestoreMatchStore) SaveAll(matches []models.Match) error {
 			"awayRecord":   m.AwayRecord,
 			"homeForm":     m.HomeForm,
 			"awayForm":     m.AwayForm,
+			"homeLogo":     m.HomeLogo,
+			"awayLogo":     m.AwayLogo,
 			"attendance":   m.Attendance,
+			"referee":      m.Referee,
 			"events":       events,
 		})
 	}
@@ -90,7 +93,10 @@ func toMatch(snap *firestore.DocumentSnapshot) (models.Match, error) {
 		AwayRecord   string    `firestore:"awayRecord"`
 		HomeForm     string    `firestore:"homeForm"`
 		AwayForm     string    `firestore:"awayForm"`
+		HomeLogo     string    `firestore:"homeLogo"`
+		AwayLogo     string    `firestore:"awayLogo"`
 		Attendance   int64     `firestore:"attendance"`
+		Referee      string    `firestore:"referee"`
 		Events       []struct {
 			Clock   string   `firestore:"clock"`
 			TypeID  string   `firestore:"typeID"`
@@ -125,7 +131,10 @@ func toMatch(snap *firestore.DocumentSnapshot) (models.Match, error) {
 		AwayRecord:   doc.AwayRecord,
 		HomeForm:     doc.HomeForm,
 		AwayForm:     doc.AwayForm,
+		HomeLogo:     doc.HomeLogo,
+		AwayLogo:     doc.AwayLogo,
 		Attendance:   int(doc.Attendance),
+		Referee:      doc.Referee,
 		Events:       events,
 	}, nil
 }

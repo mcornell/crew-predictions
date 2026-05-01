@@ -37,21 +37,24 @@ type matchDetailPrediction struct {
 }
 
 type matchDetailMatch struct {
-	ID           string             `json:"id"`
-	HomeTeam     string             `json:"homeTeam"`
-	AwayTeam     string             `json:"awayTeam"`
-	Kickoff      string             `json:"kickoff"`
-	HomeScore    string             `json:"homeScore"`
-	AwayScore    string             `json:"awayScore"`
-	State        string             `json:"state"`
-	Status       string             `json:"status"`
-	DisplayClock string             `json:"displayClock,omitempty"`
-	Venue        string             `json:"venue,omitempty"`
-	HomeRecord   string             `json:"homeRecord,omitempty"`
-	AwayRecord   string             `json:"awayRecord,omitempty"`
-	HomeForm     string             `json:"homeForm,omitempty"`
-	AwayForm     string             `json:"awayForm,omitempty"`
-	Attendance   int                `json:"attendance,omitempty"`
+	ID           string              `json:"id"`
+	HomeTeam     string              `json:"homeTeam"`
+	AwayTeam     string              `json:"awayTeam"`
+	Kickoff      string              `json:"kickoff"`
+	HomeScore    string              `json:"homeScore"`
+	AwayScore    string              `json:"awayScore"`
+	State        string              `json:"state"`
+	Status       string              `json:"status"`
+	DisplayClock string              `json:"displayClock,omitempty"`
+	Venue        string              `json:"venue,omitempty"`
+	HomeRecord   string              `json:"homeRecord,omitempty"`
+	AwayRecord   string              `json:"awayRecord,omitempty"`
+	HomeForm     string              `json:"homeForm,omitempty"`
+	AwayForm     string              `json:"awayForm,omitempty"`
+	HomeLogo     string              `json:"homeLogo,omitempty"`
+	AwayLogo     string              `json:"awayLogo,omitempty"`
+	Attendance   int                 `json:"attendance,omitempty"`
+	Referee      string              `json:"referee,omitempty"`
 	Events       []models.MatchEvent `json:"events,omitempty"`
 }
 
@@ -71,6 +74,9 @@ func (h *MatchDetailHandler) Get(w http.ResponseWriter, r *http.Request) {
 				if summary, err := h.summaryFetcher(matchID); err == nil && (summary.Attendance > 0 || len(summary.Events) > 0) {
 					allMatches[i].Attendance = summary.Attendance
 					allMatches[i].Events = summary.Events
+					allMatches[i].HomeLogo = summary.HomeLogo
+					allMatches[i].AwayLogo = summary.AwayLogo
+					allMatches[i].Referee = summary.Referee
 					_ = h.matches.SaveAll(allMatches)
 					m = allMatches[i]
 				}
@@ -90,7 +96,10 @@ func (h *MatchDetailHandler) Get(w http.ResponseWriter, r *http.Request) {
 				AwayRecord:   m.AwayRecord,
 				HomeForm:     m.HomeForm,
 				AwayForm:     m.AwayForm,
+				HomeLogo:     m.HomeLogo,
+				AwayLogo:     m.AwayLogo,
 				Attendance:   m.Attendance,
+				Referee:      m.Referee,
 				Events:       m.Events,
 			}
 			break

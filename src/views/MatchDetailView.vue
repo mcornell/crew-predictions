@@ -11,11 +11,17 @@
         <span v-else class="live-indicator">● {{ match.displayClock || 'LIVE' }}</span>
       </div>
       <div class="matchup matchup--input" data-testid="match-score" :class="{ 'matchup--has-form': match.homeRecord || match.awayRecord || match.homeForm || match.awayForm }">
-        <span class="team-name team-home">{{ match.homeTeam }}</span>
+        <span class="team-name team-home">
+          <img v-if="match.homeLogo" :src="match.homeLogo" :alt="`${match.homeTeam} logo`" class="team-logo" data-testid="home-logo" loading="lazy" />
+          <span class="team-label">{{ match.homeTeam }}</span>
+        </span>
         <span class="inline-score">{{ match.homeScore || '–' }}</span>
         <span class="vs">vs</span>
         <span class="inline-score">{{ match.awayScore || '–' }}</span>
-        <span class="team-name team-away">{{ match.awayTeam }}</span>
+        <span class="team-name team-away">
+          <img v-if="match.awayLogo" :src="match.awayLogo" :alt="`${match.awayTeam} logo`" class="team-logo" data-testid="away-logo" loading="lazy" />
+          <span class="team-label">{{ match.awayTeam }}</span>
+        </span>
         <div v-if="match.homeRecord || match.homeForm" class="matchup-team-form matchup-team-form--home">
           <span v-if="match.homeRecord" class="match-record">{{ match.homeRecord }}</span>
           <span v-if="match.homeForm" class="match-form"><span v-for="(c, i) in match.homeForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
@@ -38,6 +44,7 @@
       <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
       <div v-if="match.venue" class="match-meta match-venue" data-testid="match-detail-venue">{{ match.venue }}</div>
       <div v-if="match.attendance" class="match-meta match-attendance" data-testid="match-detail-attendance">{{ formatAttendance(match.attendance) }}</div>
+      <div v-if="match.referee" class="match-meta match-referee" data-testid="match-referee">Referee: {{ match.referee }}</div>
       <div v-if="displayableEvents.length > 0" class="match-events" data-testid="match-events">
         <div
           v-for="(event, i) in displayableEvents"
@@ -175,7 +182,10 @@ interface MatchInfo {
   awayRecord?: string
   homeForm?: string
   awayForm?: string
+  homeLogo?: string
+  awayLogo?: string
   attendance?: number
+  referee?: string
   events?: MatchEvent[]
 }
 

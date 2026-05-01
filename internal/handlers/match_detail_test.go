@@ -664,6 +664,73 @@ func TestMatchDetailHandler_WritesEventsBackToStore(t *testing.T) {
 	}
 }
 
+func TestMatchDetailHandler_IncludesRefereeAndLogosInResponse(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	matchStore.Seed([]models.Match{{
+		ID: "m-rl", HomeTeam: "Columbus Crew", AwayTeam: "Toronto FC",
+		Kickoff: time.Now().Add(-3 * time.Hour), Status: "STATUS_FULL_TIME",
+		State: "post", HomeScore: "2", AwayScore: "0", Attendance: 0,
+	}})
+
+	fetcher := func(_ string) (models.MatchSummary, error) {
+		return models.MatchSummary{
+			Attendance: 15384,
+			HomeLogo:   "https://a.espncdn.com/i/teamlogos/soccer/500/183.png",
+			AwayLogo:   "https://a.espncdn.com/i/teamlogos/soccer/500/7318.png",
+			Referee:    "Pierre-Luc Lauziere",
+		}, nil
+	}
+
+	h := handlers.NewMatchDetailHandler(
+		repository.NewMemoryPredictionStore(),
+		repository.NewMemoryResultStore(),
+		matchStore,
+		repository.NewMemoryUserStore(),
+		"Columbus Crew",
+		fetcher,
+	)
+	req := httptest.NewRequest("GET", "/api/matches/m-rl", nil)
+	req.SetPathValue("matchId", "m-rl")
+	w := httptest.NewRecorder()
+	h.Get(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+	var resp struct {
+		Match struct {
+			HomeLogo string `json:"homeLogo"`
+			AwayLogo string `json:"awayLogo"`
+			Referee  string `json:"referee"`
+		} `json:"match"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatalf("invalid JSON: %v", err)
+	}
+	if resp.Match.HomeLogo != "https://a.espncdn.com/i/teamlogos/soccer/500/183.png" {
+		t.Errorf("HomeLogo: got %q", resp.Match.HomeLogo)
+	}
+	if resp.Match.AwayLogo != "https://a.espncdn.com/i/teamlogos/soccer/500/7318.png" {
+		t.Errorf("AwayLogo: got %q", resp.Match.AwayLogo)
+	}
+	if resp.Match.Referee != "Pierre-Luc Lauziere" {
+		t.Errorf("Referee: got %q", resp.Match.Referee)
+	}
+
+	// Also verify the values were persisted back to the store.
+	matches, _ := matchStore.GetAll()
+	var stored models.Match
+	for _, m := range matches {
+		if m.ID == "m-rl" {
+			stored = m
+		}
+	}
+	if stored.HomeLogo == "" || stored.AwayLogo == "" || stored.Referee == "" {
+		t.Errorf("expected refs+logos written back to store, got home=%q away=%q ref=%q",
+			stored.HomeLogo, stored.AwayLogo, stored.Referee)
+	}
+}
+
 func TestMatchDetailHandler_IncludesRecordsAndForm(t *testing.T) {
 	matchStore := repository.NewMemoryMatchStore()
 	matchStore.SaveAll([]models.Match{{

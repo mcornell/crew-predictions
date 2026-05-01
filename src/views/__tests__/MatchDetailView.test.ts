@@ -554,6 +554,66 @@ describe('MatchDetailView', () => {
     expect(eventEl.text()).toContain('Hugo Picard')
   })
 
+  it('renders home and away team logos when present', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: {
+          ...mockMatch,
+          homeLogo: 'https://a.espncdn.com/i/teamlogos/soccer/500/183.png',
+          awayLogo: 'https://a.espncdn.com/i/teamlogos/soccer/500/10739.png',
+        },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    const home = wrapper.find('[data-testid="home-logo"]')
+    const away = wrapper.find('[data-testid="away-logo"]')
+    expect(home.exists()).toBe(true)
+    expect(away.exists()).toBe(true)
+    expect(home.attributes('src')).toContain('183.png')
+    expect(away.attributes('src')).toContain('10739.png')
+  })
+
+  it('does not render logos when match has no logo URLs', async () => {
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="home-logo"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="away-logo"]').exists()).toBe(false)
+  })
+
+  it('shows the referee when present on match', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        match: { ...mockMatch, referee: 'Pierre-Luc Lauziere' },
+        predictions: [],
+        scoringFormats: mockScoringFormats,
+      }),
+    }))
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    const ref = wrapper.find('[data-testid="match-referee"]')
+    expect(ref.exists()).toBe(true)
+    expect(ref.text()).toContain('Pierre-Luc Lauziere')
+  })
+
+  it('does not render the referee element when match has no referee', async () => {
+    const router = makeRouter()
+    await router.isReady()
+    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="match-referee"]').exists()).toBe(false)
+  })
+
   it('clears poll timer on unmount when a poll was scheduled', async () => {
     vi.useFakeTimers()
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
