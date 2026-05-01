@@ -268,6 +268,68 @@ func fetchCrewMatchesFrom(base string) ([]models.Match, error) {
 	return matches, nil
 }
 
+type espnSummaryResponse struct {
+	GameInfo struct {
+		Attendance int `json:"attendance"`
+	} `json:"gameInfo"`
+	KeyEvents []struct {
+		Clock struct {
+			DisplayValue string `json:"displayValue"`
+		} `json:"clock"`
+		Type struct {
+			Type string `json:"type"`
+		} `json:"type"`
+		Team struct {
+			DisplayName string `json:"displayName"`
+		} `json:"team"`
+		Participants []struct {
+			Athlete struct {
+				DisplayName string `json:"displayName"`
+			} `json:"athlete"`
+		} `json:"participants"`
+	} `json:"keyEvents"`
+}
+
+func summaryURL(base, matchID string) string {
+	return fmt.Sprintf("%s/usa.1/summary?event=%s", base, matchID)
+}
+
+func fetchSummaryFrom(base, matchID string) (models.MatchSummary, error) {
+	resp, err := http.Get(summaryURL(base, matchID))
+	if err != nil {
+		return models.MatchSummary{}, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return models.MatchSummary{}, nil
+	}
+	var data espnSummaryResponse
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		return models.MatchSummary{}, err
+	}
+	events := make([]models.MatchEvent, 0, len(data.KeyEvents))
+	for _, ke := range data.KeyEvents {
+		players := make([]string, 0, len(ke.Participants))
+		for _, p := range ke.Participants {
+			players = append(players, p.Athlete.DisplayName)
+		}
+		events = append(events, models.MatchEvent{
+			Clock:   ke.Clock.DisplayValue,
+			TypeID:  ke.Type.Type,
+			Team:    ke.Team.DisplayName,
+			Players: players,
+		})
+	}
+	return models.MatchSummary{
+		Attendance: data.GameInfo.Attendance,
+		Events:     events,
+	}, nil
+}
+
+func FetchSummary(matchID string) (models.MatchSummary, error) {
+	return fetchSummaryFrom(espnBase, matchID)
+}
+
 func FetchCrewMatches() ([]models.Match, error) {
 	return fetchCrewMatchesFrom(espnBase)
 }

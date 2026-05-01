@@ -275,6 +275,47 @@ func TestFetchCrewMatchesFrom_PopulatesRecordsAndForm(t *testing.T) {
 	}
 }
 
+func TestFetchSummaryFrom_ReturnsAttendance(t *testing.T) {
+	payload := `{"gameInfo":{"attendance":19903},"keyEvents":[]}`
+	srv := serveJSON(t, payload)
+	defer srv.Close()
+
+	summary, err := fetchSummaryFrom(srv.URL, "761573")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if summary.Attendance != 19903 {
+		t.Errorf("expected Attendance 19903, got %d", summary.Attendance)
+	}
+}
+
+func TestFetchSummaryFrom_ParsesKeyEvent(t *testing.T) {
+	payload := `{"gameInfo":{"attendance":0},"keyEvents":[{"clock":{"displayValue":"15'"},"type":{"type":"goal"},"team":{"displayName":"Columbus Crew"},"participants":[{"athlete":{"displayName":"Cucho Hernandez"}}]}]}`
+	srv := serveJSON(t, payload)
+	defer srv.Close()
+
+	summary, err := fetchSummaryFrom(srv.URL, "x")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(summary.Events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(summary.Events))
+	}
+	e := summary.Events[0]
+	if e.Clock != "15'" {
+		t.Errorf("Clock: got %q, want %q", e.Clock, "15'")
+	}
+	if e.TypeID != "goal" {
+		t.Errorf("TypeID: got %q, want %q", e.TypeID, "goal")
+	}
+	if e.Team != "Columbus Crew" {
+		t.Errorf("Team: got %q, want %q", e.Team, "Columbus Crew")
+	}
+	if len(e.Players) != 1 || e.Players[0] != "Cucho Hernandez" {
+		t.Errorf("Players: got %v, want [Cucho Hernandez]", e.Players)
+	}
+}
+
 func TestFetchCrewMatchesFrom_ReturnsCrewMatchesFromFixtures(t *testing.T) {
 	schedule, err := os.ReadFile("testdata/mls_schedule.json")
 	if err != nil {

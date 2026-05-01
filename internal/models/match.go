@@ -17,4 +17,18 @@ type Match struct {
 	AwayRecord   string
 	HomeForm     string
 	AwayForm     string
+	Attendance   int
+	Events       []MatchEvent
+}
+
+type MatchEvent struct {
+	Clock   string
+	TypeID  string
+	Team    string
+	Players []string
+}
+
+type MatchSummary struct {
+	Attendance int
+	Events     []MatchEvent
 }
