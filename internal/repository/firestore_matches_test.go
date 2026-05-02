@@ -135,6 +135,148 @@ func TestFirestoreMatchStore_AttendanceRoundTrips(t *testing.T) {
 	t.Error("match fs-match-attendance not found in GetAll results")
 }
 
+// TestFirestoreMatchStore_FullMatchRoundTrip is a guard against the
+// "field added to model but forgot to update encoder/decoder" bug class.
+// Same shape as the April 2026 toUser/UpdateScores incident: a write path
+// and a read path must stay in sync, but unit tests use the Memory store
+// and would silently pass if Firestore round-trip dropped a field.
+//
+// This test populates every field of a Match (and every sub-field of
+// MatchEvent), persists via SaveAll, reads back via GetAll, and asserts
+// each value matches. A future commit that adds a field to models.Match
+// or models.MatchEvent without updating both SaveAll's write map AND
+// toMatch's firestore-tagged struct will fail this test loudly.
+//
+// Uses t.Errorf (not t.Fatalf) for the field comparisons so all mismatches
+// from a regression surface in one run rather than stopping at the first.
+func TestFirestoreMatchStore_FullMatchRoundTrip(t *testing.T) {
+	store := firestoreMatchStoreOrSkip(t)
+
+	kickoff := time.Date(2026, 4, 25, 23, 0, 0, 0, time.UTC)
+	original := models.Match{
+		ID:           "fs-full-roundtrip",
+		HomeTeam:     "Columbus Crew",
+		AwayTeam:     "Philadelphia Union",
+		Kickoff:      kickoff,
+		Status:       "STATUS_FULL_TIME",
+		State:        "post",
+		HomeScore:    "2",
+		AwayScore:    "0",
+		DisplayClock: "FT",
+		Venue:        "ScottsMiracle-Gro Field",
+		HomeRecord:   "5-3-2",
+		AwayRecord:   "4-4-2",
+		HomeForm:     "WWWLL",
+		AwayForm:     "LWDWL",
+		HomeLogo:     "https://a.espncdn.com/i/teamlogos/soccer/500/183.png",
+		AwayLogo:     "https://a.espncdn.com/i/teamlogos/soccer/500/10739.png",
+		Attendance:   19903,
+		Referee:      "Pierre-Luc Lauziere",
+		Events: []models.MatchEvent{
+			{Clock: "4'", TypeID: "goal", Team: "Columbus Crew", Players: []string{"Max Arfsten"}},
+			{Clock: "39'", TypeID: "yellow-card", Team: "Philadelphia Union", Players: []string{"Danley Jean Jacques"}},
+			{Clock: "73'", TypeID: "substitution", Team: "Columbus Crew", Players: []string{"Steven Moreira", "Hugo Picard"}},
+		},
+	}
+	if err := store.SaveAll([]models.Match{original}); err != nil {
+		t.Fatalf("SaveAll failed: %v", err)
+	}
+
+	got, err := store.GetAll()
+	if err != nil {
+		t.Fatalf("GetAll failed: %v", err)
+	}
+	var found *models.Match
+	for i, m := range got {
+		if m.ID == "fs-full-roundtrip" {
+			found = &got[i]
+			break
+		}
+	}
+	if found == nil {
+		t.Fatal("match fs-full-roundtrip not found in GetAll results")
+	}
+
+	// Top-level fields
+	if found.HomeTeam != original.HomeTeam {
+		t.Errorf("HomeTeam: got %q, want %q", found.HomeTeam, original.HomeTeam)
+	}
+	if found.AwayTeam != original.AwayTeam {
+		t.Errorf("AwayTeam: got %q, want %q", found.AwayTeam, original.AwayTeam)
+	}
+	if !found.Kickoff.Equal(original.Kickoff) {
+		t.Errorf("Kickoff: got %v, want %v", found.Kickoff, original.Kickoff)
+	}
+	if found.Status != original.Status {
+		t.Errorf("Status: got %q, want %q", found.Status, original.Status)
+	}
+	if found.State != original.State {
+		t.Errorf("State: got %q, want %q", found.State, original.State)
+	}
+	if found.HomeScore != original.HomeScore {
+		t.Errorf("HomeScore: got %q, want %q", found.HomeScore, original.HomeScore)
+	}
+	if found.AwayScore != original.AwayScore {
+		t.Errorf("AwayScore: got %q, want %q", found.AwayScore, original.AwayScore)
+	}
+	if found.DisplayClock != original.DisplayClock {
+		t.Errorf("DisplayClock: got %q, want %q", found.DisplayClock, original.DisplayClock)
+	}
+	if found.Venue != original.Venue {
+		t.Errorf("Venue: got %q, want %q", found.Venue, original.Venue)
+	}
+	if found.HomeRecord != original.HomeRecord {
+		t.Errorf("HomeRecord: got %q, want %q", found.HomeRecord, original.HomeRecord)
+	}
+	if found.AwayRecord != original.AwayRecord {
+		t.Errorf("AwayRecord: got %q, want %q", found.AwayRecord, original.AwayRecord)
+	}
+	if found.HomeForm != original.HomeForm {
+		t.Errorf("HomeForm: got %q, want %q", found.HomeForm, original.HomeForm)
+	}
+	if found.AwayForm != original.AwayForm {
+		t.Errorf("AwayForm: got %q, want %q", found.AwayForm, original.AwayForm)
+	}
+	if found.HomeLogo != original.HomeLogo {
+		t.Errorf("HomeLogo: got %q, want %q", found.HomeLogo, original.HomeLogo)
+	}
+	if found.AwayLogo != original.AwayLogo {
+		t.Errorf("AwayLogo: got %q, want %q", found.AwayLogo, original.AwayLogo)
+	}
+	if found.Attendance != original.Attendance {
+		t.Errorf("Attendance: got %d, want %d", found.Attendance, original.Attendance)
+	}
+	if found.Referee != original.Referee {
+		t.Errorf("Referee: got %q, want %q", found.Referee, original.Referee)
+	}
+
+	// Events: count and per-field check across all entries
+	if len(found.Events) != len(original.Events) {
+		t.Fatalf("Events length: got %d, want %d", len(found.Events), len(original.Events))
+	}
+	for i, want := range original.Events {
+		got := found.Events[i]
+		if got.Clock != want.Clock {
+			t.Errorf("Events[%d].Clock: got %q, want %q", i, got.Clock, want.Clock)
+		}
+		if got.TypeID != want.TypeID {
+			t.Errorf("Events[%d].TypeID: got %q, want %q", i, got.TypeID, want.TypeID)
+		}
+		if got.Team != want.Team {
+			t.Errorf("Events[%d].Team: got %q, want %q", i, got.Team, want.Team)
+		}
+		if len(got.Players) != len(want.Players) {
+			t.Errorf("Events[%d].Players length: got %d, want %d", i, len(got.Players), len(want.Players))
+			continue
+		}
+		for j, p := range want.Players {
+			if got.Players[j] != p {
+				t.Errorf("Events[%d].Players[%d]: got %q, want %q", i, j, got.Players[j], p)
+			}
+		}
+	}
+}
+
 func TestFirestoreMatchStore_SaveAllOverwritesExisting(t *testing.T) {
 	store := firestoreMatchStoreOrSkip(t)
 
