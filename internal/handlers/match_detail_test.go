@@ -13,6 +13,28 @@ import (
 	"github.com/mcornell/crew-predictions/internal/repository"
 )
 
+// getMatchDetail builds a MatchDetailHandler with sensible defaults
+// (empty prediction/user stores, "Columbus Crew" target team), invokes
+// it for matchID, and returns the response recorder. Tests that need a
+// non-default prediction store or user store should construct their own
+// handler instead of using this helper.
+func getMatchDetail(t *testing.T, store repository.MatchStore, fetcher handlers.SummaryFetcher, matchID string) *httptest.ResponseRecorder {
+	t.Helper()
+	h := handlers.NewMatchDetailHandler(
+		repository.NewMemoryPredictionStore(),
+		repository.NewMemoryResultStore(),
+		store,
+		repository.NewMemoryUserStore(),
+		"Columbus Crew",
+		fetcher,
+	)
+	req := httptest.NewRequest("GET", "/api/matches/"+matchID, nil)
+	req.SetPathValue("matchId", matchID)
+	w := httptest.NewRecorder()
+	h.Get(w, req)
+	return w
+}
+
 func TestMatchDetailHandler_ReturnsPredictionsWithScores(t *testing.T) {
 	predStore := repository.NewMemoryPredictionStore()
 	resultStore := repository.NewMemoryResultStore()
@@ -424,24 +446,11 @@ func TestMatchDetailHandler_IncludesVenue(t *testing.T) {
 		Venue:     "ScottsMiracle-Gro Field",
 	}})
 
-	h := handlers.NewMatchDetailHandler(
-		repository.NewMemoryPredictionStore(),
-		repository.NewMemoryResultStore(),
-		matchStore,
-		repository.NewMemoryUserStore(),
-		"Columbus Crew",
-		nil,
-	)
-
-	req := httptest.NewRequest("GET", "/api/matches/m-venue", nil)
-	req.SetPathValue("matchId", "m-venue")
-	w := httptest.NewRecorder()
-	h.Get(w, req)
+	w := getMatchDetail(t, matchStore, nil, "m-venue")
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", w.Code)
 	}
-
 	var resp struct {
 		Match struct {
 			Venue string `json:"venue"`
@@ -467,18 +476,7 @@ func TestMatchDetailHandler_LazyFetchesAttendanceForPostMatch(t *testing.T) {
 		return models.MatchSummary{Attendance: 19903}, nil
 	}
 
-	h := handlers.NewMatchDetailHandler(
-		repository.NewMemoryPredictionStore(),
-		repository.NewMemoryResultStore(),
-		matchStore,
-		repository.NewMemoryUserStore(),
-		"Columbus Crew",
-		fetcher,
-	)
-	req := httptest.NewRequest("GET", "/api/matches/m-post", nil)
-	req.SetPathValue("matchId", "m-post")
-	w := httptest.NewRecorder()
-	h.Get(w, req)
+	w := getMatchDetail(t, matchStore, fetcher, "m-post")
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
@@ -508,18 +506,7 @@ func TestMatchDetailHandler_WritesAttendanceBackToStore(t *testing.T) {
 		return models.MatchSummary{Attendance: 5000}, nil
 	}
 
-	h := handlers.NewMatchDetailHandler(
-		repository.NewMemoryPredictionStore(),
-		repository.NewMemoryResultStore(),
-		matchStore,
-		repository.NewMemoryUserStore(),
-		"Columbus Crew",
-		fetcher,
-	)
-	req := httptest.NewRequest("GET", "/api/matches/m-wb", nil)
-	req.SetPathValue("matchId", "m-wb")
-	w := httptest.NewRecorder()
-	h.Get(w, req)
+	getMatchDetail(t, matchStore, fetcher, "m-wb")
 
 	matches, _ := matchStore.GetAll()
 	var found models.Match
@@ -547,18 +534,7 @@ func TestMatchDetailHandler_SkipsLazyFetchWhenAttendanceAlreadySet(t *testing.T)
 		return models.MatchSummary{Attendance: 0}, nil
 	}
 
-	h := handlers.NewMatchDetailHandler(
-		repository.NewMemoryPredictionStore(),
-		repository.NewMemoryResultStore(),
-		matchStore,
-		repository.NewMemoryUserStore(),
-		"Columbus Crew",
-		fetcher,
-	)
-	req := httptest.NewRequest("GET", "/api/matches/m-cached", nil)
-	req.SetPathValue("matchId", "m-cached")
-	w := httptest.NewRecorder()
-	h.Get(w, req)
+	getMatchDetail(t, matchStore, fetcher, "m-cached")
 
 	if callCount != 0 {
 		t.Errorf("expected fetcher not called when attendance already set, called %d times", callCount)
@@ -583,23 +559,11 @@ func TestMatchDetailHandler_IncludesEventsInResponse(t *testing.T) {
 		}, nil
 	}
 
-	h := handlers.NewMatchDetailHandler(
-		repository.NewMemoryPredictionStore(),
-		repository.NewMemoryResultStore(),
-		matchStore,
-		repository.NewMemoryUserStore(),
-		"Columbus Crew",
-		fetcher,
-	)
-	req := httptest.NewRequest("GET", "/api/matches/m-events", nil)
-	req.SetPathValue("matchId", "m-events")
-	w := httptest.NewRecorder()
-	h.Get(w, req)
+	w := getMatchDetail(t, matchStore, fetcher, "m-events")
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
 	}
-
 	var resp struct {
 		Match struct {
 			Events []struct {
@@ -636,18 +600,7 @@ func TestMatchDetailHandler_WritesEventsBackToStore(t *testing.T) {
 		}, nil
 	}
 
-	h := handlers.NewMatchDetailHandler(
-		repository.NewMemoryPredictionStore(),
-		repository.NewMemoryResultStore(),
-		matchStore,
-		repository.NewMemoryUserStore(),
-		"Columbus Crew",
-		fetcher,
-	)
-	req := httptest.NewRequest("GET", "/api/matches/m-ev-wb", nil)
-	req.SetPathValue("matchId", "m-ev-wb")
-	w := httptest.NewRecorder()
-	h.Get(w, req)
+	getMatchDetail(t, matchStore, fetcher, "m-ev-wb")
 
 	matches, _ := matchStore.GetAll()
 	var found models.Match
@@ -681,18 +634,7 @@ func TestMatchDetailHandler_IncludesRefereeAndLogosInResponse(t *testing.T) {
 		}, nil
 	}
 
-	h := handlers.NewMatchDetailHandler(
-		repository.NewMemoryPredictionStore(),
-		repository.NewMemoryResultStore(),
-		matchStore,
-		repository.NewMemoryUserStore(),
-		"Columbus Crew",
-		fetcher,
-	)
-	req := httptest.NewRequest("GET", "/api/matches/m-rl", nil)
-	req.SetPathValue("matchId", "m-rl")
-	w := httptest.NewRecorder()
-	h.Get(w, req)
+	w := getMatchDetail(t, matchStore, fetcher, "m-rl")
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
@@ -745,11 +687,7 @@ func TestMatchDetailHandler_IncludesRecordsAndForm(t *testing.T) {
 		AwayForm:   "LWDWL",
 	}})
 
-	h := handlers.NewMatchDetailHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), matchStore, repository.NewMemoryUserStore(), "Columbus Crew", nil)
-	req := httptest.NewRequest("GET", "/api/matches/m-rf", nil)
-	req.SetPathValue("matchId", "m-rf")
-	w := httptest.NewRecorder()
-	h.Get(w, req)
+	w := getMatchDetail(t, matchStore, nil, "m-rf")
 
 	var resp struct {
 		Match struct {
