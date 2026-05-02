@@ -40,6 +40,8 @@ Always run `npx bddgen` after editing a `.feature` file.
 
 **@reset tag:** A `Before` hook calls `DELETE /admin/reset` before each `@reset` scenario. Any feature that mutates match/prediction/result stores must carry `@reset`. Auth-only features omit it and run in parallel via the `auth` Playwright project.
 
+**Why the `app` project runs `workers: 1`:** every `@reset` scenario calls `DELETE /admin/reset` against the shared Go server. The Go server holds match/prediction/result/user state in process memory in TEST_MODE — there's no isolation between concurrent requests. Running `@reset` scenarios in parallel would cause races (Worker A seeds `m-A`, Worker B resets and wipes `m-A`, Worker A asserts on `m-A` → fails). Don't try to "fix" `workers: 1` by removing it; the right fix is per-worker server isolation, captured in BACKLOG with a 90s runtime trigger condition.
+
 **Smoke suite:** `npm run test:smoke` runs in CI after `deploy-staging` against the live staging URL. Scope: "did the deploy come up + can users sign in + do core API endpoints respond." Scope explicitly does NOT include third-party integrations like ESPN — if ESPN is down, smoke must still pass. Don't add smoke assertions for `[data-testid="match-events"]`, `match-detail-attendance`, `home-logo`, `match-referee`, etc. (those are exercised by the local e2e suite, which now uses fixture-backed summaries via `espn.FixtureFetcher` in TEST_MODE).
 
 It is not a substitute for the local e2e suite — run `npm test` locally first.
