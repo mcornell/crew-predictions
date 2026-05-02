@@ -275,7 +275,7 @@ body::after {
 .match-list {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 0.5rem;
 }
 
 .match-card {
