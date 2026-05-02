@@ -63,6 +63,66 @@ func TestMatchPoller_Tick_FetchesSummaryAndPersistsEventsForLiveMatch(t *testing
 	}
 }
 
+func TestMatchPoller_Tick_ContinuesWhenSummaryFetcherFails(t *testing.T) {
+	// A failing summaryFetcher should not block the scoreboard data from
+	// being persisted. Match score still updates; events stay empty.
+	matchStore := repository.NewMemoryMatchStore()
+	scoreboardMatch := models.Match{
+		ID: "m-sumerr", HomeTeam: "Crew", AwayTeam: "FC Dallas",
+		Kickoff: time.Now().Add(-30 * time.Minute), State: "in", Status: "STATUS_IN_PROGRESS",
+		HomeScore: "2", AwayScore: "1",
+	}
+	matchStore.Seed([]models.Match{scoreboardMatch})
+	scoreboardFetcher := func() ([]models.Match, error) { return []models.Match{scoreboardMatch}, nil }
+	summaryFetcher := func(_ string) (models.MatchSummary, error) {
+		return models.MatchSummary{}, fmt.Errorf("simulated summary failure")
+	}
+
+	p := poll.NewMatchPoller(matchStore, repository.NewMemoryResultStore(), scoreboardFetcher, immediateTimer)
+	p.SetSummaryFetcher(summaryFetcher)
+	p.Schedule([]models.Match{scoreboardMatch})
+	p.Tick(context.Background())
+
+	stored, _ := matchStore.GetAll()
+	if len(stored) != 1 {
+		t.Fatalf("expected 1 match in store, got %d", len(stored))
+	}
+	if stored[0].HomeScore != "2" || stored[0].AwayScore != "1" {
+		t.Errorf("expected scoreboard data persisted (2-1), got %s-%s", stored[0].HomeScore, stored[0].AwayScore)
+	}
+	if len(stored[0].Events) != 0 {
+		t.Errorf("expected no events when summary fetch failed, got %d", len(stored[0].Events))
+	}
+}
+
+func TestMatchPoller_Tick_SkipsSummaryForActiveIDsAbsentFromScoreboard(t *testing.T) {
+	// If an active match isn't in the scoreboard fetch result (rare, but
+	// possible during ESPN reshuffles), the !ok guard should skip the
+	// summary call entirely rather than enriching a zero-value match.
+	matchStore := repository.NewMemoryMatchStore()
+	staleMatch := models.Match{
+		ID: "m-stale", HomeTeam: "Crew", AwayTeam: "FC Dallas",
+		Kickoff: time.Now().Add(-30 * time.Minute), State: "in", Status: "STATUS_IN_PROGRESS",
+	}
+	matchStore.Seed([]models.Match{staleMatch})
+	// Scoreboard returns empty — m-stale is no longer in ESPN's response.
+	scoreboardFetcher := func() ([]models.Match, error) { return []models.Match{}, nil }
+	summaryCalls := 0
+	summaryFetcher := func(_ string) (models.MatchSummary, error) {
+		summaryCalls++
+		return models.MatchSummary{}, nil
+	}
+
+	p := poll.NewMatchPoller(matchStore, repository.NewMemoryResultStore(), scoreboardFetcher, immediateTimer)
+	p.SetSummaryFetcher(summaryFetcher)
+	p.Schedule([]models.Match{staleMatch})
+	p.Tick(context.Background())
+
+	if summaryCalls != 0 {
+		t.Errorf("expected summaryFetcher NOT called for IDs absent from scoreboard, was called %d times", summaryCalls)
+	}
+}
+
 func TestMatchPoller_Tick_DoesNotCallSummaryWhenNoneConfigured(t *testing.T) {
 	matchStore := repository.NewMemoryMatchStore()
 	scoreboardMatch := models.Match{

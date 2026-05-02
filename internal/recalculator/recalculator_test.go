@@ -73,6 +73,54 @@ func TestRecalculate_SetsPredictionCount(t *testing.T) {
 	}
 }
 
+// countingResultStore wraps MemoryResultStore and counts GetResult calls so
+// we can verify the result-cache deduplication actually saves lookups.
+type countingResultStore struct {
+	*repository.MemoryResultStore
+	calls int
+}
+
+func (c *countingResultStore) GetResult(ctx context.Context, matchID string) (*repository.Result, error) {
+	c.calls++
+	return c.MemoryResultStore.GetResult(ctx, matchID)
+}
+
+func TestRecalculate_DeduplicatesResultLookupsAcrossUsers(t *testing.T) {
+	// Two users, both with predictions for the SAME match. The result cache
+	// in Recalculate should fetch the result exactly once (not once per user).
+	ctx := context.Background()
+	users := repository.NewMemoryUserStore()
+	preds := repository.NewMemoryPredictionStore()
+	results := &countingResultStore{MemoryResultStore: repository.NewMemoryResultStore()}
+
+	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "FanA"})
+	users.Upsert(ctx, repository.User{UserID: "u2", Handle: "FanB"})
+	preds.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "u1", HomeGoals: 2, AwayGoals: 1})
+	preds.Save(ctx, repository.Prediction{MatchID: "m1", UserID: "u2", HomeGoals: 0, AwayGoals: 0})
+	results.SaveResult(ctx, repository.Result{MatchID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", HomeGoals: 2, AwayGoals: 1})
+
+	// Reset call counter — SaveResult above also touches the store
+	// indirectly but doesn't use GetResult.
+	results.calls = 0
+
+	if err := recalculator.Recalculate(ctx, preds, results, users, nil, recalculator.SeasonWindow{}, "Columbus Crew"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if results.calls != 1 {
+		t.Errorf("expected GetResult called exactly once via the cache, was called %d times", results.calls)
+	}
+
+	// Sanity check both users got scored from the same result.
+	u1, _ := users.GetByID(ctx, "u1")
+	u2, _ := users.GetByID(ctx, "u2")
+	if u1.AcesRadioPoints != 15 {
+		t.Errorf("u1 (exact 2-1) expected 15 AcesRadio points, got %d", u1.AcesRadioPoints)
+	}
+	if u2.AcesRadioPoints != 0 {
+		t.Errorf("u2 (wrong 0-0) expected 0 AcesRadio points, got %d", u2.AcesRadioPoints)
+	}
+}
+
 func TestRecalculate_ReturnsErrorWhenPredictionStoreFails(t *testing.T) {
 	ctx := context.Background()
 	err := recalculator.Recalculate(ctx, repository.NewErrorGetAllPredictionStore(), repository.NewMemoryResultStore(), repository.NewMemoryUserStore(), nil, recalculator.SeasonWindow{}, "Columbus Crew")

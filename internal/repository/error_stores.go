@@ -217,6 +217,27 @@ func (e *ErrorGetAllMatchStore) SaveAll(_ []models.Match) error { return nil }
 
 func (e *ErrorGetAllMatchStore) Reset() {}
 
+// ErrorSaveAllMatchStore is a test double whose GetAll succeeds (returns a
+// configurable seed) but whose SaveAll always fails. Use to test handlers
+// that read the store, mutate the slice, and then write it back.
+type ErrorSaveAllMatchStore struct {
+	Matches []models.Match
+}
+
+func NewErrorSaveAllMatchStore(seed []models.Match) *ErrorSaveAllMatchStore {
+	return &ErrorSaveAllMatchStore{Matches: seed}
+}
+
+func (e *ErrorSaveAllMatchStore) GetAll() ([]models.Match, error) {
+	return e.Matches, nil
+}
+
+func (e *ErrorSaveAllMatchStore) SaveAll(_ []models.Match) error {
+	return fmt.Errorf("simulated SaveAll failure")
+}
+
+func (e *ErrorSaveAllMatchStore) Reset() {}
+
 // ErrorGetByMatchPredictionStore is a test double that always fails on GetByMatch.
 type ErrorGetByMatchPredictionStore struct{}
 
