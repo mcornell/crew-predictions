@@ -113,74 +113,49 @@ describe('App', () => {
     expect(wrapper.text()).toContain('testfan@crew.mock')
   })
 
-  it('passes only past seasons to AppHeader in descending order', async () => {
+  it.each([
+    {
+      desc: 'returns past seasons before the current one in descending order',
+      input: [
+        { id: '2026', name: '2026 Season', isCurrent: false },
+        { id: '2027-sprint', name: '2027 Sprint Season', isCurrent: true },
+        { id: '2027-28', name: '2027-28 Season', isCurrent: false },
+      ],
+      expected: [
+        { id: '2026', name: '2026 Season', isCurrent: false },
+      ],
+    },
+    {
+      desc: 'returns no past seasons when the current season is first',
+      input: [
+        { id: '2026', name: '2026 Season', isCurrent: true },
+        { id: '2027-sprint', name: '2027 Sprint Season', isCurrent: false },
+      ],
+      expected: [],
+    },
+    {
+      desc: 'returns multiple past seasons in descending order',
+      input: [
+        { id: '2026', name: '2026 Season', isCurrent: false },
+        { id: '2027-sprint', name: '2027 Sprint Season', isCurrent: false },
+        { id: '2027-28', name: '2027-28 Season', isCurrent: true },
+        { id: '2028-29', name: '2028-29 Season', isCurrent: false },
+      ],
+      expected: [
+        { id: '2027-sprint', name: '2027 Sprint Season', isCurrent: false },
+        { id: '2026', name: '2026 Season', isCurrent: false },
+      ],
+    },
+  ])('passes seasons to AppHeader: $desc', async ({ input, expected }) => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce({ ok: false, status: 401 })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          seasons: [
-            { id: '2026', name: '2026 Season', isCurrent: false },
-            { id: '2027-sprint', name: '2027 Sprint Season', isCurrent: true },
-            { id: '2027-28', name: '2027-28 Season', isCurrent: false },
-          ],
-        }),
-      })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ seasons: input }) })
     vi.stubGlobal('fetch', fetchMock)
 
     const wrapper = mount(App, { global: { plugins: [makeRouter()] } })
     await flushPromises()
 
     const header = wrapper.findComponent(AppHeader)
-    expect(header.props('seasons')).toEqual([
-      { id: '2026', name: '2026 Season', isCurrent: false },
-    ])
-  })
-
-  it('passes no seasons when the first season is current', async () => {
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce({ ok: false, status: 401 })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          seasons: [
-            { id: '2026', name: '2026 Season', isCurrent: true },
-            { id: '2027-sprint', name: '2027 Sprint Season', isCurrent: false },
-          ],
-        }),
-      })
-    vi.stubGlobal('fetch', fetchMock)
-
-    const wrapper = mount(App, { global: { plugins: [makeRouter()] } })
-    await flushPromises()
-
-    const header = wrapper.findComponent(AppHeader)
-    expect(header.props('seasons')).toEqual([])
-  })
-
-  it('passes multiple past seasons in descending order', async () => {
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce({ ok: false, status: 401 })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          seasons: [
-            { id: '2026', name: '2026 Season', isCurrent: false },
-            { id: '2027-sprint', name: '2027 Sprint Season', isCurrent: false },
-            { id: '2027-28', name: '2027-28 Season', isCurrent: true },
-            { id: '2028-29', name: '2028-29 Season', isCurrent: false },
-          ],
-        }),
-      })
-    vi.stubGlobal('fetch', fetchMock)
-
-    const wrapper = mount(App, { global: { plugins: [makeRouter()] } })
-    await flushPromises()
-
-    const header = wrapper.findComponent(AppHeader)
-    expect(header.props('seasons')).toEqual([
-      { id: '2027-sprint', name: '2027 Sprint Season', isCurrent: false },
-      { id: '2026', name: '2026 Season', isCurrent: false },
-    ])
+    expect(header.props('seasons')).toEqual(expected)
   })
 })

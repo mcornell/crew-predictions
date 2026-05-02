@@ -83,13 +83,15 @@ describe('LeaderboardView', () => {
     expect(rows[1].find('[data-testid="leaderboard-upper90-points"]').text()).toBe('2')
   })
 
-  it('sorts by Upper 90 Club when that column header is clicked', async () => {
+  it.each([
+    ['sort-upper90',  'leaderboard-upper90-points',  '2'],
+    ['sort-grouchy',  'leaderboard-grouchy-points',  '3'],
+  ])('sorts by %s when that column header is clicked', async (sortTestid, pointsTestid, expectedTopValue) => {
     const wrapper = mount(LeaderboardView, { global: { plugins: [makeRouter()] } })
     await flushPromises()
-    await wrapper.find('[data-testid="sort-upper90"]').trigger('click')
+    await wrapper.find(`[data-testid="${sortTestid}"]`).trigger('click')
     const rows = wrapper.findAll('[data-testid="leaderboard-row"]')
-    expect(rows[0].find('[data-testid="leaderboard-upper90-points"]').text()).toBe('2')
-    expect(rows[1].find('[data-testid="leaderboard-upper90-points"]').text()).toBe('1')
+    expect(rows[0].find(`[data-testid="${pointsTestid}"]`).text()).toBe(expectedTopValue)
   })
 
   it('sorts by Aces Radio when that column header is clicked', async () => {
@@ -161,12 +163,15 @@ describe('LeaderboardView', () => {
     expect(wrapper.find('[data-testid="mobile-sort-upper90"]').exists()).toBe(true)
   })
 
-  it('mobile sort upper90 button triggers sort change', async () => {
+  it.each([
+    ['mobile-sort-upper90',  'leaderboard-upper90-points',  '2'],
+    ['mobile-sort-grouchy',  'leaderboard-grouchy-points',  '3'],
+  ])('mobile %s button triggers sort change', async (sortTestid, pointsTestid, expectedTopValue) => {
     const wrapper = mount(LeaderboardView, { global: { plugins: [makeRouter()] } })
     await flushPromises()
-    await wrapper.find('[data-testid="mobile-sort-upper90"]').trigger('click')
+    await wrapper.find(`[data-testid="${sortTestid}"]`).trigger('click')
     const rows = wrapper.findAll('[data-testid="leaderboard-row"]')
-    expect(rows[0].find('[data-testid="leaderboard-upper90-points"]').text()).toBe('2')
+    expect(rows[0].find(`[data-testid="${pointsTestid}"]`).text()).toBe(expectedTopValue)
   })
 
   it('shows Grouchy points in each row', async () => {
@@ -177,26 +182,10 @@ describe('LeaderboardView', () => {
     expect(rows[1].find('[data-testid="leaderboard-grouchy-points"]').text()).toBe('1')
   })
 
-  it('sorts by Grouchy when Grouchy column header is clicked', async () => {
-    const wrapper = mount(LeaderboardView, { global: { plugins: [makeRouter()] } })
-    await flushPromises()
-    await wrapper.find('[data-testid="sort-grouchy"]').trigger('click')
-    const rows = wrapper.findAll('[data-testid="leaderboard-row"]')
-    expect(rows[0].find('[data-testid="leaderboard-grouchy-points"]').text()).toBe('3')
-  })
-
   it('renders mobile sort button for Grouchy', async () => {
     const wrapper = mount(LeaderboardView, { global: { plugins: [makeRouter()] } })
     await flushPromises()
     expect(wrapper.find('[data-testid="mobile-sort-grouchy"]').exists()).toBe(true)
-  })
-
-  it('mobile sort Grouchy button triggers sort change', async () => {
-    const wrapper = mount(LeaderboardView, { global: { plugins: [makeRouter()] } })
-    await flushPromises()
-    await wrapper.find('[data-testid="mobile-sort-grouchy"]').trigger('click')
-    const rows = wrapper.findAll('[data-testid="leaderboard-row"]')
-    expect(rows[0].find('[data-testid="leaderboard-grouchy-points"]').text()).toBe('3')
   })
 
   it('mobile sort Aces button switches back from another sort', async () => {

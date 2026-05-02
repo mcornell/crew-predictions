@@ -81,49 +81,23 @@ describe('SignupView', () => {
     expect(signInWithGoogle).toHaveBeenCalled()
   })
 
-  it('shows a specific message when email is already registered', async () => {
+  it.each([
+    ['auth/email-already-in-use', 'That email is already registered. Sign in instead.'],
+    ['auth/weak-password',        'Password must be at least 6 characters.'],
+    ['auth/something-weird',      'Could not create account.'],
+  ])('maps Firebase signUp error %s to a user-facing message', async (code, expected) => {
     const { signUp } = await import('../../firebase')
-    const err: any = new Error('email in use')
-    err.code = 'auth/email-already-in-use'
+    const err: any = new Error(code)
+    err.code = code
     vi.mocked(signUp).mockRejectedValue(err)
 
     const wrapper = mount(SignupView, { global: { plugins: [makeRouter()] } })
-    await wrapper.find('input[type="email"]').setValue('taken@crew.mock')
+    await wrapper.find('input[type="email"]').setValue('test@crew.mock')
     await wrapper.find('input[type="password"]').setValue('pass123')
     await wrapper.find('form').trigger('submit')
     await flushPromises()
 
-    expect(wrapper.find('.form-error').text()).toBe('That email is already registered. Sign in instead.')
-  })
-
-  it('shows a specific message when password is too weak', async () => {
-    const { signUp } = await import('../../firebase')
-    const err: any = new Error('weak password')
-    err.code = 'auth/weak-password'
-    vi.mocked(signUp).mockRejectedValue(err)
-
-    const wrapper = mount(SignupView, { global: { plugins: [makeRouter()] } })
-    await wrapper.find('input[type="email"]').setValue('new@crew.mock')
-    await wrapper.find('input[type="password"]').setValue('abc')
-    await wrapper.find('form').trigger('submit')
-    await flushPromises()
-
-    expect(wrapper.find('.form-error').text()).toBe('Password must be at least 6 characters.')
-  })
-
-  it('shows a generic message for unknown sign-up errors', async () => {
-    const { signUp } = await import('../../firebase')
-    const err: any = new Error('something weird')
-    err.code = 'auth/something-weird'
-    vi.mocked(signUp).mockRejectedValue(err)
-
-    const wrapper = mount(SignupView, { global: { plugins: [makeRouter()] } })
-    await wrapper.find('input[type="email"]').setValue('new@crew.mock')
-    await wrapper.find('input[type="password"]').setValue('pass123')
-    await wrapper.find('form').trigger('submit')
-    await flushPromises()
-
-    expect(wrapper.find('.form-error').text()).toBe('Could not create account.')
+    expect(wrapper.find('.form-error').text()).toBe(expected)
   })
 
   it('shows "Could not create session" when session endpoint returns non-ok', async () => {
