@@ -104,4 +104,31 @@ describe('LoginView', () => {
 
     expect(signInWithGoogle).toHaveBeenCalled()
   })
+
+  it('shows "Invalid email or password" when signIn rejects', async () => {
+    const { signIn } = await import('../../firebase')
+    vi.mocked(signIn).mockRejectedValue(new Error('auth/wrong-password'))
+
+    await router.push('/login')
+    const wrapper = mount(LoginView, { global: { plugins: [router] } })
+    await wrapper.find('input[type="email"]').setValue('test@crew.mock')
+    await wrapper.find('input[type="password"]').setValue('wrong')
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+
+    expect(router.currentRoute.value.path).toBe('/login')
+    expect(wrapper.find('.form-error').text()).toBe('Invalid email or password')
+  })
+
+  it('shows "Google sign-in failed" when signInWithGoogle rejects', async () => {
+    const { signInWithGoogle } = await import('../../firebase')
+    vi.mocked(signInWithGoogle).mockRejectedValue(new Error('popup-closed'))
+
+    await router.push('/login')
+    const wrapper = mount(LoginView, { global: { plugins: [router] } })
+    await wrapper.find('button[data-testid="google-signin"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('.form-error').text()).toBe('Google sign-in failed')
+  })
 })

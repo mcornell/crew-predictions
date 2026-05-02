@@ -125,4 +125,18 @@ describe('SignupView', () => {
 
     expect(wrapper.find('.form-error').text()).toBe('Could not create account.')
   })
+
+  it('shows "Could not create session" when session endpoint returns non-ok', async () => {
+    const { signUp } = await import('../../firebase')
+    vi.mocked(signUp).mockResolvedValue('fake-token')
+    global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 401 })
+
+    const wrapper = mount(SignupView, { global: { plugins: [makeRouter()] } })
+    await wrapper.find('input[type="email"]').setValue('new@crew.mock')
+    await wrapper.find('input[type="password"]').setValue('pass123')
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+
+    expect(wrapper.find('.form-error').text()).toBe('Could not create session. Please try again.')
+  })
 })

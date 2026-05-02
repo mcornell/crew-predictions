@@ -135,4 +135,17 @@ describe('ProfileView', () => {
     await flushPromises()
     expect(wrapper.find('.form-error').exists()).toBe(true)
   })
+
+  it('redirects to /login when userID route param is missing', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({}) }))
+    const r = makeRouter()
+    // Add a /profile route WITHOUT the :userID param + a /login destination
+    r.addRoute({ path: '/profile', component: ProfileView })
+    r.addRoute({ path: '/login', component: { template: '<div data-testid="login-page" />' } })
+    await r.push('/profile')
+    const currentUser = ref(null)
+    mount(ProfileView, { global: { plugins: [r], provide: { currentUser } } })
+    await flushPromises()
+    expect(r.currentRoute.value.path).toBe('/login')
+  })
 })
