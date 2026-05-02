@@ -383,6 +383,71 @@ describe('MatchesView', () => {
     expect(wrapper.findAll('[data-testid="match-card"]')).toHaveLength(0)
   })
 
+  it('schedules a future-window poll when kickoff is ~30 min away', async () => {
+    // Mirror of MatchDetailView's "future-window poll timer fires and re-fetches".
+    // Kickoff 31 minutes from now → msUntilActiveWindow ≈ 60_000 ms
+    // (one minute before the active window opens). After that single minute,
+    // the scheduled poll should fire and trigger a re-fetch.
+    vi.useFakeTimers()
+    const kickoff = new Date(Date.now() + 31 * 60 * 1000).toISOString()
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        matches: [{
+          id: 'm-future', homeTeam: 'Columbus Crew', awayTeam: 'FC Dallas',
+          kickoff, status: 'STATUS_SCHEDULED', state: 'pre',
+          homeScore: '', awayScore: '',
+        }],
+        predictions: {},
+      }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    mountMatches()
+    await flushPromises()
+    const callsBefore = fetchMock.mock.calls.length
+
+    await vi.advanceTimersByTimeAsync(61_000)
+    await flushPromises()
+
+    expect(fetchMock.mock.calls.length).toBeGreaterThan(callsBefore)
+    vi.useRealTimers()
+  })
+
+  it('renders goals and cards inline on a live match card', async () => {
+    // Exercises liveCardEvents + eventIcon + eventSide on a now-playing
+    // card. Verifies the LIVE_CARD_EVENT_TYPES filter (substitutions
+    // are excluded; goals/yellow-card/red-card are included).
+    const liveWithEvents = {
+      id: 'm-evts-live', homeTeam: 'Columbus Crew', awayTeam: 'FC Dallas',
+      kickoff: pastKickoff(1), status: 'STATUS_FIRST_HALF', state: 'in',
+      homeScore: '1', awayScore: '0',
+      events: [
+        { clock: "23'", typeID: 'goal', team: 'Columbus Crew', players: ['Hugo Picard'] },
+        { clock: "39'", typeID: 'yellow-card', team: 'FC Dallas', players: ['Some Player'] },
+        { clock: "67'", typeID: 'red-card', team: 'FC Dallas', players: ['Other Player'] },
+        { clock: "73'", typeID: 'substitution', team: 'Columbus Crew', players: ['SubIn', 'SubOff'] },
+      ],
+    }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ matches: [liveWithEvents], predictions: {} }),
+    }))
+    const wrapper = mountMatches()
+    await flushPromises()
+
+    const card = wrapper.find('[data-testid="now-playing-card"][data-match-id="m-evts-live"]')
+    const events = card.findAll('[data-testid="match-event"]')
+    expect(events).toHaveLength(3) // sub filtered out
+    const text = card.text()
+    expect(text).toContain('Hugo Picard')
+    expect(text).toContain('Some Player')
+    expect(text).toContain('Other Player')
+    expect(text).not.toContain('SubIn')
+    expect(text).not.toContain('SubOff')
+    vi.restoreAllMocks()
+  })
+
   it('polls every 60 seconds when a live match is present', async () => {
     vi.useFakeTimers()
     const liveMatches = [...mockMatches, liveMatch]
@@ -481,64 +546,34 @@ describe('MatchesView', () => {
     expect(wrapper.find('[data-testid="error"]').exists()).toBe(true)
   })
 
-  it('shows venue on upcoming match card', async () => {
-    const matchWithVenue = { id: 'match-ven-1', homeTeam: 'Columbus Crew', awayTeam: 'FC Dallas', kickoff: futureKickoff(24), status: 'STATUS_SCHEDULED', state: 'pre', homeScore: '', awayScore: '', venue: 'ScottsMiracle-Gro Field' }
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ matches: [matchWithVenue], predictions: {} }) }))
+  it.each([
+    ['upcoming',     'match-card',         { kickoff: futureKickoff(24), status: 'STATUS_SCHEDULED', state: 'pre', homeScore: '', awayScore: '' }],
+    ['now-playing',  'now-playing-card',   { kickoff: pastKickoff(1),    status: 'STATUS_FIRST_HALF', state: 'in',  homeScore: '1', awayScore: '0' }],
+    ['result',       'result-card',        { kickoff: pastKickoff(96),   status: 'STATUS_FULL_TIME',  state: 'post', homeScore: '2', awayScore: '1' }],
+  ])('shows venue on %s card', async (_label, cardTestId, fields) => {
+    const m = { id: 'm-ven', homeTeam: 'Columbus Crew', awayTeam: 'FC Dallas', venue: 'ScottsMiracle-Gro Field', ...fields }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ matches: [m], predictions: {} }) }))
     const wrapper = mountMatches()
     await flushPromises()
-    const card = wrapper.find('[data-testid="match-card"][data-match-id="match-ven-1"]')
-    expect(card.find('[data-testid="match-venue"]').text()).toBe('ScottsMiracle-Gro Field')
+    expect(wrapper.find(`[data-testid="${cardTestId}"][data-match-id="m-ven"] [data-testid="match-venue"]`).text()).toBe('ScottsMiracle-Gro Field')
     vi.restoreAllMocks()
   })
 
-  it('shows venue on live match card', async () => {
-    const liveWithVenue = { id: 'match-ven-live', homeTeam: 'Columbus Crew', awayTeam: 'FC Dallas', kickoff: pastKickoff(1), status: 'STATUS_FIRST_HALF', state: 'in', homeScore: '1', awayScore: '0', venue: 'ScottsMiracle-Gro Field' }
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ matches: [liveWithVenue], predictions: {} }) }))
-    const wrapper = mountMatches()
+  it.each([
+    ['unpredicted upcoming',  'match-card',       false, { kickoff: futureKickoff(24), status: 'STATUS_SCHEDULED', state: 'pre', homeScore: '', awayScore: '' }],
+    ['predicted upcoming',    'match-card',       true,  { kickoff: futureKickoff(24), status: 'STATUS_SCHEDULED', state: 'pre', homeScore: '', awayScore: '' }],
+    ['now-playing',           'now-playing-card', false, { kickoff: pastKickoff(1),    status: 'STATUS_IN_PROGRESS', state: 'in', homeScore: '1', awayScore: '0' }],
+  ])('shows record and form on %s card', async (_label, cardTestId, predicted, fields) => {
+    const m = {
+      id: 'm-rf', homeTeam: 'Columbus Crew', awayTeam: 'FC Dallas',
+      homeRecord: '5-3-2', awayRecord: '4-4-2', homeForm: 'WWWLL', awayForm: 'LWDWL',
+      ...fields,
+    }
+    const predictions = predicted ? { 'm-rf': { homeGoals: 2, awayGoals: 1 } } : {}
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ matches: [m], predictions }) }))
+    const wrapper = mountMatches(predicted ? loggedInProvide : undefined)
     await flushPromises()
-    const card = wrapper.find('[data-testid="now-playing-card"][data-match-id="match-ven-live"]')
-    expect(card.find('[data-testid="match-venue"]').text()).toBe('ScottsMiracle-Gro Field')
-    vi.restoreAllMocks()
-  })
-
-  it('shows venue on result card', async () => {
-    const resultWithVenue = { id: 'match-ven-result', homeTeam: 'Columbus Crew', awayTeam: 'FC Dallas', kickoff: pastKickoff(96), status: 'STATUS_FULL_TIME', state: 'post', homeScore: '2', awayScore: '1', venue: 'ScottsMiracle-Gro Field' }
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ matches: [resultWithVenue], predictions: {} }) }))
-    const wrapper = mountMatches()
-    await flushPromises()
-    const card = wrapper.find('[data-testid="result-card"][data-match-id="match-ven-result"]')
-    expect(card.find('[data-testid="match-venue"]').text()).toBe('ScottsMiracle-Gro Field')
-    vi.restoreAllMocks()
-  })
-
-  it('shows record and form on unpredicted upcoming match card', async () => {
-    const match = { id: 'match-rf-1', homeTeam: 'Columbus Crew', awayTeam: 'FC Dallas', kickoff: futureKickoff(24), status: 'STATUS_SCHEDULED', state: 'pre', homeScore: '', awayScore: '', homeRecord: '5-3-2', awayRecord: '4-4-2', homeForm: 'WWWLL', awayForm: 'LWDWL' }
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ matches: [match], predictions: {} }) }))
-    const wrapper = mountMatches()
-    await flushPromises()
-    const card = wrapper.find('[data-testid="match-card"][data-match-id="match-rf-1"]')
-    expect(card.find('[data-testid="home-record"]').text()).toBe('5-3-2')
-    expect(card.find('[data-testid="home-form"]').text()).toBe('WWWLL')
-    vi.restoreAllMocks()
-  })
-
-  it('shows record and form on predicted upcoming match card', async () => {
-    const match = { id: 'match-rf-2', homeTeam: 'Columbus Crew', awayTeam: 'FC Dallas', kickoff: futureKickoff(24), status: 'STATUS_SCHEDULED', state: 'pre', homeScore: '', awayScore: '', homeRecord: '5-3-2', awayRecord: '4-4-2', homeForm: 'WWWLL', awayForm: 'LWDWL' }
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ matches: [match], predictions: { 'match-rf-2': { homeGoals: 2, awayGoals: 1 } } }) }))
-    const wrapper = mountMatches(loggedInProvide)
-    await flushPromises()
-    const card = wrapper.find('[data-testid="match-card"][data-match-id="match-rf-2"]')
-    expect(card.find('[data-testid="home-record"]').text()).toBe('5-3-2')
-    expect(card.find('[data-testid="home-form"]').text()).toBe('WWWLL')
-    vi.restoreAllMocks()
-  })
-
-  it('shows record and form on now-playing match card', async () => {
-    const match = { id: 'match-rf-3', homeTeam: 'Columbus Crew', awayTeam: 'FC Dallas', kickoff: pastKickoff(1), status: 'STATUS_IN_PROGRESS', state: 'in', homeScore: '1', awayScore: '0', homeRecord: '5-3-2', awayRecord: '4-4-2', homeForm: 'WWWLL', awayForm: 'LWDWL' }
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ matches: [match], predictions: {} }) }))
-    const wrapper = mountMatches()
-    await flushPromises()
-    const card = wrapper.find('[data-testid="now-playing-card"][data-match-id="match-rf-3"]')
+    const card = wrapper.find(`[data-testid="${cardTestId}"][data-match-id="m-rf"]`)
     expect(card.find('[data-testid="home-record"]').text()).toBe('5-3-2')
     expect(card.find('[data-testid="home-form"]').text()).toBe('WWWLL')
     vi.restoreAllMocks()

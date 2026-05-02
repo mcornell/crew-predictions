@@ -2,6 +2,7 @@ package seasons_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -94,6 +95,25 @@ func TestCloseSeason_ReturnsErrorWhenSaveFails(t *testing.T) {
 	err := seasons.CloseSeason(ctx, "2026", users, repository.NewErrorSeasonStore(), time.Now())
 	if err == nil {
 		t.Error("expected error when season Save fails, got nil")
+	}
+}
+
+func TestCloseSeason_ReturnsErrorWhenUpdateScoresFails(t *testing.T) {
+	// ErrorUpsertWithUserStore: GetAll returns one user (so we reach the
+	// reset loop), UpdateScores fails. The Upsert error is irrelevant here
+	// because CloseSeason never calls Upsert.
+	err := seasons.CloseSeason(
+		context.Background(),
+		"2026",
+		repository.NewErrorUpsertWithUserStore(),
+		repository.NewMemorySeasonStore(),
+		time.Now(),
+	)
+	if err == nil {
+		t.Fatal("expected error when UpdateScores fails, got nil")
+	}
+	if !strings.Contains(err.Error(), "reset scores") {
+		t.Errorf("expected error to mention 'reset scores', got %q", err.Error())
 	}
 }
 

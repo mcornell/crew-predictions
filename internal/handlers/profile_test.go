@@ -139,6 +139,52 @@ func TestProfileHandler_ReturnsGrouchyStanding(t *testing.T) {
 	}
 }
 
+func TestProfileHandler_RanksLowerStandingsCorrectly(t *testing.T) {
+	users := repository.NewMemoryUserStore()
+	ctx := context.Background()
+	// u1 is leading with 15, u2 has 10 (rank 2), u3 and u4 are tied at 5 (both rank 3).
+	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "Leader"})
+	users.UpdateScores(ctx, "u1", 1, 15, 0, 0)
+	users.Upsert(ctx, repository.User{UserID: "u2", Handle: "Second"})
+	users.UpdateScores(ctx, "u2", 1, 10, 0, 0)
+	users.Upsert(ctx, repository.User{UserID: "u3", Handle: "TiedThirdA"})
+	users.UpdateScores(ctx, "u3", 1, 5, 0, 0)
+	users.Upsert(ctx, repository.User{UserID: "u4", Handle: "TiedThirdB"})
+	users.UpdateScores(ctx, "u4", 1, 5, 0, 0)
+
+	h := NewProfileHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), users, "Columbus Crew")
+
+	rankOf := func(userID string) int {
+		req := httptest.NewRequest(http.MethodGet, "/api/profile/"+userID, nil)
+		req.SetPathValue("userID", userID)
+		w := httptest.NewRecorder()
+		h.Get(w, req)
+		var body struct {
+			AcesRadio struct {
+				Rank int `json:"rank"`
+			} `json:"acesRadio"`
+		}
+		if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+			t.Fatalf("decode profile %q: %v", userID, err)
+		}
+		return body.AcesRadio.Rank
+	}
+
+	if got := rankOf("u1"); got != 1 {
+		t.Errorf("u1 (15 pts, leader): expected rank 1, got %d", got)
+	}
+	if got := rankOf("u2"); got != 2 {
+		t.Errorf("u2 (10 pts, second): expected rank 2, got %d", got)
+	}
+	// Tied at 5 — both should share rank 3 (skip-rank semantics).
+	if got := rankOf("u3"); got != 3 {
+		t.Errorf("u3 (5 pts, tied for third): expected rank 3, got %d", got)
+	}
+	if got := rankOf("u4"); got != 3 {
+		t.Errorf("u4 (5 pts, tied for third): expected rank 3, got %d", got)
+	}
+}
+
 func TestProfileHandler_Returns500WhenGetAllFails(t *testing.T) {
 	h := NewProfileHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), repository.NewErrorGetAllWithExistingUserStore(), "Columbus Crew")
 	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", nil)

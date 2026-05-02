@@ -65,6 +65,31 @@ func TestSeedMatchEventsHandler_Returns404ForUnknownMatch(t *testing.T) {
 	}
 }
 
+func TestSeedMatchEventsHandler_Returns500WhenGetAllFails(t *testing.T) {
+	h := handlers.NewSeedMatchEventsHandler(repository.NewErrorGetAllMatchStore())
+	body := []byte(`{"matchID":"m-1","events":[]}`)
+	req := httptest.NewRequest("POST", "/admin/seed-match-events", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	h.Submit(w, req)
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("expected 500 when MatchStore.GetAll fails, got %d", w.Code)
+	}
+}
+
+func TestSeedMatchEventsHandler_Returns500WhenSaveAllFails(t *testing.T) {
+	store := repository.NewErrorSaveAllMatchStore([]models.Match{{ID: "m-1"}})
+	h := handlers.NewSeedMatchEventsHandler(store)
+	body := []byte(`{"matchID":"m-1","events":[]}`)
+	req := httptest.NewRequest("POST", "/admin/seed-match-events", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	h.Submit(w, req)
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("expected 500 when MatchStore.SaveAll fails, got %d", w.Code)
+	}
+}
+
 func TestSeedMatchEventsHandler_Returns400OnBadJSON(t *testing.T) {
 	store := repository.NewMemoryMatchStore()
 	h := handlers.NewSeedMatchEventsHandler(store)

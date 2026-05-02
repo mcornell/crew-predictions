@@ -37,6 +37,19 @@ function makeRouter(matchId = 'm-test') {
   return router
 }
 
+// Mount MatchDetailView with a fresh router (per-test rule from
+// src/CLAUDE.md), wait for the router and then for any in-flight fetch
+// promises to settle. Tests that need to assert the pre-flush loading
+// state should NOT use this helper — they need to hold their fetch
+// promise unresolved.
+async function mountDetail(matchId = 'm-test') {
+  const router = makeRouter(matchId)
+  await router.isReady()
+  const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
+  await flushPromises()
+  return wrapper
+}
+
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
     ok: true,
@@ -50,66 +63,45 @@ afterEach(() => {
 
 describe('MatchDetailView', () => {
   it('shows match header with team names and score', async () => {
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     expect(wrapper.text()).toContain('Columbus Crew')
     expect(wrapper.text()).toContain('FC Dallas')
     expect(wrapper.find('[data-testid="match-score"]').text()).toContain('2')
   })
 
   it('renders a row for each predictor', async () => {
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     const rows = wrapper.findAll('[data-testid="prediction-row"]')
     expect(rows).toHaveLength(2)
   })
 
   it('shows column headers for both scoring formats', async () => {
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     expect(wrapper.find('[data-testid="sort-aces"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="sort-upper90"]').exists()).toBe(true)
   })
 
   it('shows both Aces Radio and Upper 90 Club points in each row', async () => {
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     const rows = wrapper.findAll('[data-testid="prediction-row"]')
     expect(rows[0].find('[data-testid="prediction-aces-points"]').text()).toBe('15')
     expect(rows[0].find('[data-testid="prediction-upper90-points"]').text()).toBe('3')
   })
 
   it('shows the predicted score in each row', async () => {
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     const rows = wrapper.findAll('[data-testid="prediction-row"]')
     expect(rows[0].find('[data-testid="prediction-score"]').text()).toContain('2')
   })
 
   it('sorts by Aces Radio descending by default — highest points first', async () => {
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     const rows = wrapper.findAll('[data-testid="prediction-row"]')
     expect(rows[0].text()).toContain('fan1@bsky.mock')
   })
 
   it('sorts by Upper 90 Club when that column header is clicked', async () => {
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     await wrapper.find('[data-testid="sort-upper90"]').trigger('click')
     const rows = wrapper.findAll('[data-testid="prediction-row"]')
     expect(rows[0].find('[data-testid="prediction-upper90-points"]').text()).toBe('3')
@@ -128,10 +120,7 @@ describe('MatchDetailView', () => {
         scoringFormats: mockScoringFormats,
       }),
     }))
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     const rows = wrapper.findAll('[data-testid="prediction-row"]')
     expect(rows[0].find('[data-testid="prediction-rank"]').text()).toBe('1')
     expect(rows[1].find('[data-testid="prediction-rank"]').text()).toBe('1')
@@ -143,10 +132,7 @@ describe('MatchDetailView', () => {
       ok: true,
       json: () => Promise.resolve({ match: mockMatch, predictions: [], scoringFormats: mockScoringFormats }),
     }))
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     expect(wrapper.text()).toContain('No predictions were made for this match')
   })
 
@@ -160,47 +146,32 @@ describe('MatchDetailView', () => {
 
   it('shows error state when fetch fails', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     expect(wrapper.find('[data-testid="error"]').exists()).toBe(true)
   })
 
   it('shows a back link to /matches', async () => {
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     const backLink = wrapper.find('[data-testid="back-link"]')
     expect(backLink.exists()).toBe(true)
     expect(backLink.attributes('href')).toContain('/matches')
   })
 
   it('renders mobile sort buttons for both scoring formats', async () => {
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     expect(wrapper.find('[data-testid="mobile-sort-aces"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="mobile-sort-upper90"]').exists()).toBe(true)
   })
 
   it('mobile sort upper90 button triggers sort change', async () => {
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     await wrapper.find('[data-testid="mobile-sort-upper90"]').trigger('click')
     const rows = wrapper.findAll('[data-testid="prediction-row"]')
     expect(rows[0].find('[data-testid="prediction-upper90-points"]').text()).toBe('3')
   })
 
   it('shows Grouchy points in each row', async () => {
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     const rows = wrapper.findAll('[data-testid="prediction-row"]')
     expect(rows[0].find('[data-testid="prediction-grouchy-points"]').text()).toBe('1')
     expect(rows[1].find('[data-testid="prediction-grouchy-points"]').text()).toBe('0')
@@ -218,38 +189,26 @@ describe('MatchDetailView', () => {
         scoringFormats: mockScoringFormats,
       }),
     }))
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     await wrapper.find('[data-testid="sort-grouchy"]').trigger('click')
     const rows = wrapper.findAll('[data-testid="prediction-row"]')
     expect(rows[0].find('[data-testid="prediction-grouchy-points"]').text()).toBe('1')
   })
 
   it('renders mobile sort button for Grouchy', async () => {
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     expect(wrapper.find('[data-testid="mobile-sort-grouchy"]').exists()).toBe(true)
   })
 
   it('mobile sort Grouchy button triggers sort change', async () => {
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     await wrapper.find('[data-testid="mobile-sort-grouchy"]').trigger('click')
     const rows = wrapper.findAll('[data-testid="prediction-row"]')
     expect(rows[0].find('[data-testid="prediction-grouchy-points"]').text()).toBe('1')
   })
 
   it('mobile sort Aces button switches back to Aces Radio', async () => {
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     await wrapper.find('[data-testid="mobile-sort-upper90"]').trigger('click')
     await wrapper.find('[data-testid="mobile-sort-aces"]').trigger('click')
     const rows = wrapper.findAll('[data-testid="prediction-row"]')
@@ -257,10 +216,7 @@ describe('MatchDetailView', () => {
   })
 
   it('desktop sort Aces button switches back to Aces Radio from another sort', async () => {
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     await wrapper.find('[data-testid="sort-upper90"]').trigger('click')
     await wrapper.find('[data-testid="sort-aces"]').trigger('click')
     const rows = wrapper.findAll('[data-testid="prediction-row"]')
@@ -276,10 +232,7 @@ describe('MatchDetailView', () => {
         scoringFormats: mockScoringFormats,
       }),
     }))
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     expect(wrapper.find('[data-testid="live-indicator-detail"]').exists()).toBe(true)
     expect(wrapper.text()).toContain("67'")
   })
@@ -293,10 +246,7 @@ describe('MatchDetailView', () => {
         scoringFormats: mockScoringFormats,
       }),
     }))
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     expect(wrapper.text()).toContain('HT')
   })
 
@@ -310,10 +260,7 @@ describe('MatchDetailView', () => {
         scoringFormats: mockScoringFormats,
       }),
     }))
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     expect(wrapper.find('[data-testid="projected-label"]').exists()).toBe(true)
   })
 
@@ -326,10 +273,7 @@ describe('MatchDetailView', () => {
         scoringFormats: mockScoringFormats,
       }),
     }))
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     expect(wrapper.find('.match-meta').text()).toBe('')
   })
 
@@ -344,10 +288,7 @@ describe('MatchDetailView', () => {
       }),
     })
     vi.stubGlobal('fetch', fetchMock)
-    const router = makeRouter()
-    await router.isReady()
-    mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    await mountDetail()
     const callsBefore = fetchMock.mock.calls.length
     await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS)
     await flushPromises()
@@ -367,10 +308,7 @@ describe('MatchDetailView', () => {
       }),
     }))
     const setTimeoutSpy = vi.spyOn(global, 'setTimeout')
-    const router = makeRouter()
-    await router.isReady()
-    mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    await mountDetail()
     expect(setTimeoutSpy).toHaveBeenCalled()
     vi.useRealTimers()
   })
@@ -388,10 +326,7 @@ describe('MatchDetailView', () => {
       }),
     })
     vi.stubGlobal('fetch', fetchMock)
-    const router = makeRouter()
-    await router.isReady()
-    mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    await mountDetail()
     const callsBefore = fetchMock.mock.calls.length
     await vi.advanceTimersByTimeAsync(61_000)
     await flushPromises()
@@ -408,18 +343,12 @@ describe('MatchDetailView', () => {
         scoringFormats: mockScoringFormats,
       }),
     }))
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     expect(wrapper.find('[data-testid="match-detail-venue"]').text()).toBe('ScottsMiracle-Gro Field')
   })
 
   it('shows ESPN link on match detail page', async () => {
-    const router = makeRouter('m-test')
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail('m-test')
     const link = wrapper.find('[data-testid="espn-link"]')
     expect(link.exists()).toBe(true)
     expect(link.attributes('href')).toContain('gameId/m-test')
@@ -434,10 +363,7 @@ describe('MatchDetailView', () => {
         scoringFormats: mockScoringFormats,
       }),
     }))
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     expect(wrapper.find('[data-testid="home-record"]').text()).toBe('5-3-2')
     expect(wrapper.find('[data-testid="home-form"]').text()).toBe('WWWLL')
     vi.restoreAllMocks()
@@ -452,10 +378,7 @@ describe('MatchDetailView', () => {
         scoringFormats: mockScoringFormats,
       }),
     }))
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     expect(wrapper.find('[data-testid="match-detail-attendance"]').text()).toBe('19,903')
   })
 
@@ -468,10 +391,7 @@ describe('MatchDetailView', () => {
         scoringFormats: mockScoringFormats,
       }),
     }))
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     expect(wrapper.find('[data-testid="match-detail-attendance"]').exists()).toBe(false)
   })
 
@@ -489,18 +409,12 @@ describe('MatchDetailView', () => {
         scoringFormats: mockScoringFormats,
       }),
     }))
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     expect(wrapper.find('[data-testid="events-toggle"]').exists()).toBe(true)
   })
 
   it('does not show events toggle when match has no events', async () => {
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     expect(wrapper.find('[data-testid="events-toggle"]').exists()).toBe(false)
   })
 
@@ -518,10 +432,7 @@ describe('MatchDetailView', () => {
         scoringFormats: mockScoringFormats,
       }),
     }))
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     const events = wrapper.find('[data-testid="match-events"]')
     expect(events.classes()).toContain('match-events--collapsed')
     await wrapper.find('[data-testid="events-toggle"]').trigger('click')
@@ -543,19 +454,13 @@ describe('MatchDetailView', () => {
         scoringFormats: mockScoringFormats,
       }),
     }))
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     expect(wrapper.find('[data-testid="match-events"]').exists()).toBe(true)
     expect(wrapper.findAll('[data-testid="match-event"]')).toHaveLength(2)
   })
 
   it('does not show event timeline when match has no events', async () => {
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     expect(wrapper.find('[data-testid="match-events"]').exists()).toBe(false)
   })
 
@@ -577,10 +482,7 @@ describe('MatchDetailView', () => {
         scoringFormats: mockScoringFormats,
       }),
     }))
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     expect(wrapper.findAll('[data-testid="match-event"]')).toHaveLength(1)
   })
 
@@ -600,10 +502,7 @@ describe('MatchDetailView', () => {
         scoringFormats: mockScoringFormats,
       }),
     }))
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     const rows = wrapper.findAll('[data-testid="match-event"]')
     // Two same-team-same-clock home subs collapse into one row; FC Dallas sub is its own row.
     expect(rows).toHaveLength(2)
@@ -627,10 +526,7 @@ describe('MatchDetailView', () => {
         scoringFormats: mockScoringFormats,
       }),
     }))
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     expect(wrapper.findAll('[data-testid="match-event"]')).toHaveLength(3)
   })
 
@@ -649,10 +545,7 @@ describe('MatchDetailView', () => {
         scoringFormats: mockScoringFormats,
       }),
     }))
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     const eventEl = wrapper.find('[data-testid="match-event"]')
     expect(eventEl.text()).toContain('Picard')
     expect(eventEl.text()).not.toContain('Cheberko')
@@ -672,10 +565,7 @@ describe('MatchDetailView', () => {
         scoringFormats: mockScoringFormats,
       }),
     }))
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     const eventEl = wrapper.find('[data-testid="match-event"]')
     expect(eventEl.text()).toContain('Steven Moreira')
     expect(eventEl.text()).toContain('Hugo Picard')
@@ -698,10 +588,7 @@ describe('MatchDetailView', () => {
         scoringFormats: mockScoringFormats,
       }),
     }))
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     const text = wrapper.text()
     expect(text).toContain('Wessam Abou Ali')
     expect(text).toContain('Philippe Ndinga Ossibadjouo')
@@ -722,10 +609,7 @@ describe('MatchDetailView', () => {
         scoringFormats: mockScoringFormats,
       }),
     }))
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     const home = wrapper.find('[data-testid="home-logo"]')
     const away = wrapper.find('[data-testid="away-logo"]')
     expect(home.exists()).toBe(true)
@@ -735,10 +619,7 @@ describe('MatchDetailView', () => {
   })
 
   it('does not render logos when match has no logo URLs', async () => {
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     expect(wrapper.find('[data-testid="home-logo"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="away-logo"]').exists()).toBe(false)
   })
@@ -752,20 +633,14 @@ describe('MatchDetailView', () => {
         scoringFormats: mockScoringFormats,
       }),
     }))
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     const ref = wrapper.find('[data-testid="match-referee"]')
     expect(ref.exists()).toBe(true)
     expect(ref.text()).toContain('Pierre-Luc Lauziere')
   })
 
   it('does not render the referee element when match has no referee', async () => {
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     expect(wrapper.find('[data-testid="match-referee"]').exists()).toBe(false)
   })
 
@@ -780,10 +655,7 @@ describe('MatchDetailView', () => {
       }),
     }))
     const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout')
-    const router = makeRouter()
-    await router.isReady()
-    const wrapper = mount(MatchDetailView, { global: { plugins: [router] } })
-    await flushPromises()
+    const wrapper = await mountDetail()
     wrapper.unmount()
     expect(clearTimeoutSpy).toHaveBeenCalled()
     vi.useRealTimers()

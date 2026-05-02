@@ -22,6 +22,15 @@
 
 ### Infrastructure (sequenced after current PR + PR4 live-events work)
 
+- [ ] **Refactor `cmd/server/main.go` (currently 269 lines / one giant `main()`)** — `main()` does environment loading, store construction, Firebase setup, handler wiring, route registration, admin/test endpoints, daily refresh, and ListenAndServe in one body. The bulk is wiring rather than logic, so unit-test coverage on the function reads as 0% even though the composition is exercised by e2e. Extract into:
+  - `cmd/server/config.go` — `Config` struct + `loadConfig()` reading env vars
+  - `cmd/server/stores.go` — `Stores` struct + `buildStores(ctx, cfg)` handling Firestore vs Memory branching
+  - `cmd/server/firebase.go` — `buildVerifier(ctx, cfg)` for Firebase Auth wiring
+  - `cmd/server/routes.go` — `registerRoutes(mux, deps)` for production routes
+  - `cmd/server/test_routes.go` — `registerTestRoutes(mux, deps)` for TEST_MODE seeds
+  - `main()` becomes ~50 lines of orchestration
+  Net-zero LoC overall, but each file independently readable and `registerRoutes`/`buildStores` become unit-testable. Bonus: enables `setupServer(testCfg) *http.Server` for programmatic test instances. Estimated 30 min, real refactor risk so e2e regression check matters.
+
 - [ ] **Cache team logos in Firebase Cloud Storage (snapshot at match time)** — current refs+logos PR hot-links to ESPN's CDN (`https://a.espncdn.com/i/teamlogos/soccer/500/<teamID>.png`). Replace with first-encounter caching: when `MatchDetailHandler` lazy-fetches a summary and gets ESPN logo URLs, server downloads bytes once per team, uploads to `gs://crew-predictions.firebasestorage.app/team-logos/<teamID>.png` (publicly readable), stores our Storage URL in `match.HomeLogo` / `AwayLogo`. On subsequent matches with the same team, reuse cached version — never re-download. Gives "logo at time of match" snapshot semantics: ESPN rebrands later don't change our historical match displays. Add `internal/teamlogos/cache.go` with `EnsureCached(ctx, teamID, espnURL) (publicURL, error)`. Migration: one-shot script to walk existing match docs and re-cache any with ESPN URLs. Cost: storage ~1.2MB/year, egress trivially small after Hosting CDN warms.
 
 ### Security

@@ -9,10 +9,12 @@ import (
 )
 
 type SeedMatchEventsHandler struct {
-	store *repository.MemoryMatchStore
+	store repository.MatchStore
 }
 
-func NewSeedMatchEventsHandler(store *repository.MemoryMatchStore) *SeedMatchEventsHandler {
+// NewSeedMatchEventsHandler accepts the MatchStore interface (rather than the
+// concrete *MemoryMatchStore) so error-path tests can inject failing stores.
+func NewSeedMatchEventsHandler(store repository.MatchStore) *SeedMatchEventsHandler {
 	return &SeedMatchEventsHandler{store: store}
 }
 
