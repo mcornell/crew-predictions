@@ -37,42 +37,22 @@ describe('AppHeader', () => {
     expect(wrapper.find('a[href="/profile"]').exists()).toBe(false)
   })
 
-  it('always shows a leaderboard nav trigger', () => {
+  it('renders Leaderboard as a direct link to /leaderboard (no flyout in nav)', () => {
     const wrapper = mount(AppHeader, { props: { user: null } })
-    expect(wrapper.find('[data-testid="season-selector"]').exists()).toBe(true)
-  })
-
-  it('clicking leaderboard trigger opens season flyout', async () => {
-    const seasons = [{ id: '2026', name: '2026 Season', isCurrent: true }]
-    const wrapper = mount(AppHeader, { props: { user: null, seasons } })
-    await wrapper.find('[data-testid="season-selector"]').trigger('click')
-    expect(wrapper.find('[data-testid="season-flyout"]').exists()).toBe(true)
-  })
-
-  it('season flyout contains a current season link and historical season links', async () => {
-    const seasons = [{ id: '2026', name: '2026 Season', isCurrent: false }]
-    const wrapper = mount(AppHeader, { props: { user: null, seasons } })
-    await wrapper.find('[data-testid="season-selector"]').trigger('click')
-    const flyout = wrapper.find('[data-testid="season-flyout"]')
-    expect(flyout.find('a[href="/leaderboard"]').exists()).toBe(true)
-    expect(flyout.text()).toContain('2026 Season')
-  })
-
-  it('clicking a flyout season link closes the flyout', async () => {
-    const seasons = [{ id: '2026', name: '2026 Season', isCurrent: false }]
-    const wrapper = mount(AppHeader, { props: { user: null, seasons } })
-    await wrapper.find('[data-testid="season-selector"]').trigger('click')
-    await wrapper.find('[data-testid="season-flyout"] a').trigger('click')
+    const link = wrapper.find('a[data-testid="nav-leaderboard"]')
+    expect(link.exists()).toBe(true)
+    expect(link.attributes('href')).toBe('/leaderboard')
+    expect(wrapper.find('[data-testid="season-selector"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="season-flyout"]').exists()).toBe(false)
   })
 
-  it('mobile drawer shows seasons under leaderboard when expanded', async () => {
-    const seasons = [{ id: '2026', name: '2026 Season', isCurrent: false }]
-    const wrapper = mount(AppHeader, { props: { user: null, seasons } })
+  it('drawer shows a direct Leaderboard link to /leaderboard (no toggle/flyout)', async () => {
+    const wrapper = mount(AppHeader, { props: { user: null } })
     await wrapper.find('button[data-testid="hamburger"]').trigger('click')
-    const drawer = wrapper.find('[data-testid="mobile-drawer"]')
-    await drawer.find('[data-testid="drawer-lb-toggle"]').trigger('click')
-    expect(drawer.text()).toContain('2026 Season')
+    const link = wrapper.find('[data-testid="drawer-leaderboard"]')
+    expect(link.exists()).toBe(true)
+    expect(link.attributes('href')).toBe('/leaderboard')
+    expect(wrapper.find('[data-testid="drawer-lb-toggle"]').exists()).toBe(false)
   })
 
   it('hides Sign In when auth is loading', () => {
@@ -139,32 +119,11 @@ describe('AppHeader', () => {
     removeSpy.mockRestore()
   })
 
-  it('clicking a season link in the drawer closes drawer and collapses leaderboard section', async () => {
-    const seasons = [{ id: '2026', name: '2026 Season', isCurrent: false }]
-    const wrapper = mount(AppHeader, { props: { user: null, seasons } })
-    await wrapper.find('button[data-testid="hamburger"]').trigger('click')
-    await wrapper.find('[data-testid="drawer-lb-toggle"]').trigger('click')
-    const seasonLink = wrapper.findAll('.drawer-lb-item').find(a => a.text() === '2026 Season')
-    await seasonLink!.trigger('click')
-    expect(wrapper.find('[data-testid="mobile-drawer"]').exists()).toBe(false)
-  })
-
-  it('clicking Current Season in the drawer closes drawer', async () => {
+  it('clicking the drawer Leaderboard link closes the drawer', async () => {
     const wrapper = mount(AppHeader, { props: { user: null } })
     await wrapper.find('button[data-testid="hamburger"]').trigger('click')
-    await wrapper.find('[data-testid="drawer-lb-toggle"]').trigger('click')
-    await wrapper.find('a.drawer-lb-item[href="/leaderboard"]').trigger('click')
+    await wrapper.find('[data-testid="drawer-leaderboard"]').trigger('click')
     expect(wrapper.find('[data-testid="mobile-drawer"]').exists()).toBe(false)
-  })
-
-  it('clicking a flyout season link (v-for) closes the flyout', async () => {
-    const seasons = [{ id: '2026', name: '2026 Season', isCurrent: false }]
-    const wrapper = mount(AppHeader, { props: { user: null, seasons } })
-    await wrapper.find('[data-testid="season-selector"]').trigger('click')
-    const seasonLinks = wrapper.findAll('[data-testid="season-flyout"] a')
-    const historicalLink = seasonLinks.find(a => a.text() === '2026 Season')
-    await historicalLink!.trigger('click')
-    expect(wrapper.find('[data-testid="season-flyout"]').exists()).toBe(false)
   })
 
   it('clicking user profile link in drawer closes the drawer', async () => {
@@ -181,14 +140,4 @@ describe('AppHeader', () => {
     expect(wrapper.find('[data-testid="mobile-drawer"]').exists()).toBe(false)
   })
 
-  it('clicking outside the leaderboard nav closes the flyout', async () => {
-    const seasons = [{ id: '2026', name: '2026 Season', isCurrent: false }]
-    const wrapper = mount(AppHeader, { props: { user: null, seasons }, attachTo: document.body })
-    await wrapper.find('[data-testid="season-selector"]').trigger('click')
-    expect(wrapper.find('[data-testid="season-flyout"]').exists()).toBe(true)
-    document.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    await wrapper.vm.$nextTick()
-    expect(wrapper.find('[data-testid="season-flyout"]').exists()).toBe(false)
-    wrapper.unmount()
-  })
 })

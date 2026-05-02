@@ -22,6 +22,14 @@ Feature: Leaderboard
     When I visit the leaderboard
     Then I should see "GrouchyFan@bsky.mock" with 1 Grouchy points
 
+  Scenario: Leaderboard nav goes directly to current season; selector lives on the leaderboard page
+    When an admin closes the current season
+    And I am on the matches page
+    Then no season selector should be visible
+    When I click the Leaderboard nav link
+    Then I should be on the leaderboard page
+    And a season selector should be visible
+
   Scenario: Season dropdown shows past seasons and hides future seasons
     When an admin closes the current season
     And I visit the leaderboard

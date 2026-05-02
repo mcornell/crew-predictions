@@ -69,8 +69,7 @@ Then('the mobile navigation drawer should be closed', async ({ page }) => {
 });
 
 When('I tap the Leaderboard link in the drawer', async ({ page }) => {
-  await page.getByTestId('drawer-lb-toggle').click();
-  await page.getByTestId('mobile-drawer').getByRole('link', { name: 'Current Season' }).click();
+  await page.getByTestId('drawer-leaderboard').click();
 });
 
 Then('I should be on the leaderboard page', async ({ page }) => {
