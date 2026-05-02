@@ -30,8 +30,10 @@ Feature: Match detail page
     And "CrewFan@bsky.mock" predicted 2-1 for match "m-full"
     And "OtherFan@bsky.mock" predicted 1-1 for match "m-full"
     And the final score for match "m-full" was 2-1 with Columbus home
-    When I visit the match detail page for "m-full"
-    Then I should see the match header with "Columbus Crew" vs "FC Dallas"
+    When I visit the matches page
+    And I click on the result card for match "m-full"
+    Then I should be on the match detail page for "m-full"
+    And I should see the match header with "Columbus Crew" vs "FC Dallas"
     And I should see the venue "ScottsMiracle-Gro Field" on the match detail page
     And I should see home record "5-3-2" on the match detail page
     And I should see home form "WWWLL" on the match detail page

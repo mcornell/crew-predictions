@@ -157,7 +157,14 @@ func main() {
 	ssh := handlers.NewSeasonsHandler(configStore)
 	mux.Handle("GET /api/seasons", rateLimitMw(http.HandlerFunc(ssh.APIList)))
 	mux.Handle("GET /api/profile/{userID}", rateLimitMw(http.HandlerFunc(prh.Get)))
-	mdh := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew", espn.FetchSummary)
+	// In TEST_MODE, route summary fetches to local fixtures instead of the
+	// live ESPN endpoint. Keeps the e2e suite deterministic and removes a
+	// reason for tests to fail when ESPN is slow or down.
+	summaryFetcher := espn.FetchSummary
+	if os.Getenv("TEST_MODE") == "1" {
+		summaryFetcher = espn.FixtureFetcher("internal/espn/testdata")
+	}
+	mdh := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew", summaryFetcher)
 	mux.HandleFunc("GET /api/matches/{matchId}", mdh.Get)
 	if os.Getenv("TEST_MODE") != "1" && os.Getenv("ADMIN_KEY") == "" {
 		log.Fatal("ADMIN_KEY env var must be set in production")

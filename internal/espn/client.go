@@ -319,6 +319,13 @@ func fetchSummaryFrom(base, matchID string) (models.MatchSummary, error) {
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
 		return models.MatchSummary{}, err
 	}
+	return parseSummary(data), nil
+}
+
+// parseSummary extracts a MatchSummary from a decoded ESPN /summary response.
+// Shared between the live HTTP fetcher and the test-mode fixture fetcher so
+// the two paths stay consistent.
+func parseSummary(data espnSummaryResponse) models.MatchSummary {
 	events := make([]models.MatchEvent, 0, len(data.KeyEvents))
 	for _, ke := range data.KeyEvents {
 		players := make([]string, 0, len(ke.Participants))
@@ -351,7 +358,7 @@ func fetchSummaryFrom(base, matchID string) (models.MatchSummary, error) {
 		AwayLogo:   awayLogo,
 		Referee:    referee,
 		Events:     events,
-	}, nil
+	}
 }
 
 func FetchSummary(matchID string) (models.MatchSummary, error) {

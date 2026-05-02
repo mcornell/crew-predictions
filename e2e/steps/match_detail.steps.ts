@@ -112,11 +112,11 @@ Then('I should see home form {string} on the match detail page', async ({ page }
 });
 
 Then('I should see the attendance {string} on the match detail page', async ({ page }, attendance: string) => {
-  await expect.soft(page.locator('[data-testid="match-detail-attendance"]')).toHaveText(attendance, { timeout: 15000 });
+  await expect.soft(page.locator('[data-testid="match-detail-attendance"]')).toHaveText(attendance);
 });
 
 Then('I should see the event timeline on the match detail page', async ({ page }) => {
-  await expect.soft(page.locator('[data-testid="match-events"]')).toBeVisible({ timeout: 15000 });
+  await expect.soft(page.locator('[data-testid="match-events"]')).toBeVisible();
 });
 
 Then('I should see at least one event in the timeline', async ({ page }) => {
@@ -124,15 +124,15 @@ Then('I should see at least one event in the timeline', async ({ page }) => {
 });
 
 Then('I should see the home team logo on the match detail page', async ({ page }) => {
-  await expect.soft(page.locator('[data-testid="home-logo"]')).toBeVisible({ timeout: 15000 });
+  await expect.soft(page.locator('[data-testid="home-logo"]')).toBeVisible();
 });
 
 Then('I should see the away team logo on the match detail page', async ({ page }) => {
-  await expect.soft(page.locator('[data-testid="away-logo"]')).toBeVisible({ timeout: 15000 });
+  await expect.soft(page.locator('[data-testid="away-logo"]')).toBeVisible();
 });
 
 Then('I should see the referee on the match detail page', async ({ page }) => {
   const ref = page.locator('[data-testid="match-referee"]');
-  await expect.soft(ref).toBeVisible({ timeout: 15000 });
+  await expect.soft(ref).toBeVisible();
   await expect.soft(ref).not.toHaveText('');
 });

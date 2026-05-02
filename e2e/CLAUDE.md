@@ -40,7 +40,11 @@ Always run `npx bddgen` after editing a `.feature` file.
 
 **@reset tag:** A `Before` hook calls `DELETE /admin/reset` before each `@reset` scenario. Any feature that mutates match/prediction/result stores must carry `@reset`. Auth-only features omit it and run in parallel via the `auth` Playwright project.
 
-**Smoke suite:** `npm run test:smoke` runs in CI after `deploy-staging`. It is not a substitute for the local e2e suite — run `npm test` locally first.
+**Smoke suite:** `npm run test:smoke` runs in CI after `deploy-staging` against the live staging URL. Scope: "did the deploy come up + can users sign in + do core API endpoints respond." Scope explicitly does NOT include third-party integrations like ESPN — if ESPN is down, smoke must still pass. Don't add smoke assertions for `[data-testid="match-events"]`, `match-detail-attendance`, `home-logo`, `match-referee`, etc. (those are exercised by the local e2e suite, which now uses fixture-backed summaries via `espn.FixtureFetcher` in TEST_MODE).
+
+It is not a substitute for the local e2e suite — run `npm test` locally first.
+
+**TEST_MODE swaps live ESPN for local fixtures.** The Go server in TEST_MODE (`PORT=8082`, used by `npm test`) routes match-summary fetches to `internal/espn/testdata/summary_<matchID>.json` via `espn.FixtureFetcher` instead of calling `site.api.espn.com`. Tests that exercise event-timeline / attendance / logos / referee should seed real ESPN match IDs that have fixtures in `testdata/` (currently 761573, 761499, 761451, 761461, 761552, 401869714). Tests that don't care about summary data can use any seed ID — missing fixtures return an empty `MatchSummary` so lazy-fetch becomes a no-op.
 
 ---
 
