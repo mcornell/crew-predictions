@@ -19,10 +19,18 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   projects: [
+    // Auth scenarios: no @reset, no shared mutable state. Run in parallel.
     {
       name: 'auth',
       grepInvert: /@reset/,
     },
+    // App scenarios: tagged @reset because each one calls DELETE /admin/reset
+    // against the shared Go server's in-memory store. Forced to workers: 1
+    // because multiple workers would race on global state — Worker A seeds
+    // m-A, Worker B resets and wipes m-A, Worker A asserts on m-A → fails.
+    // To run @reset in parallel, give each worker its own Go server + Vite
+    // preview on port-shifted bases. See BACKLOG: "Per-worker server
+    // isolation" (trigger when this project's runtime exceeds 90s).
     {
       name: 'app',
       grep: /@reset/,

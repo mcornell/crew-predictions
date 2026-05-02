@@ -16,12 +16,12 @@ When('I revisit the matches page', async ({ page }) => {
 });
 
 Then('I should see the {string} heading', async ({ page }, heading: string) => {
-  await expect(page.getByRole('heading', { name: heading })).toBeVisible();
+  await expect.soft(page.getByRole('heading', { name: heading })).toBeVisible();
 });
 
 Then('I should see at least one Columbus Crew match card', async ({ page }) => {
-  await expect(page.getByText(/Columbus Crew/i).first()).toBeVisible();
-  await expect(page.getByTestId('match-card').first()).toBeVisible();
+  await expect.soft(page.getByText(/Columbus Crew/i).first()).toBeVisible();
+  await expect.soft(page.getByTestId('match-card').first()).toBeVisible();
 });
 
 When('the admin triggers a match refresh', async ({ request }) => {
@@ -38,19 +38,19 @@ Then('the matches API includes match {string}', async ({ request }, matchId: str
   const resp = await request.get('/api/matches');
   const body = await resp.json();
   const ids = (body.matches ?? []).map((m: any) => m.id);
-  expect(ids).toContain(matchId);
+  expect.soft(ids).toContain(matchId);
 });
 
 Then('I should see a LIVE indicator on the match card', async ({ page }) => {
-  await expect(page.locator('[data-testid="live-indicator"]').first()).toBeVisible();
+  await expect.soft(page.locator('[data-testid="live-indicator"]').first()).toBeVisible();
 });
 
 Then('I should see a countdown on the match card', async ({ page }) => {
-  await expect(page.locator('[data-testid="match-countdown"]').first()).toBeVisible();
+  await expect.soft(page.locator('[data-testid="match-countdown"]').first()).toBeVisible();
 });
 
 Then('I should see a DELAYED indicator on the match card', async ({ page }) => {
-  await expect(page.locator('[data-testid="delayed-indicator"]').first()).toBeVisible();
+  await expect.soft(page.locator('[data-testid="delayed-indicator"]').first()).toBeVisible();
 });
 
 Given('the following matches are seeded in order:', async ({ request }, table: any) => {
@@ -85,9 +85,9 @@ Then('match {string} should appear before match {string}', async ({ page }, firs
   );
   const firstIdx = cardIds.indexOf(firstId);
   const secondIdx = cardIds.indexOf(secondId);
-  expect(firstIdx).toBeGreaterThanOrEqual(0);
-  expect(secondIdx).toBeGreaterThanOrEqual(0);
-  expect(firstIdx).toBeLessThan(secondIdx);
+  expect.soft(firstIdx).toBeGreaterThanOrEqual(0);
+  expect.soft(secondIdx).toBeGreaterThanOrEqual(0);
+  expect.soft(firstIdx).toBeLessThan(secondIdx);
 });
 
 Then('the now playing card should appear before the upcoming card', async ({ page }) => {
@@ -95,39 +95,39 @@ Then('the now playing card should appear before the upcoming card', async ({ pag
   const matchCard = page.locator('[data-testid="match-card"]').first();
   const nowPlayingY = await nowPlayingCard.boundingBox().then(b => b?.y ?? 0);
   const matchCardY = await matchCard.boundingBox().then(b => b?.y ?? 0);
-  expect(nowPlayingY).toBeLessThan(matchCardY);
+  expect.soft(nowPlayingY).toBeLessThan(matchCardY);
 });
 
 Then('the now playing card should show score {string} to {string}', async ({ page }, home: string, away: string) => {
   const card = page.locator('[data-testid="now-playing-card"]').first();
   const scores = card.locator('.inline-score');
-  await expect(scores.nth(0)).toHaveText(home);
-  await expect(scores.nth(1)).toHaveText(away);
+  await expect.soft(scores.nth(0)).toHaveText(home);
+  await expect.soft(scores.nth(1)).toHaveText(away);
 });
 
 Then('the match card for {string} should show venue {string}', async ({ page }, matchId: string, venue: string) => {
   const card = page.locator(`[data-testid="match-card"][data-match-id="${matchId}"]`);
-  await expect(card.locator('[data-testid="match-venue"]')).toHaveText(venue);
+  await expect.soft(card.locator('[data-testid="match-venue"]')).toHaveText(venue);
 });
 
 Then('the now playing card for match {string} should show venue {string}', async ({ page }, matchId: string, venue: string) => {
   const card = page.locator(`[data-testid="now-playing-card"][data-match-id="${matchId}"]`);
-  await expect(card.locator('[data-testid="match-venue"]')).toHaveText(venue);
+  await expect.soft(card.locator('[data-testid="match-venue"]')).toHaveText(venue);
 });
 
 Then('the match card for {string} should show home record {string}', async ({ page }, matchId: string, record: string) => {
   const card = page.locator(`[data-testid="match-card"][data-match-id="${matchId}"]`);
-  await expect(card.locator('[data-testid="home-record"]')).toHaveText(record);
+  await expect.soft(card.locator('[data-testid="home-record"]')).toHaveText(record);
 });
 
 Then('the match card for {string} should show home form {string}', async ({ page }, matchId: string, form: string) => {
   const card = page.locator(`[data-testid="match-card"][data-match-id="${matchId}"]`);
-  await expect(card.locator('[data-testid="home-form"]')).toHaveText(form);
+  await expect.soft(card.locator('[data-testid="home-form"]')).toHaveText(form);
 });
 
 Then('the now playing card for match {string} should show home record {string}', async ({ page }, matchId: string, record: string) => {
   const card = page.locator(`[data-testid="now-playing-card"][data-match-id="${matchId}"]`);
-  await expect(card.locator('[data-testid="home-record"]')).toHaveText(record);
+  await expect.soft(card.locator('[data-testid="home-record"]')).toHaveText(record);
 });
 
 Given('the following events are seeded for match {string}:', async ({ request }, matchId: string, table: any) => {
@@ -147,37 +147,37 @@ Given('the following events are seeded for match {string}:', async ({ request },
 
 Then('the now playing card for match {string} should show event content', async ({ page }, matchId: string) => {
   const card = page.locator(`[data-testid="now-playing-card"][data-match-id="${matchId}"]`);
-  await expect(card.locator('[data-testid="match-events"]')).toBeVisible();
+  await expect.soft(card.locator('[data-testid="match-events"]')).toBeVisible();
 });
 
 Then('the now playing card for match {string} should show {string}', async ({ page }, matchId: string, text: string) => {
   const card = page.locator(`[data-testid="now-playing-card"][data-match-id="${matchId}"]`);
-  await expect(card).toContainText(text);
+  await expect.soft(card).toContainText(text);
 });
 
 Then('the now playing card for match {string} should not show an events block', async ({ page }, matchId: string) => {
   const card = page.locator(`[data-testid="now-playing-card"][data-match-id="${matchId}"]`);
-  await expect(card.locator('[data-testid="match-events"]')).toHaveCount(0);
+  await expect.soft(card.locator('[data-testid="match-events"]')).toHaveCount(0);
 });
 
 Then('the now playing card for match {string} should not show {string}', async ({ page }, matchId: string, text: string) => {
   const card = page.locator(`[data-testid="now-playing-card"][data-match-id="${matchId}"]`);
-  await expect(card).not.toContainText(text);
+  await expect.soft(card).not.toContainText(text);
 });
 
 Then('the now playing card for match {string} should show home form {string}', async ({ page }, matchId: string, form: string) => {
   const card = page.locator(`[data-testid="now-playing-card"][data-match-id="${matchId}"]`);
-  await expect(card.locator('[data-testid="home-form"]')).toHaveText(form);
+  await expect.soft(card.locator('[data-testid="home-form"]')).toHaveText(form);
 });
 
 Then('the result card for match {string} should show venue {string}', async ({ page }, matchId: string, venue: string) => {
   const card = page.locator(`[data-testid="result-card"][data-match-id="${matchId}"]`);
-  await expect(card.locator('[data-testid="match-venue"]')).toHaveText(venue);
+  await expect.soft(card.locator('[data-testid="match-venue"]')).toHaveText(venue);
 });
 
 Then('the result card for match {string} should show my pick {string} below the score', async ({ page }, matchId: string, pick: string) => {
   const card = page.locator(`[data-testid="result-card"][data-match-id="${matchId}"]`);
-  await expect(card.locator('[data-testid="your-pick"]')).toContainText(`Your pick: ${pick}`);
+  await expect.soft(card.locator('[data-testid="your-pick"]')).toContainText(`Your pick: ${pick}`);
   const pickAfterMatchup = await card.evaluate((cardEl) => {
     const info = cardEl.querySelector('.match-info');
     if (!info) return false;
@@ -187,7 +187,7 @@ Then('the result card for match {string} should show my pick {string} below the 
     // pick must be immediately after matchup (score), before date and venue
     return pickIdx !== -1 && matchupIdx !== -1 && pickIdx === matchupIdx + 1;
   });
-  expect(pickAfterMatchup).toBe(true);
+  expect.soft(pickAfterMatchup).toBe(true);
 });
 
 Given('the match {string} has already kicked off', async ({ request }, matchId: string) => {

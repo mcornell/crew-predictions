@@ -34,7 +34,7 @@
 
 - [ ] **Real-fixture coverage for schedule/scoreboard parser** — `internal/espn/client_test.go` currently tests `fetchCrewMatchesFrom` against hand-rolled `crewEventJSON()` strings plus two MLS-only fixtures (`mls_schedule.json`, `mls_scoreboard.json`). Capture per-competition fixtures from historical Crew matches: 2024 Concacaf Champions Cup (Crew won the trophy), 2025 Leagues Cup, USOC 2026 (after May 19 match 401871130 plus prior rounds). Save as `usa_open_*.json`, `concacaf_champions_*.json`, `concacaf_leagues_cup_*.json` and add table-driven tests asserting league-specific shapes. Mirrors what `TestFetchSummaryFrom_RealFixtures` does for the `/summary` endpoint. Goal: catch regressions in record/form parsing for tournament matches before they hit production.
 
-- [ ] **Per-worker server isolation** — current parallelism runs two Playwright projects (`auth` + `app`) against a shared server. If the app group grows too slow, give each worker its own Go server instance on a separate port so they don't share in-memory state.
+- [ ] **Per-worker server isolation** — current parallelism runs two Playwright projects (`auth` + `app`) against a shared server. The `app` project is forced to `workers: 1` because every `@reset` scenario calls `DELETE /admin/reset` against a shared Go server's in-memory store; multiple workers would race on global state. Give each worker its own Go server + Vite preview on port-shifted bases (e.g. worker 0 → 8082/8083, worker 1 → 8084/8085) so they don't share state. Estimated ~150 LoC of test infra, runs ~4 Go processes + 4 Vite previews concurrently. **Trigger condition:** local `app` project runtime exceeds 90s. (Was 33s as of May 2026.) Below that, the engineering cost doesn't pay back.
 
 
 ---
