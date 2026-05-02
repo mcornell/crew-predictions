@@ -15,17 +15,17 @@ Then('the page should not overflow horizontally', async ({ page }) => {
   const overflows = await page.evaluate(
     () => document.documentElement.scrollWidth > window.innerWidth
   );
-  expect(overflows).toBe(false);
+  expect.soft(overflows).toBe(false);
 });
 
 Then('each match card should be at most 260px tall', async ({ page }) => {
   await expect.soft(page.getByTestId('match-card').first()).toBeVisible();
   const cards = page.getByTestId('match-card');
   const count = await cards.count();
-  expect(count).toBeGreaterThan(0);
+  expect.soft(count).toBeGreaterThan(0);
   for (let i = 0; i < count; i++) {
     const box = await cards.nth(i).boundingBox();
-    expect(box!.height).toBeLessThanOrEqual(260);
+    expect.soft(box!.height).toBeLessThanOrEqual(260);
   }
 });
 
@@ -33,14 +33,14 @@ Then('the site header should be at most 64px tall', async ({ page }) => {
   const header = page.locator('.site-header');
   await expect.soft(header).toBeVisible();
   const box = await header.boundingBox();
-  expect(box!.height).toBeLessThanOrEqual(64);
+  expect.soft(box!.height).toBeLessThanOrEqual(64);
 });
 
 Then('the Predict button should be at least 44px tall', async ({ page }) => {
   const btn = page.getByRole('button', { name: 'Predict' }).first();
   await expect.soft(btn).toBeVisible();
   const box = await btn.boundingBox();
-  expect(box!.height).toBeGreaterThanOrEqual(44);
+  expect.soft(box!.height).toBeGreaterThanOrEqual(44);
 });
 
 Then('team names should not be clipped on any match card', async ({ page }) => {
@@ -49,7 +49,7 @@ Then('team names should not be clipped on any match card', async ({ page }) => {
     const names = document.querySelectorAll('.team-name')
     return Array.from(names).some(el => el.scrollWidth > el.clientWidth)
   })
-  expect(clipped).toBe(false)
+  expect.soft(clipped).toBe(false)
 })
 
 When('I tap the hamburger menu', async ({ page }) => {
