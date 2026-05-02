@@ -383,6 +383,71 @@ describe('MatchesView', () => {
     expect(wrapper.findAll('[data-testid="match-card"]')).toHaveLength(0)
   })
 
+  it('schedules a future-window poll when kickoff is ~30 min away', async () => {
+    // Mirror of MatchDetailView's "future-window poll timer fires and re-fetches".
+    // Kickoff 31 minutes from now → msUntilActiveWindow ≈ 60_000 ms
+    // (one minute before the active window opens). After that single minute,
+    // the scheduled poll should fire and trigger a re-fetch.
+    vi.useFakeTimers()
+    const kickoff = new Date(Date.now() + 31 * 60 * 1000).toISOString()
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        matches: [{
+          id: 'm-future', homeTeam: 'Columbus Crew', awayTeam: 'FC Dallas',
+          kickoff, status: 'STATUS_SCHEDULED', state: 'pre',
+          homeScore: '', awayScore: '',
+        }],
+        predictions: {},
+      }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    mountMatches()
+    await flushPromises()
+    const callsBefore = fetchMock.mock.calls.length
+
+    await vi.advanceTimersByTimeAsync(61_000)
+    await flushPromises()
+
+    expect(fetchMock.mock.calls.length).toBeGreaterThan(callsBefore)
+    vi.useRealTimers()
+  })
+
+  it('renders goals and cards inline on a live match card', async () => {
+    // Exercises liveCardEvents + eventIcon + eventSide on a now-playing
+    // card. Verifies the LIVE_CARD_EVENT_TYPES filter (substitutions
+    // are excluded; goals/yellow-card/red-card are included).
+    const liveWithEvents = {
+      id: 'm-evts-live', homeTeam: 'Columbus Crew', awayTeam: 'FC Dallas',
+      kickoff: pastKickoff(1), status: 'STATUS_FIRST_HALF', state: 'in',
+      homeScore: '1', awayScore: '0',
+      events: [
+        { clock: "23'", typeID: 'goal', team: 'Columbus Crew', players: ['Hugo Picard'] },
+        { clock: "39'", typeID: 'yellow-card', team: 'FC Dallas', players: ['Some Player'] },
+        { clock: "67'", typeID: 'red-card', team: 'FC Dallas', players: ['Other Player'] },
+        { clock: "73'", typeID: 'substitution', team: 'Columbus Crew', players: ['SubIn', 'SubOff'] },
+      ],
+    }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ matches: [liveWithEvents], predictions: {} }),
+    }))
+    const wrapper = mountMatches()
+    await flushPromises()
+
+    const card = wrapper.find('[data-testid="now-playing-card"][data-match-id="m-evts-live"]')
+    const events = card.findAll('[data-testid="match-event"]')
+    expect(events).toHaveLength(3) // sub filtered out
+    const text = card.text()
+    expect(text).toContain('Hugo Picard')
+    expect(text).toContain('Some Player')
+    expect(text).toContain('Other Player')
+    expect(text).not.toContain('SubIn')
+    expect(text).not.toContain('SubOff')
+    vi.restoreAllMocks()
+  })
+
   it('polls every 60 seconds when a live match is present', async () => {
     vi.useFakeTimers()
     const liveMatches = [...mockMatches, liveMatch]
