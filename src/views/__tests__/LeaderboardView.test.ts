@@ -10,11 +10,24 @@ const mockEntries = [
 
 const mockData = { entries: mockEntries }
 
+// Default seasons response: a current season and a past one. Tests that need
+// different season state stub fetch themselves before mounting.
+const defaultSeasons = [
+  { id: '2025', name: '2025 Season', isCurrent: false },
+  { id: '2026', name: '2026 Season', isCurrent: true },
+]
+
+function urlRouter(overrides: Record<string, unknown> = {}) {
+  return vi.fn(async (url: string) => {
+    if (url in overrides) return overrides[url] as Response
+    if (url.startsWith('/api/leaderboard')) return { ok: true, json: () => Promise.resolve(mockData) } as unknown as Response
+    if (url === '/api/seasons') return { ok: true, json: () => Promise.resolve({ seasons: defaultSeasons }) } as unknown as Response
+    return { ok: false, status: 404 } as Response
+  })
+}
+
 beforeEach(() => {
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-    ok: true,
-    json: () => Promise.resolve(mockData),
-  }))
+  vi.stubGlobal('fetch', urlRouter())
 })
 // Note: individual tests that need distinct fetch responses stub fetch themselves
 
@@ -30,10 +43,11 @@ function makeLeaderboardRouter(path = '/leaderboard') {
 
 describe('LeaderboardView', () => {
   it('fetches from /api/leaderboard/:season when season route param is set', async () => {
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ entries: [
+    const fetchMock = urlRouter({
+      '/api/leaderboard/2026': { ok: true, json: () => Promise.resolve({ entries: [
         { handle: 'HistoryFan', acesRadioPoints: 15, upper90ClubPoints: 3, grouchyPoints: 1 }
-      ]}) })
+      ]}) } as unknown as Response,
+    })
     vi.stubGlobal('fetch', fetchMock)
     const r = makeLeaderboardRouter()
     await r.push('/leaderboard/2026')
@@ -195,5 +209,68 @@ describe('LeaderboardView', () => {
     await wrapper.find('[data-testid="mobile-sort-aces"]').trigger('click')
     const rows = wrapper.findAll('[data-testid="leaderboard-row"]')
     expect(rows[0].find('[data-testid="leaderboard-aces-points"]').text()).toBe('15')
+  })
+
+  describe('season selector', () => {
+    it('renders selector showing current season name when past seasons exist', async () => {
+      const wrapper = mount(LeaderboardView, { global: { plugins: [makeRouter()] } })
+      await flushPromises()
+      const selector = wrapper.find('[data-testid="season-selector"]')
+      expect(selector.exists()).toBe(true)
+      expect(selector.text()).toContain('2026 Season')
+    })
+
+    it('hides selector when there are no past seasons', async () => {
+      vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+        if (url.startsWith('/api/leaderboard')) return { ok: true, json: () => Promise.resolve(mockData) } as unknown as Response
+        if (url === '/api/seasons') return { ok: true, json: () => Promise.resolve({ seasons: [{ id: '2026', name: '2026 Season', isCurrent: true }] }) } as unknown as Response
+        return { ok: false } as Response
+      }))
+      const wrapper = mount(LeaderboardView, { global: { plugins: [makeRouter()] } })
+      await flushPromises()
+      expect(wrapper.find('[data-testid="season-selector"]').exists()).toBe(false)
+    })
+
+    it('clicking selector opens a flyout listing past seasons', async () => {
+      const wrapper = mount(LeaderboardView, { global: { plugins: [makeRouter()] } })
+      await flushPromises()
+      await wrapper.find('[data-testid="season-selector"]').trigger('click')
+      const flyout = wrapper.find('[data-testid="season-flyout"]')
+      expect(flyout.exists()).toBe(true)
+      expect(flyout.text()).toContain('2025 Season')
+    })
+
+    it('flyout includes a Current Season link to /leaderboard', async () => {
+      const wrapper = mount(LeaderboardView, { global: { plugins: [makeRouter()] } })
+      await flushPromises()
+      await wrapper.find('[data-testid="season-selector"]').trigger('click')
+      const currentLink = wrapper.find('[data-testid="season-flyout"] a[href="/leaderboard"]')
+      expect(currentLink.exists()).toBe(true)
+    })
+
+    it('past-season links point to /leaderboard/:id', async () => {
+      const wrapper = mount(LeaderboardView, { global: { plugins: [makeRouter()] } })
+      await flushPromises()
+      await wrapper.find('[data-testid="season-selector"]').trigger('click')
+      const pastLink = wrapper.find('[data-testid="season-flyout"] a[href="/leaderboard/2025"]')
+      expect(pastLink.exists()).toBe(true)
+    })
+
+    it('shows the historical season name when viewing /leaderboard/:season', async () => {
+      const r = makeLeaderboardRouter()
+      await r.push('/leaderboard/2025')
+      const wrapper = mount(LeaderboardView, { global: { plugins: [r] } })
+      await flushPromises()
+      const selector = wrapper.find('[data-testid="season-selector"]')
+      expect(selector.text()).toContain('2025 Season')
+    })
+
+    it('clicking a past-season link closes the flyout', async () => {
+      const wrapper = mount(LeaderboardView, { global: { plugins: [makeRouter()] } })
+      await flushPromises()
+      await wrapper.find('[data-testid="season-selector"]').trigger('click')
+      await wrapper.find('[data-testid="season-flyout"] a').trigger('click')
+      expect(wrapper.find('[data-testid="season-flyout"]').exists()).toBe(false)
+    })
   })
 })

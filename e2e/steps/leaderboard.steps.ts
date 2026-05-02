@@ -48,6 +48,22 @@ When('I open the leaderboard dropdown', async ({ page }) => {
   await expect(page.getByTestId('season-flyout')).toBeVisible();
 });
 
+Given('I am on the matches page', async ({ page }) => {
+  await page.goto('/matches');
+});
+
+When('I click the Leaderboard nav link', async ({ page }) => {
+  await page.getByTestId('nav-leaderboard').click();
+});
+
+Then('a season selector should be visible', async ({ page }) => {
+  await expect(page.getByTestId('season-selector')).toBeVisible();
+});
+
+Then('no season selector should be visible', async ({ page }) => {
+  await expect(page.getByTestId('season-selector')).toHaveCount(0);
+});
+
 Then('the season dropdown includes {string}', async ({ page }, seasonName: string) => {
   await expect(page.getByTestId('season-flyout')).toContainText(seasonName);
 });

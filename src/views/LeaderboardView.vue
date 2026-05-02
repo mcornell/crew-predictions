@@ -1,6 +1,31 @@
 <template>
   <div class="page">
-    <h1 class="page-title">Leaderboard</h1>
+    <div class="lb-page-header">
+      <h1 class="page-title">Leaderboard</h1>
+      <div v-if="showSwitcher" class="lb-season-switcher" ref="switcherRef">
+        <button
+          class="lb-season-trigger"
+          data-testid="season-selector"
+          @click="seasonOpen = !seasonOpen"
+        >{{ activeSeasonLabel }} <span class="lb-season-chevron">▾</span></button>
+        <div v-if="seasonOpen" class="season-flyout" data-testid="season-flyout">
+          <a
+            href="/leaderboard"
+            class="season-flyout-item"
+            :class="{ 'season-flyout-item--current': !routeSeasonID }"
+            @click="seasonOpen = false"
+          >Current Season</a>
+          <a
+            v-for="s in pastSeasons"
+            :key="s.id"
+            :href="`/leaderboard/${s.id}`"
+            class="season-flyout-item"
+            :class="{ 'season-flyout-item--current': routeSeasonID === s.id }"
+            @click="seasonOpen = false"
+          >{{ s.name }}</a>
+        </div>
+      </div>
+    </div>
 
     <p v-if="loading" data-testid="loading" class="status-msg">Loading…</p>
     <p v-else-if="error" data-testid="error" class="status-msg status-msg--error">{{ error }}</p>
@@ -96,7 +121,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 
 interface Entry {
@@ -109,12 +134,56 @@ interface Entry {
   hasProfile?: boolean
 }
 
+interface Season {
+  id: string
+  name: string
+  isCurrent: boolean
+}
+
 const route = useRoute()
 
 const entries = ref<Entry[]>([])
 const activeSort = ref<'aces' | 'upper90' | 'grouchy'>('aces')
 const loading = ref(true)
 const error = ref<string | null>(null)
+
+// All seasons known to the backend (current + past + future). The selector
+// only surfaces past seasons; future seasons are filtered out so an admin
+// pre-creating next year's season doesn't leak into the dropdown.
+const allSeasons = ref<Season[]>([])
+const seasonOpen = ref(false)
+const switcherRef = ref<HTMLElement | null>(null)
+
+const routeSeasonID = computed(() => route.params.season as string | undefined)
+
+const pastSeasons = computed<Season[]>(() => {
+  const currentIdx = allSeasons.value.findIndex(s => s.isCurrent)
+  if (currentIdx < 0) return []
+  return [...allSeasons.value.slice(0, currentIdx)].reverse()
+})
+
+const currentSeason = computed<Season | undefined>(() =>
+  allSeasons.value.find(s => s.isCurrent)
+)
+
+// Show the switcher if there are past seasons to navigate to, OR if the user
+// has landed directly on a historical leaderboard URL — in that case they
+// need a way back to current even when no other past seasons exist.
+const showSwitcher = computed(() => pastSeasons.value.length > 0 || !!routeSeasonID.value)
+
+const activeSeasonLabel = computed(() => {
+  if (routeSeasonID.value) {
+    const found = allSeasons.value.find(s => s.id === routeSeasonID.value)
+    return found?.name ?? routeSeasonID.value
+  }
+  return currentSeason.value?.name ?? 'Current Season'
+})
+
+function onDocClick(e: MouseEvent) {
+  if (switcherRef.value && !switcherRef.value.contains(e.target as Node)) {
+    seasonOpen.value = false
+  }
+}
 
 function upper90For(e: Entry): number {
   return e.upper90ClubPoints ?? e.upper90Points ?? 0
@@ -144,13 +213,23 @@ onMounted(async () => {
   document.title = 'Leaderboard — Crew Predictions'
   const seasonID = route.params.season as string | undefined
   const url = seasonID ? `/api/leaderboard/${seasonID}` : '/api/leaderboard'
-  const res = await fetch(url)
-  if (res.ok) {
-    const data = await res.json()
+
+  const [lbRes, seasonsRes] = await Promise.all([fetch(url), fetch('/api/seasons')])
+  if (lbRes.ok) {
+    const data = await lbRes.json()
     entries.value = data.entries ?? []
   } else {
     error.value = 'Could not load leaderboard. Try again later.'
   }
+  if (seasonsRes.ok) {
+    const sData = await seasonsRes.json()
+    allSeasons.value = sData.seasons ?? []
+  }
   loading.value = false
+  document.addEventListener('click', onDocClick)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', onDocClick)
 })
 </script>
