@@ -135,12 +135,7 @@ jobs:
         run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o server ./cmd/server
 
       - name: Start Firebase emulators
-        # --host 0.0.0.0 binds the emulators to every interface (both IPv4
-        # 127.0.0.1 and IPv6 ::1) so test code connecting via either
-        # localhost-resolution path reaches them. Defense-in-depth for the
-        # ipv4first DNS env var at the job level. CI-only — local dev
-        # via dev.sh keeps the safer 127.0.0.1 default.
-        run: npx firebase emulators:start --only auth,firestore --project crew-predictions --host 0.0.0.0 &
+        run: npx firebase emulators:start --only auth,firestore --project crew-predictions &
         env:
           FIREBASE_PROJECT_ID: crew-predictions
 
