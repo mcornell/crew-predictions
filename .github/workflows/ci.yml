@@ -14,6 +14,14 @@ jobs:
   build-and-test:
     if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
+    # Run inside the Microsoft Playwright container so chromium + every
+    # system lib is preinstalled. Eliminates `npx playwright install
+    # --with-deps` (~30-90s per CI run). Image tag MUST match the
+    # @playwright/test version pinned in package.json — bump both
+    # together when upgrading Playwright.
+    container:
+      image: mcr.microsoft.com/playwright:v1.59.1-noble
+      options: --user 1001
     permissions:
       checks: write
       contents: read
@@ -123,25 +131,6 @@ jobs:
         run: npx firebase emulators:start --only auth,firestore --project crew-predictions &
         env:
           FIREBASE_PROJECT_ID: crew-predictions
-
-      # Cache Playwright browsers (Chromium bundle is ~170MB)
-      - name: Get Playwright version
-        id: playwright-version
-        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> $GITHUB_OUTPUT
-
-      - uses: actions/cache@v5
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
-
-      - name: Install Playwright browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
-
-      - name: Install Playwright system deps
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
 
       - name: Wait for Firebase emulators
         run: |
@@ -316,6 +305,11 @@ jobs:
     if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
     needs: deploy-staging
     runs-on: ubuntu-latest
+    # Same container approach as build-and-test — chromium + system libs
+    # preinstalled. Image tag must match @playwright/test in package.json.
+    container:
+      image: mcr.microsoft.com/playwright:v1.59.1-noble
+      options: --user 1001
     permissions:
       checks: write
 
@@ -328,24 +322,6 @@ jobs:
           cache: npm
 
       - run: npm ci
-
-      - name: Get Playwright version
-        id: playwright-version
-        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> $GITHUB_OUTPUT
-
-      - uses: actions/cache@v5
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
-
-      - name: Install Playwright browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
-
-      - name: Install Playwright system deps
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
 
       - name: Run staging smoke tests
         run: npm run test:smoke
@@ -502,6 +478,11 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     needs: deploy-prod
     runs-on: ubuntu-latest
+    # Same container approach as build-and-test — chromium + system libs
+    # preinstalled. Image tag must match @playwright/test in package.json.
+    container:
+      image: mcr.microsoft.com/playwright:v1.59.1-noble
+      options: --user 1001
     permissions:
       checks: write
 
@@ -514,24 +495,6 @@ jobs:
           cache: npm
 
       - run: npm ci
-
-      - name: Get Playwright version
-        id: playwright-version
-        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> $GITHUB_OUTPUT
-
-      - uses: actions/cache@v5
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
-
-      - name: Install Playwright browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
-
-      - name: Install Playwright system deps
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
 
       - name: Run prod smoke tests
         run: npm run test:smoke:prod
