@@ -66,9 +66,7 @@ jobs:
           fail-on-empty: false
 
       - name: Vue unit tests
-        run: |
-          echo "## Vue Tests" >> $GITHUB_STEP_SUMMARY
-          npm run test:unit -- --coverage
+        run: npm run test:unit -- --coverage
 
       - name: Vue test report
         uses: dorny/test-reporter@v3
