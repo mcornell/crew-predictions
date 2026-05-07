@@ -160,6 +160,13 @@ jobs:
           timeout 30 bash -c 'until curl -sf http://localhost:9099; do sleep 1; done'
           timeout 30 bash -c 'until curl -sf http://localhost:8081; do sleep 1; done'
 
+      - name: Firestore rules unit tests
+        run: |
+          echo "## Firestore Rules" >> $GITHUB_STEP_SUMMARY
+          npm run test:rules
+        env:
+          FIRESTORE_EMULATOR_HOST: localhost:8081
+
       - name: Go integration tests
         run: |
           echo "## Go Integration Tests" >> $GITHUB_STEP_SUMMARY
@@ -299,6 +306,9 @@ jobs:
 
       - name: Deploy staging to Firebase Hosting
         run: npx firebase deploy --only hosting --project crew-predictions-staging --config firebase.staging.json
+
+      - name: Deploy Firestore rules + indexes to staging
+        run: npx firebase deploy --only firestore --project crew-predictions-staging --config firebase.staging.json
 
       - name: Upload frontend to GCS
         run: |
@@ -451,6 +461,9 @@ jobs:
 
       - name: Deploy to Firebase Hosting
         run: npx firebase deploy --only hosting --project crew-predictions
+
+      - name: Deploy Firestore rules + indexes to prod
+        run: npx firebase deploy --only firestore --project crew-predictions
 
       - name: Promote prod tags
         run: |
