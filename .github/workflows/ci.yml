@@ -23,11 +23,11 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.59.1-noble
       options: --user 1001
     env:
-      # Force Node DNS to prefer IPv4 when resolving "localhost". Inside
-      # the playwright container, /etc/hosts resolves localhost to ::1
-      # (IPv6) first, but the Firebase Auth emulator binds 127.0.0.1
-      # only — so test requests to http://localhost:9099/... fail with
-      # ECONNREFUSED ::1:9099. This restores Node 16 default ordering.
+      # Belt-and-suspenders alongside the 127.0.0.1 emulator hosts below.
+      # Inside the playwright container /etc/hosts resolves "localhost" to
+      # ::1 first, but the Firebase Auth emulator binds 127.0.0.1 only —
+      # any code path still using "localhost" would hit ECONNREFUSED ::1.
+      # This restores Node 16 default IPv4-first ordering as a safety net.
       NODE_OPTIONS: --dns-result-order=ipv4first
     permissions:
       checks: write
@@ -141,22 +141,22 @@ jobs:
 
       - name: Wait for Firebase emulators
         run: |
-          timeout 30 bash -c 'until curl -sf http://localhost:9099; do sleep 1; done'
-          timeout 30 bash -c 'until curl -sf http://localhost:8081; do sleep 1; done'
+          timeout 30 bash -c 'until curl -sf http://127.0.0.1:9099; do sleep 1; done'
+          timeout 30 bash -c 'until curl -sf http://127.0.0.1:8081; do sleep 1; done'
 
       - name: Firestore rules unit tests
         run: |
           echo "## Firestore Rules" >> $GITHUB_STEP_SUMMARY
           npm run test:rules
         env:
-          FIRESTORE_EMULATOR_HOST: localhost:8081
+          FIRESTORE_EMULATOR_HOST: 127.0.0.1:8081
 
       - name: Go integration tests
         run: |
           echo "## Go Integration Tests" >> $GITHUB_STEP_SUMMARY
           gotestsum --junitfile go-integration-results.xml -- -tags integration ./internal/repository/...
         env:
-          FIRESTORE_EMULATOR_HOST: localhost:8081
+          FIRESTORE_EMULATOR_HOST: 127.0.0.1:8081
           FIREBASE_PROJECT_ID: crew-predictions
 
       - name: Go integration test report
@@ -176,7 +176,7 @@ jobs:
           npm test
         env:
           FIREBASE_PROJECT_ID: crew-predictions
-          FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
+          FIREBASE_AUTH_EMULATOR_HOST: 127.0.0.1:9099
 
       - name: Playwright test report
         uses: dorny/test-reporter@v3
