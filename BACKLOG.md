@@ -37,6 +37,8 @@
 
 - [ ] **App Check** — register Crew Predictions web app with reCAPTCHA v3 attestation provider; enforce on Cloud Firestore and Authentication. Note: does not cover Go/Cloud Run endpoints (those are protected by session cookies). Wire `initializeAppCheck()` into `src/firebase.ts` before enforcing.
 
+- [ ] **Check Firestore security rules into the repo** — the deployed rules are deny-all (correct posture for our server-only Admin SDK architecture), but they currently live only in the Firebase console. No PR review, no rollback, no way to detect drift between prod and staging. Add `firestore.rules`, reference it from both `firebase.json` and `firebase.staging.json`, deploy via CI. Once in place, `internal/CLAUDE.md`'s "When you change Firestore rules" workflow becomes enforceable. Audited 2026-05-07 via `/firestore-security-rules-auditor`.
+
 ### Test Infrastructure
 
 - [ ] **Reevaluate e2e scenario structure** — audit the BDD suite for coverage vs. test count. Goal: each scenario should be atomic (isolated, no shared state) but scoped to a coherent UI component — e.g. "the match prediction box shows everything expected" (team names, score inputs, submit button, locked state) as one scenario rather than a separate test per element. Avoid grouping unrelated features just because they share a page. Expect this to reduce total scenario count while keeping each one focused and diagnostic. Candidate areas: match card variants (upcoming, live, result), prediction input box, match detail predictions table.
