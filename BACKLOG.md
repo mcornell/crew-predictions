@@ -2,6 +2,29 @@
 
 ## Up Next
 
+### CI tool/action documentation audit
+
+- [ ] **Walk every CI tool against current upstream documentation** and apply any simplifications / current-best-practice changes. Each item gets its own focused commit so failures isolate. Two findings already applied separately (Go cache simplification + Vitest `github-actions` reporter); the rest still need to be reviewed:
+
+  **Highest impact — review next:**
+  - [ ] `actions/setup-node@v6` — built-in caching pattern (similar to setup-go). Doc: https://github.com/actions/setup-node
+  - [ ] `actions/setup-java@v5` — confirm `temurin` distribution + Java 25 still recommended. Doc: https://github.com/actions/setup-java
+  - [ ] `docker/build-push-action@v6` — buildx cache options have shifted historically. Doc: https://github.com/docker/build-push-action
+  - [ ] `firebase-tools` (pinned 15.15.0 in package.json) — latest is 17+; check release notes for deploy-flag changes. Doc: https://firebase.google.com/docs/cli
+
+  **Medium priority:**
+  - [ ] `google-github-actions/auth@v3` — WIF auth patterns. Doc: https://github.com/google-github-actions/auth
+  - [ ] `google-github-actions/setup-gcloud@v3` — installer. Doc: https://github.com/google-github-actions/setup-gcloud
+  - [ ] `gotestsum` (installed at `latest`) — pin to specific version + review JUnit output options. Doc: https://github.com/gotestyourself/gotestsum
+  - [ ] `gocover-cobertura` (installed at `latest`) — pin to specific version. Doc: https://github.com/boumenot/gocover-cobertura
+
+  **Lower priority — likely no change:**
+  - [ ] `actions/checkout@v6` — sanity check. Doc: https://github.com/actions/checkout
+  - [ ] `actions/upload-artifact@v7` / `actions/download-artifact@v7` — confirm syntax current. Doc: https://github.com/actions/upload-artifact
+  - [ ] `docker/setup-buildx-action@v3` / `docker/login-action@v3` — stable. Docs: https://github.com/docker/setup-buildx-action / https://github.com/docker/login-action
+  - [ ] `dorny/test-reporter@v3` — third-party, works today. Doc: https://github.com/dorny/test-reporter
+  - [ ] `playwright-bdd` (`bddgen`) — scan CHANGELOG for CI guidance. Doc: https://github.com/vitalets/playwright-bdd
+
 ### CI Speedup — switch e2e job to Playwright container
 
 - [ ] **Run the build-and-test job inside `mcr.microsoft.com/playwright:v<VERSION>-noble`** — Playwright's official guidance is explicit that browser binaries should not be cached and that OS deps "need to be installed, which are not cacheable" (https://playwright.dev/docs/ci#caching-browsers). Their recommended pattern is the prebuilt Microsoft container image, which has chromium + every system lib preinstalled — eliminating the `npx playwright install --with-deps` step entirely (~30–90s per CI run today).
