@@ -160,6 +160,13 @@ jobs:
           timeout 30 bash -c 'until curl -sf http://localhost:9099; do sleep 1; done'
           timeout 30 bash -c 'until curl -sf http://localhost:8081; do sleep 1; done'
 
+      - name: Firestore rules unit tests
+        run: |
+          echo "## Firestore Rules" >> $GITHUB_STEP_SUMMARY
+          npm run test:rules
+        env:
+          FIRESTORE_EMULATOR_HOST: localhost:8081
+
       - name: Go integration tests
         run: |
           echo "## Go Integration Tests" >> $GITHUB_STEP_SUMMARY
@@ -291,6 +298,13 @@ jobs:
             --project=crew-predictions-staging \
             --region=us-east5 \
             --allow-unauthenticated \
+            --concurrency=80 \
+            --cpu=1 \
+            --memory=512Mi \
+            --min-instances=0 \
+            --max-instances=20 \
+            --timeout=300 \
+            --cpu-boost \
             --set-env-vars=FIREBASE_PROJECT_ID=crew-predictions-staging,FIREBASE_API_KEY=$STAGING_API_KEY,FIREBASE_AUTH_DOMAIN=crew-predictions-staging.web.app,GOOGLE_CLOUD_PROJECT=crew-predictions-staging,FIREBASE_MEASUREMENT_ID=G-7N1MBBZ18B,FIREBASE_APP_ID=1:99152086201:web:3ea10e771e33452cecc768 \
             --update-secrets=ADMIN_KEY=admin-key:latest,SESSION_SECRET=session-secret:latest \
             --quiet
@@ -299,6 +313,9 @@ jobs:
 
       - name: Deploy staging to Firebase Hosting
         run: npx firebase deploy --only hosting --project crew-predictions-staging --config firebase.staging.json
+
+      - name: Deploy Firestore rules + indexes to staging
+        run: npx firebase deploy --only firestore --project crew-predictions-staging --config firebase.staging.json
 
       - name: Upload frontend to GCS
         run: |
@@ -443,6 +460,13 @@ jobs:
           gcloud run deploy crew-predictions \
             --image=${{ env.DEPLOY_IMAGE }} \
             --region=us-east5 \
+            --concurrency=80 \
+            --cpu=1 \
+            --memory=512Mi \
+            --min-instances=0 \
+            --max-instances=20 \
+            --timeout=300 \
+            --cpu-boost \
             --set-env-vars=FIREBASE_PROJECT_ID=crew-predictions,FIREBASE_API_KEY=$PROD_API_KEY,FIREBASE_AUTH_DOMAIN=crew-predictions.web.app,GOOGLE_CLOUD_PROJECT=crew-predictions,FIREBASE_MEASUREMENT_ID=G-PFL8D07Q09,FIREBASE_APP_ID=1:937208344837:web:28d1ccfe9f2ac0a2dd876c \
             --update-secrets=ADMIN_KEY=admin-key:latest,SESSION_SECRET=session-secret:latest \
             --quiet
@@ -451,6 +475,9 @@ jobs:
 
       - name: Deploy to Firebase Hosting
         run: npx firebase deploy --only hosting --project crew-predictions
+
+      - name: Deploy Firestore rules + indexes to prod
+        run: npx firebase deploy --only firestore --project crew-predictions
 
       - name: Promote prod tags
         run: |

@@ -46,6 +46,7 @@ yarn-error.log*
 playwright-report/
 playwright-report*.zip
 smoke-report/
+smoke-report-extracted/
 *smoke-report*.zip
 test-results/
 trace-ci/
@@ -61,8 +62,9 @@ HANDOFF.md
 *.log
 .cache/
 dist/
-*.png
-*.html
-*.webm
-*.mp4
 .playwright-cli/
+# Playwright artifact-typed catch-alls scoped to where they actually appear.
+# A blanket `*.png` / `*.html` would shadow tracked files like the Vite
+# entry index.html or future favicons. The artifact directories are already
+# gitignored above (playwright-report/, .playwright-mcp/, test-results/,
+# smoke-report/), so no top-level type-based rule is needed.
