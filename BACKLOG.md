@@ -37,7 +37,7 @@
 
 - [ ] **App Check** — register Crew Predictions web app with reCAPTCHA v3 attestation provider; enforce on Cloud Firestore and Authentication. Note: does not cover Go/Cloud Run endpoints (those are protected by session cookies). Wire `initializeAppCheck()` into `src/firebase.ts` before enforcing.
 
-- [ ] **Check Firestore security rules into the repo** — the deployed rules are deny-all (correct posture for our server-only Admin SDK architecture), but they currently live only in the Firebase console. No PR review, no rollback, no way to detect drift between prod and staging. Add `firestore.rules`, reference it from both `firebase.json` and `firebase.staging.json`, deploy via CI. Once in place, `internal/CLAUDE.md`'s "When you change Firestore rules" workflow becomes enforceable. Audited 2026-05-07 via `/firestore-security-rules-auditor`.
+- [ ] **Cloud Run runtime service account least privilege** — both prod and staging Cloud Run services currently run as the default Compute Engine service account, which holds `roles/editor` on the project. That means our public-facing Go server has effectively project-admin permissions; a server compromise blast-radius is the entire GCP project. Fix: create a dedicated runtime SA per project (e.g., `cloud-run-runtime@<project>.iam.gserviceaccount.com`), grant only what the Go code needs (`roles/datastore.user`, `roles/secretmanager.secretAccessor` scoped to `admin-key` and `session-secret`, `roles/logging.logWriter`), update both `gcloud run deploy` commands in CI to pass `--service-account=...`, validate end-to-end on staging, then revoke `roles/editor` from the default Compute SA on both projects. Audited 2026-05-07.
 
 ### Test Infrastructure
 
@@ -71,6 +71,8 @@
 ---
 
 ## Done
+
+- [x] **Firestore security rules + indexes in the repo** — `firestore.rules` (deny-all, audited 5/5 via `/firestore-security-rules-auditor` 2026-05-07) and `firestore.indexes.json` (empty) checked in and referenced from both `firebase.json` and `firebase.staging.json`. CI deploys to staging on push to develop and to prod on merge to main. 21-probe Vitest suite via `@firebase/rules-unit-testing` validates deny-all behavior against the emulator (auth/unauth × read/write × every collection + recursive subcollections). `internal/CLAUDE.md` documents the deny-all posture and the workflow for any future rules change. Required IAM grants on both projects for the GitHub Actions SA: `roles/serviceusage.serviceUsageConsumer`, `roles/firebaserules.admin`, `roles/datastore.indexAdmin`.
 
 - [x] **Restructure CI: build-and-test job** — renamed `test` → `build-and-test`; step order: Go unit tests → Vue unit tests → coverage → typecheck → `npm run build` → `CGO_ENABLED=0 go build -o server` → Firebase emulators → integration tests → e2e → upload `dist/` + `server` binary as GitHub Actions artifacts. `deploy-staging` downloads pre-built artifacts; Docker image is now single-stage (`debian:bookworm-slim`, just `COPY server .`). `playwright.config.ts` CI-aware: uses `./server` + `vite preview` in CI, `go run` + `vite build && vite preview` locally. Artifacts only uploaded after all tests pass.
 - [x] **Decouple frontend from Docker image** — removed `spaHandler`/`assetsHandler` from Go server and Node/Vite build stage from Dockerfile; Vue built as a separate CI step (`npm run build`); `vite preview` on :8083 proxies to Go API on :8082 for e2e tests, mirroring production architecture (Firebase Hosting → Cloud Run).
