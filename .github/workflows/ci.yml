@@ -22,6 +22,13 @@ jobs:
     container:
       image: mcr.microsoft.com/playwright:v1.59.1-noble
       options: --user 1001
+    env:
+      # Force Node DNS to prefer IPv4 when resolving "localhost". Inside
+      # the playwright container, /etc/hosts resolves localhost to ::1
+      # (IPv6) first, but the Firebase Auth emulator binds 127.0.0.1
+      # only — so test requests to http://localhost:9099/... fail with
+      # ECONNREFUSED ::1:9099. This restores Node 16 default ordering.
+      NODE_OPTIONS: --dns-result-order=ipv4first
     permissions:
       checks: write
       contents: read
@@ -128,7 +135,12 @@ jobs:
         run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o server ./cmd/server
 
       - name: Start Firebase emulators
-        run: npx firebase emulators:start --only auth,firestore --project crew-predictions &
+        # --host 0.0.0.0 binds the emulators to every interface (both IPv4
+        # 127.0.0.1 and IPv6 ::1) so test code connecting via either
+        # localhost-resolution path reaches them. Defense-in-depth for the
+        # ipv4first DNS env var at the job level. CI-only — local dev
+        # via dev.sh keeps the safer 127.0.0.1 default.
+        run: npx firebase emulators:start --only auth,firestore --project crew-predictions --host 0.0.0.0 &
         env:
           FIREBASE_PROJECT_ID: crew-predictions
 
