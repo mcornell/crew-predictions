@@ -2,6 +2,19 @@
 
 ## Up Next
 
+### CI Speedup — switch e2e job to Playwright container
+
+- [ ] **Run the build-and-test job inside `mcr.microsoft.com/playwright:v<VERSION>-noble`** — Playwright's official guidance is explicit that browser binaries should not be cached and that OS deps "need to be installed, which are not cacheable" (https://playwright.dev/docs/ci#caching-browsers). Their recommended pattern is the prebuilt Microsoft container image, which has chromium + every system lib preinstalled — eliminating the `npx playwright install --with-deps` step entirely (~30–90s per CI run today).
+
+  Implementation approach:
+  - Add `container: { image: mcr.microsoft.com/playwright:v<VERSION>-noble }` to the `build-and-test` job.
+  - Drop the cache step on `~/.cache/ms-playwright` and the `playwright install` / `install-deps` steps — the container has both.
+  - Verify `actions/setup-go`, `actions/setup-java`, and `actions/setup-node` all cooperate with the container (they should — they install into writable user paths).
+  - Pin the container version to match the `@playwright/test` version in package.json; bump together when upgrading Playwright.
+  - Free-tier compatible (image pull from MCR is free; runner minutes unchanged).
+
+  Trigger condition: do this **first** in the next infra cleanup batch — every PR pays the install tax today, and savings compound across all CI runs.
+
 ### Season History & Year-End Reset
 
 - [ ] **Season archive and leaderboard reset** — At the end of each season, snapshot the final leaderboard standings into a `seasons/{seasonID}` Firestore collection, then zero out user scores for the new season. The leaderboard UI gets a season selector (e.g. "2026", "2027 Short", "2027–28") so anyone can browse historical standings. The current leaderboard always shows the active season.
