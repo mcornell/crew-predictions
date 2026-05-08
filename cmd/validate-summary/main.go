@@ -1,7 +1,10 @@
+//go:build manual
+
 // Validates the ESPN /summary parser against every completed Columbus Crew
-// match this season. Run manually:
+// match this season. Run manually (the `manual` build tag excludes this file
+// from default builds, tests, and coverage):
 //
-//	go run ./cmd/validate-summary
+//	go run -tags manual ./cmd/validate-summary
 //
 // For each completed match, prints attendance, total events, displayable
 // events, and the distinct event types observed. Useful to spot matches with
