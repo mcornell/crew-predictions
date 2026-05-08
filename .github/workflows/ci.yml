@@ -224,6 +224,7 @@ jobs:
           name: frontend-dist
           path: dist/
           retention-days: 1
+          if-no-files-found: error
 
       - name: Upload server binary artifact
         uses: actions/upload-artifact@v7
@@ -231,6 +232,7 @@ jobs:
           name: server-binary
           path: server
           retention-days: 1
+          if-no-files-found: error
 
   deploy-staging:
     if: github.ref == 'refs/heads/develop' && github.event_name == 'push'

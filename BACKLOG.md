@@ -20,8 +20,8 @@
   - [ ] **gocover-cobertura `-strict` flag** — when v1.5+ ships, bump the tool directive and add `-strict` to the invocation in `.github/workflows/ci.yml`. The flag fails the build if any coverage profiles are silently skipped due to missing package/module info. Currently in upstream main only (https://github.com/boumenot/gocover-cobertura).
 
   **Lower priority — likely no change:**
-  - [ ] `actions/checkout@v6` — sanity check. Doc: https://github.com/actions/checkout
-  - [ ] `actions/upload-artifact@v7` / `actions/download-artifact@v7` — confirm syntax current. Doc: https://github.com/actions/upload-artifact
+  - [x] `actions/checkout@v6` — reviewed; six bare uses match docs' canonical examples. Already on latest major (v6 credential storage moved to `$RUNNER_TEMP`, transparent). No change.
+  - [x] `actions/upload-artifact@v7` / `actions/download-artifact@v7` — already on latest major. Added `if-no-files-found: error` to `frontend-dist` and `server-binary` uploads (must-exist artifacts for downstream deploy jobs); other uploads correctly leave the default since their files are conditional.
   - [ ] `docker/setup-buildx-action@v3` / `docker/login-action@v3` — stable. Docs: https://github.com/docker/setup-buildx-action / https://github.com/docker/login-action
   - [ ] `dorny/test-reporter@v3` — third-party, works today. Doc: https://github.com/dorny/test-reporter
   - [ ] `playwright-bdd` (`bddgen`) — scan CHANGELOG for CI guidance. Doc: https://github.com/vitalets/playwright-bdd
