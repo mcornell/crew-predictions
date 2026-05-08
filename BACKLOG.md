@@ -7,23 +7,24 @@
 - [ ] **Walk every CI tool against current upstream documentation** and apply any simplifications / current-best-practice changes. Each item gets its own focused commit so failures isolate. Two findings already applied separately (Go cache simplification + Vitest `github-actions` reporter); the rest still need to be reviewed:
 
   **Highest impact — review next:**
-  - [ ] `actions/setup-node@v6` — built-in caching pattern (similar to setup-go). Doc: https://github.com/actions/setup-node
-  - [ ] `actions/setup-java@v5` — confirm `temurin` distribution + Java 25 still recommended. Doc: https://github.com/actions/setup-java
-  - [ ] `docker/build-push-action@v6` — buildx cache options have shifted historically. Doc: https://github.com/docker/build-push-action
-  - [ ] `firebase-tools` (pinned 15.15.0 in package.json) — latest is 17+; check release notes for deploy-flag changes. Doc: https://firebase.google.com/docs/cli
+  - [x] `actions/setup-node@v6` — switched to `node-version-file: package.json` with `engines.node: ^24` for single source of truth.
+  - [x] `actions/setup-java@v5` — reviewed; current `temurin` + Java 25 usage is already idiomatic, no change needed.
+  - [x] `docker/build-push-action@v6` — bumped to `@v7`; v7.0.0 only drops deprecated env vars we don't set + Node 24 runtime. Inputs unchanged.
+  - [x] `firebase-tools` — bumped exact pin 15.15.0 → 15.17.0; emulator improvements + hosting cross-project safety fix. No flag/usage changes.
 
   **Medium priority:**
-  - [ ] `google-github-actions/auth@v3` — WIF auth patterns. Doc: https://github.com/google-github-actions/auth
-  - [ ] `google-github-actions/setup-gcloud@v3` — installer. Doc: https://github.com/google-github-actions/setup-gcloud
-  - [ ] `gotestsum` (installed at `latest`) — pin to specific version + review JUnit output options. Doc: https://github.com/gotestyourself/gotestsum
-  - [ ] `gocover-cobertura` (installed at `latest`) — pin to specific version. Doc: https://github.com/boumenot/gocover-cobertura
+  - [x] `google-github-actions/auth@v3` — reviewed; already on latest major, indirect WIF + `access_token` for Docker login is idiomatic, permissions/checkout-ordering correct. No change.
+  - [x] `google-github-actions/setup-gcloud@v3` — reviewed; bare usage matches docs' canonical WIF example. Sibling actions (deploy-cloudrun, upload-cloud-storage, etc.) considered but rejected — our deploys have substantial conditional logic that stays in bash regardless. No change.
+  - [x] `gotestsum` — already pinned via go.mod `tool` directive (v1.13.0). Dropped CI install step in favor of `go tool gotestsum`. Added `--junitfile-testcase-classname=relative` for cleaner test report classnames.
+  - [x] `gocover-cobertura` — pinned via go.mod tool directive at v1.4.0; CI install step dropped in favor of `go tool gocover-cobertura`.
+  - [ ] **gocover-cobertura `-strict` flag** — when v1.5+ ships, bump the tool directive and add `-strict` to the invocation in `.github/workflows/ci.yml`. The flag fails the build if any coverage profiles are silently skipped due to missing package/module info. Currently in upstream main only (https://github.com/boumenot/gocover-cobertura).
 
   **Lower priority — likely no change:**
-  - [ ] `actions/checkout@v6` — sanity check. Doc: https://github.com/actions/checkout
-  - [ ] `actions/upload-artifact@v7` / `actions/download-artifact@v7` — confirm syntax current. Doc: https://github.com/actions/upload-artifact
-  - [ ] `docker/setup-buildx-action@v3` / `docker/login-action@v3` — stable. Docs: https://github.com/docker/setup-buildx-action / https://github.com/docker/login-action
-  - [ ] `dorny/test-reporter@v3` — third-party, works today. Doc: https://github.com/dorny/test-reporter
-  - [ ] `playwright-bdd` (`bddgen`) — scan CHANGELOG for CI guidance. Doc: https://github.com/vitalets/playwright-bdd
+  - [x] `actions/checkout@v6` — reviewed; six bare uses match docs' canonical examples. Already on latest major (v6 credential storage moved to `$RUNNER_TEMP`, transparent). No change.
+  - [x] `actions/upload-artifact@v7` / `actions/download-artifact@v7` — already on latest major. Added `if-no-files-found: error` to `frontend-dist` and `server-binary` uploads (must-exist artifacts for downstream deploy jobs); other uploads correctly leave the default since their files are conditional.
+  - [x] `docker/setup-buildx-action@v3` / `docker/login-action@v3` — both bumped to `@v4`; same Node 24 runtime + ESM switch as build-push-action v7. setup-buildx-action v4 removes deprecated `config`/`config-inline`/`install` inputs which we don't use. login-action v4 keeps our existing `registry`/`username`/`password` inputs as canonical.
+  - [x] `dorny/test-reporter@v3` — reviewed; six calls share identical canonical pattern. Already on latest major (v3.0.0 was Node 24 + permissions tightening, no schema change). `java-junit` reporter is correct since gotestsum/vitest/playwright all emit JUnit XML. No change.
+  - [x] `playwright-bdd` — already on latest 8.5.0. Migrated `playwright.smoke.ts` and `playwright.prod-smoke.ts` from deprecated Cucumber-style `paths`/`require` to canonical `features`/`steps` (per `CucumberConfigDeprecated` typedef in installed types).
 
 ### CI Speedup — switch e2e job to Playwright container
 
