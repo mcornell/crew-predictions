@@ -21,7 +21,7 @@ func TestRefreshMatchesHandler_CallsOnRefreshCallback(t *testing.T) {
 
 	var called []models.Match
 	h := handlers.NewRefreshMatchesHandler(store, fetcher, func(m []models.Match) { called = m })
-	req := httptest.NewRequest(http.MethodPost, "/admin/refresh-matches", nil)
+	req := httptest.NewRequest(http.MethodPost, "/admin/refresh-matches", http.NoBody)
 	w := httptest.NewRecorder()
 	h.Refresh(w, req)
 
@@ -38,7 +38,7 @@ func TestRefreshMatchesHandler_SavesFetcherResultsToStore(t *testing.T) {
 	fetcher := func() ([]models.Match, error) { return matches, nil }
 
 	h := handlers.NewRefreshMatchesHandler(store, fetcher, nil)
-	req := httptest.NewRequest(http.MethodPost, "/admin/refresh-matches", nil)
+	req := httptest.NewRequest(http.MethodPost, "/admin/refresh-matches", http.NoBody)
 	w := httptest.NewRecorder()
 	h.Refresh(w, req)
 
@@ -62,7 +62,7 @@ func TestRefreshMatchesHandler_Returns500WhenStoreSaveFails(t *testing.T) {
 	}
 
 	h := handlers.NewRefreshMatchesHandler(store, fetcher, nil)
-	req := httptest.NewRequest(http.MethodPost, "/admin/refresh-matches", nil)
+	req := httptest.NewRequest(http.MethodPost, "/admin/refresh-matches", http.NoBody)
 	w := httptest.NewRecorder()
 	h.Refresh(w, req)
 
@@ -76,7 +76,7 @@ func TestRefreshMatchesHandler_Returns500WhenFetcherFails(t *testing.T) {
 	fetcher := func() ([]models.Match, error) { return nil, fmt.Errorf("espn down") }
 
 	h := handlers.NewRefreshMatchesHandler(store, fetcher, nil)
-	req := httptest.NewRequest(http.MethodPost, "/admin/refresh-matches", nil)
+	req := httptest.NewRequest(http.MethodPost, "/admin/refresh-matches", http.NoBody)
 	w := httptest.NewRecorder()
 	h.Refresh(w, req)
 

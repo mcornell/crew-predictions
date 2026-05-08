@@ -20,7 +20,7 @@ func TestCloseSeasonHandler_ClosesActiveSeasonAndReturns204(t *testing.T) {
 	users.UpdateScores(ctx, "u1", 1, 15, 0, 0)
 
 	h := handlers.NewCloseSeasonHandler(users, snaps, cfg)
-	req := httptest.NewRequest(http.MethodPost, "/admin/seasons/close", nil)
+	req := httptest.NewRequest(http.MethodPost, "/admin/seasons/close", http.NoBody)
 	rr := httptest.NewRecorder()
 	h.Close(rr, req)
 
@@ -45,7 +45,7 @@ func TestCloseSeasonHandler_ClosesActiveSeasonAndReturns204(t *testing.T) {
 func TestCloseSeasonHandler_Returns500WhenCloseSeasonFails(t *testing.T) {
 	cfg := repository.NewMemoryConfigStore("2026")
 	h := handlers.NewCloseSeasonHandler(repository.NewErrorGetAllUserStore(), repository.NewMemorySeasonStore(), cfg)
-	req := httptest.NewRequest(http.MethodPost, "/admin/seasons/close", nil)
+	req := httptest.NewRequest(http.MethodPost, "/admin/seasons/close", http.NoBody)
 	rr := httptest.NewRecorder()
 	h.Close(rr, req)
 	if rr.Code != http.StatusInternalServerError {
@@ -60,7 +60,7 @@ func TestCloseSeasonHandler_AdvancesActiveSeason(t *testing.T) {
 	cfg := repository.NewMemoryConfigStore("2026")
 
 	h := handlers.NewCloseSeasonHandler(users, snaps, cfg)
-	req := httptest.NewRequest(http.MethodPost, "/admin/seasons/close", nil)
+	req := httptest.NewRequest(http.MethodPost, "/admin/seasons/close", http.NoBody)
 	rr := httptest.NewRecorder()
 	h.Close(rr, req)
 

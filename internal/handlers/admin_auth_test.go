@@ -14,7 +14,7 @@ func TestAdminAuth_NoHeader_Returns403(t *testing.T) {
 	handler := AdminAuth(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
-	req := httptest.NewRequest(http.MethodPost, "/admin/results", nil)
+	req := httptest.NewRequest(http.MethodPost, "/admin/results", http.NoBody)
 	rr := httptest.NewRecorder()
 	handler(rr, req)
 
@@ -30,7 +30,7 @@ func TestAdminAuth_WrongKey_Returns403(t *testing.T) {
 	handler := AdminAuth(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
-	req := httptest.NewRequest(http.MethodPost, "/admin/results", nil)
+	req := httptest.NewRequest(http.MethodPost, "/admin/results", http.NoBody)
 	req.Header.Set("X-Admin-Key", "wrong")
 	rr := httptest.NewRecorder()
 	handler(rr, req)
@@ -47,7 +47,7 @@ func TestAdminAuth_CorrectKey_Passes(t *testing.T) {
 	handler := AdminAuth(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
-	req := httptest.NewRequest(http.MethodPost, "/admin/results", nil)
+	req := httptest.NewRequest(http.MethodPost, "/admin/results", http.NoBody)
 	req.Header.Set("X-Admin-Key", "secret")
 	rr := httptest.NewRecorder()
 	handler(rr, req)
@@ -64,7 +64,7 @@ func TestAdminAuth_TestMode_Bypasses(t *testing.T) {
 	handler := AdminAuth(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
-	req := httptest.NewRequest(http.MethodPost, "/admin/results", nil)
+	req := httptest.NewRequest(http.MethodPost, "/admin/results", http.NoBody)
 	// No header — should still pass in TEST_MODE
 	rr := httptest.NewRecorder()
 	handler(rr, req)
@@ -83,7 +83,7 @@ func TestAdminAuth_EmptyEnvKey_AlwaysDenies(t *testing.T) {
 	handler := AdminAuth(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
-	req := httptest.NewRequest(http.MethodPost, "/admin/results", nil)
+	req := httptest.NewRequest(http.MethodPost, "/admin/results", http.NoBody)
 	req.Header.Set("X-Admin-Key", "")
 	rr := httptest.NewRecorder()
 	handler(rr, req)

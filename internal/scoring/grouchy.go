@@ -15,7 +15,7 @@ func crewMargin(r Result, targetIsHome bool) int {
 }
 
 func predictionToResult(p Prediction) Result {
-	return Result{Home: p.Home, Away: p.Away}
+	return Result(p)
 }
 
 func grouchyCategory(margin int) int {

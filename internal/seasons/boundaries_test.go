@@ -45,8 +45,8 @@ func TestSeasonByID(t *testing.T) {
 
 func TestSeasonForDate(t *testing.T) {
 	tests := []struct {
-		date     time.Time
-		wantID   string
+		date   time.Time
+		wantID string
 	}{
 		{time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC), "2026"},
 		{time.Date(2026, 12, 31, 0, 0, 0, 0, time.UTC), "2026"},

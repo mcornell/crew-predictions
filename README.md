@@ -77,6 +77,34 @@ The smoke suite verifies that clicking "Sign in with Google" initiates the redir
 
 ---
 
+## Linting
+
+Linters are configured for **local use only** — there's no CI gate. Run them on demand.
+
+**Go** ([`.golangci.yml`](.golangci.yml)):
+
+```bash
+golangci-lint run ./...      # find issues
+golangci-lint fmt ./...      # auto-apply gofmt + goimports
+```
+
+The linter must be at least v2.x and built with a Go runtime ≥ the project's `go.mod` toolchain (currently 1.26). Install/upgrade with:
+
+```bash
+go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+```
+
+**Vue / TypeScript** ([`eslint.config.mjs`](eslint.config.mjs)):
+
+```bash
+npm run lint        # find issues
+npm run lint:fix    # auto-fix what's autofixable (most Vue formatting rules)
+```
+
+Both linters expect a clean tree before commit. The configs are tuned to skip noisy style nags (Go: `hugeParam`/`rangeValCopy`/`paramTypeCombine`/`QF1001`; TypeScript: `no-explicit-any` is allowed in `e2e/` and test files).
+
+---
+
 ## Status
 
 See [BACKLOG.md](BACKLOG.md) for what's done and what's next.

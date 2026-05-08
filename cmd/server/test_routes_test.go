@@ -29,7 +29,7 @@ func TestRegisterTestRoutes_RegistersResetEndpoint(t *testing.T) {
 	mux := http.NewServeMux()
 	registerTestRoutes(mux, newTestModeDeps(t))
 
-	req := httptest.NewRequest(http.MethodDelete, "/admin/reset", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/admin/reset", http.NoBody)
 	rr := httptest.NewRecorder()
 	mux.ServeHTTP(rr, req)
 
@@ -71,7 +71,7 @@ func TestRegisterTestRoutes_SkipsWhenStoresNotMemoryBacked(t *testing.T) {
 	mux := http.NewServeMux()
 	registerTestRoutes(mux, deps)
 
-	req := httptest.NewRequest(http.MethodDelete, "/admin/reset", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/admin/reset", http.NoBody)
 	rr := httptest.NewRecorder()
 	mux.ServeHTTP(rr, req)
 
@@ -96,7 +96,7 @@ func TestRegisterTestRoutes_ResetClearsAllMemoryStores(t *testing.T) {
 		t.Fatalf("seed user: %v", err)
 	}
 
-	req := httptest.NewRequest(http.MethodDelete, "/admin/reset", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/admin/reset", http.NoBody)
 	rr := httptest.NewRecorder()
 	mux.ServeHTTP(rr, req)
 	if rr.Code != http.StatusNoContent {

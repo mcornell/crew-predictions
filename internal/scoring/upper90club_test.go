@@ -7,10 +7,11 @@ import (
 )
 
 // Upper 90 Club scoring:
-//   +3 exact score
-//   +2 correct outcome AND (correct Columbus goals OR correct opponent goals)
-//   +1 correct outcome only OR correct Columbus goals only
-//    0 otherwise
+//
+//	+3 exact score
+//	+2 correct outcome AND (correct Columbus goals OR correct opponent goals)
+//	+1 correct outcome only OR correct Columbus goals only
+//	 0 otherwise
 func TestUpper90Club(t *testing.T) {
 	cases := []struct {
 		desc     string

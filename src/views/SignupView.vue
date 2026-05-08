@@ -1,20 +1,58 @@
 <template>
   <div class="login-page">
     <div class="login-card">
-      <h1 class="login-title">Sign Up</h1>
-      <p class="login-sub">Pick your scores. Be wrong in public. It's tradition.</p>
-      <form class="login-form" data-testid="signup-form" @submit.prevent="handleSubmit">
-        <input class="form-input" v-model="email" type="email" placeholder="Email" autocomplete="email" required />
-        <input class="form-input" v-model="password" type="password" placeholder="Password" autocomplete="new-password" required />
-        <p v-if="error" class="form-error">{{ error }}</p>
-        <button class="btn-submit" type="submit">Sign Up</button>
+      <h1 class="login-title">
+        Sign Up
+      </h1>
+      <p class="login-sub">
+        Pick your scores. Be wrong in public. It's tradition.
+      </p>
+      <form
+        class="login-form"
+        data-testid="signup-form"
+        @submit.prevent="handleSubmit"
+      >
+        <input
+          v-model="email"
+          class="form-input"
+          type="email"
+          placeholder="Email"
+          autocomplete="email"
+          required
+        >
+        <input
+          v-model="password"
+          class="form-input"
+          type="password"
+          placeholder="Password"
+          autocomplete="new-password"
+          required
+        >
+        <p
+          v-if="error"
+          class="form-error"
+        >
+          {{ error }}
+        </p>
+        <button
+          class="btn-submit"
+          type="submit"
+        >
+          Sign Up
+        </button>
       </form>
-      <button class="btn-google" data-testid="google-signin" @click="handleGoogle">
+      <button
+        class="btn-google"
+        data-testid="google-signin"
+        @click="handleGoogle"
+      >
         Sign in with Google
       </button>
       <p class="auth-alt">
         Already have an account?
-        <router-link to="/login">Sign in</router-link>
+        <router-link to="/login">
+          Sign in
+        </router-link>
       </p>
     </div>
   </div>
@@ -57,8 +95,9 @@ async function handleSubmit() {
     }
     await flushGuestPredictions()
     router.push('/matches')
-  } catch (e: any) {
-    error.value = signUpErrorMessages[e?.code] ?? 'Could not create account.'
+  } catch (e) {
+    const code = (e as { code?: string })?.code ?? ''
+    error.value = signUpErrorMessages[code] ?? 'Could not create account.'
   }
 }
 

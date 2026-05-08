@@ -1,0 +1,55 @@
+version: "2"
+
+run:
+  timeout: 3m
+  tests: true
+
+linters:
+  default: none
+  enable:
+    - errcheck       # unchecked errors
+    - govet          # vet checks
+    - ineffassign    # unused assignments
+    - staticcheck    # comprehensive bug checks
+    - unused         # unused code
+    - misspell       # misspellings in comments and strings
+    - unconvert      # unnecessary type conversions
+    - revive         # golint replacement
+    - bodyclose      # http response bodies must be closed
+    - gocritic       # additional code quality checks
+  settings:
+    staticcheck:
+      checks:
+        - all
+        - -QF1001  # "could apply De Morgan's law" — readability preference, not a bug
+    revive:
+      rules:
+        - name: var-naming
+        - name: package-comments
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - performance
+        - style
+      disabled-checks:
+        - ifElseChain
+        # Pass-by-value perf nags; flagging every handler/struct method is more noise than signal.
+        - hugeParam
+        - rangeValCopy
+        - paramTypeCombine
+  exclusions:
+    paths:
+      - node_modules
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/mcornell/crew-predictions

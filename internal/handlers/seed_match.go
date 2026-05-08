@@ -31,7 +31,7 @@ func NewSeedMatchHandler(store *repository.MemoryMatchStore) *SeedMatchHandler {
 }
 
 func (h *SeedMatchHandler) Submit(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	_ = r.ParseForm()
 	if r.FormValue("id") == "" {
 		http.Error(w, "id is required", http.StatusBadRequest)
 		return
@@ -46,14 +46,14 @@ func (h *SeedMatchHandler) Submit(w http.ResponseWriter, r *http.Request) {
 		state = deriveStateFromStatus(r.FormValue("status"))
 	}
 	h.store.Seed([]models.Match{{
-		ID:        r.FormValue("id"),
-		HomeTeam:  r.FormValue("home_team"),
-		AwayTeam:  r.FormValue("away_team"),
-		Kickoff:   kickoff,
-		Status:    r.FormValue("status"),
-		State:     state,
-		HomeScore: r.FormValue("home_score"),
-		AwayScore: r.FormValue("away_score"),
+		ID:         r.FormValue("id"),
+		HomeTeam:   r.FormValue("home_team"),
+		AwayTeam:   r.FormValue("away_team"),
+		Kickoff:    kickoff,
+		Status:     r.FormValue("status"),
+		State:      state,
+		HomeScore:  r.FormValue("home_score"),
+		AwayScore:  r.FormValue("away_score"),
 		Venue:      r.FormValue("venue"),
 		HomeRecord: r.FormValue("home_record"),
 		AwayRecord: r.FormValue("away_record"),

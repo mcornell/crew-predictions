@@ -87,6 +87,6 @@ func TestWriteThroughMatchStore_SaveAllReturnsErrorWhenPrimaryFails(t *testing.T
 
 type failingMatchStore struct{}
 
-func (f *failingMatchStore) SaveAll(_ []models.Match) error          { return fmt.Errorf("firestore down") }
-func (f *failingMatchStore) GetAll() ([]models.Match, error)         { return nil, nil }
-func (f *failingMatchStore) Reset()                                   {}
+func (f *failingMatchStore) SaveAll(_ []models.Match) error  { return fmt.Errorf("firestore down") }
+func (f *failingMatchStore) GetAll() ([]models.Match, error) { return nil, nil }
+func (f *failingMatchStore) Reset()                          {}

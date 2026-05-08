@@ -21,5 +21,5 @@ func serveFirebaseConfig(w http.ResponseWriter, _ *http.Request) {
 		"authEmulatorHost": os.Getenv("FIREBASE_AUTH_EMULATOR_HOST"),
 	})
 	w.Header().Set("Content-Type", "application/javascript")
-	fmt.Fprintf(w, "window.__firebaseConfig = %s;", cfg)
+	_, _ = fmt.Fprintf(w, "window.__firebaseConfig = %s;", cfg)
 }

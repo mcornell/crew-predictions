@@ -31,7 +31,10 @@ func (h *CloseSeasonHandler) Close(w http.ResponseWriter, r *http.Request) {
 	activeDef, _ := seasons.SeasonByID(activeID)
 	nextDef := seasons.SeasonForDate(activeDef.End)
 	if nextDef.ID != activeID {
-		h.config.SetActiveSeason(ctx, nextDef.ID)
+		if err := h.config.SetActiveSeason(ctx, nextDef.ID); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 
 	w.WriteHeader(http.StatusNoContent)

@@ -26,13 +26,15 @@ func matchStoreWith(matches []models.Match) *repository.MemoryMatchStore {
 
 func TestAPIMatchesHandler_ReadsFromMatchStore(t *testing.T) {
 	mh := handlers.NewMatchesHandler(repository.NewMemoryPredictionStore(), matchStoreWith(oneMatch()))
-	req := httptest.NewRequest(http.MethodGet, "/api/matches", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/matches", http.NoBody)
 	w := httptest.NewRecorder()
 
 	mh.APIList(w, req)
 
 	var body struct {
-		Matches []struct{ ID string `json:"id"` } `json:"matches"`
+		Matches []struct {
+			ID string `json:"id"`
+		} `json:"matches"`
 	}
 	json.NewDecoder(w.Body).Decode(&body)
 	if len(body.Matches) != 1 || body.Matches[0].ID != "match-99" {
@@ -42,7 +44,7 @@ func TestAPIMatchesHandler_ReadsFromMatchStore(t *testing.T) {
 
 func TestAPIMatchesHandler_ReturnsJSON(t *testing.T) {
 	mh := handlers.NewMatchesHandler(repository.NewMemoryPredictionStore(), matchStoreWith(oneMatch()))
-	req := httptest.NewRequest(http.MethodGet, "/api/matches", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/matches", http.NoBody)
 	w := httptest.NewRecorder()
 
 	mh.APIList(w, req)
@@ -76,7 +78,7 @@ func (e *errMatchStore) Reset()                          {}
 
 func TestAPIMatchesHandler_ReturnsErrorWhenFetchFails(t *testing.T) {
 	mh := handlers.NewMatchesHandler(repository.NewMemoryPredictionStore(), &errMatchStore{})
-	req := httptest.NewRequest(http.MethodGet, "/api/matches", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/matches", http.NoBody)
 	w := httptest.NewRecorder()
 
 	mh.APIList(w, req)
@@ -90,7 +92,7 @@ func TestAPIMatchesHandler_IncludesStateInResponse(t *testing.T) {
 	ms := repository.NewMemoryMatchStore()
 	ms.SaveAll([]models.Match{{ID: "m-live", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", Kickoff: time.Now(), State: "in"}})
 	mh := handlers.NewMatchesHandler(repository.NewMemoryPredictionStore(), ms)
-	req := httptest.NewRequest(http.MethodGet, "/api/matches", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/matches", http.NoBody)
 	w := httptest.NewRecorder()
 
 	mh.APIList(w, req)
@@ -118,13 +120,15 @@ func TestAPIMatchesHandler_ReturnsSortedByKickoffAscending(t *testing.T) {
 		{ID: "m-early", HomeTeam: "Columbus Crew", AwayTeam: "LA Galaxy", Kickoff: earlier},
 	})
 	mh := handlers.NewMatchesHandler(repository.NewMemoryPredictionStore(), ms)
-	req := httptest.NewRequest(http.MethodGet, "/api/matches", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/matches", http.NoBody)
 	w := httptest.NewRecorder()
 
 	mh.APIList(w, req)
 
 	var body struct {
-		Matches []struct{ ID string `json:"id"` } `json:"matches"`
+		Matches []struct {
+			ID string `json:"id"`
+		} `json:"matches"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
 		t.Fatalf("invalid JSON: %v", err)
@@ -143,7 +147,7 @@ func TestAPIMatchesHandler_IncludesVenue(t *testing.T) {
 			Kickoff: time.Now(), Venue: "ScottsMiracle-Gro Field"},
 	})
 	mh := handlers.NewMatchesHandler(repository.NewMemoryPredictionStore(), store)
-	req := httptest.NewRequest(http.MethodGet, "/api/matches", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/matches", http.NoBody)
 	w := httptest.NewRecorder()
 
 	mh.APIList(w, req)
@@ -175,7 +179,7 @@ func TestAPIMatchesHandler_IncludesEventsForLiveMatches(t *testing.T) {
 			}},
 	})
 	mh := handlers.NewMatchesHandler(repository.NewMemoryPredictionStore(), store)
-	req := httptest.NewRequest(http.MethodGet, "/api/matches", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/matches", http.NoBody)
 	w := httptest.NewRecorder()
 	mh.APIList(w, req)
 
@@ -208,7 +212,7 @@ func TestAPIMatchesHandler_IncludesRecordsAndForm(t *testing.T) {
 			HomeForm: "WWWLL", AwayForm: "LWDWL"},
 	})
 	mh := handlers.NewMatchesHandler(repository.NewMemoryPredictionStore(), store)
-	req := httptest.NewRequest(http.MethodGet, "/api/matches", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/matches", http.NoBody)
 	w := httptest.NewRecorder()
 
 	mh.APIList(w, req)
@@ -248,7 +252,7 @@ func TestAPIMatchesHandler_IncludesPredictionForLoggedInUser(t *testing.T) {
 		MatchID: "match-99", UserID: "google:abc123", HomeGoals: 2, AwayGoals: 1,
 	})
 	mh := handlers.NewMatchesHandler(store, matchStoreWith(oneMatch()))
-	req := httptest.NewRequest(http.MethodGet, "/api/matches", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/matches", http.NoBody)
 	req.AddCookie(sessionCookie("google:abc123", "BlackAndGold@bsky.mock"))
 	w := httptest.NewRecorder()
 

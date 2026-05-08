@@ -163,7 +163,7 @@ func (h *MatchDetailHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(map[string]any{
-		"match": found,
+		"match":       found,
 		"isProjected": isProjected,
 		"scoringFormats": []map[string]string{
 			{"key": "acesRadio", "label": "Aces Radio"},

@@ -17,7 +17,7 @@ func TestProfileHandler_UsesPrecomputedAcesRadioPoints(t *testing.T) {
 	users.UpdateScores(ctx, "u1", 3, 42, 0, 0)
 
 	h := NewProfileHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), users, "Columbus Crew")
-	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", http.NoBody)
 	req.SetPathValue("userID", "u1")
 	w := httptest.NewRecorder()
 	h.Get(w, req)
@@ -39,7 +39,7 @@ func TestProfileHandler_ReturnsHandleAndLocation(t *testing.T) {
 	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "CrewFan", Location: "Columbus, OH"})
 
 	h := NewProfileHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), users, "Columbus Crew")
-	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", http.NoBody)
 	req.SetPathValue("userID", "u1")
 	w := httptest.NewRecorder()
 	h.Get(w, req)
@@ -67,7 +67,7 @@ func TestProfileHandler_ReturnsPredictionCount(t *testing.T) {
 	users.UpdateScores(ctx, "u1", 2, 0, 0, 0)
 
 	h := NewProfileHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), users, "Columbus Crew")
-	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", http.NoBody)
 	req.SetPathValue("userID", "u1")
 	w := httptest.NewRecorder()
 	h.Get(w, req)
@@ -90,7 +90,7 @@ func TestProfileHandler_ReturnsLeaderboardStanding(t *testing.T) {
 	users.UpdateScores(ctx, "u2", 1, 0, 0, 0)
 
 	h := NewProfileHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), users, "Columbus Crew")
-	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", http.NoBody)
 	req.SetPathValue("userID", "u1")
 	w := httptest.NewRecorder()
 	h.Get(w, req)
@@ -119,7 +119,7 @@ func TestProfileHandler_ReturnsGrouchyStanding(t *testing.T) {
 	users.UpdateScores(ctx, "u2", 1, 0, 0, 0)
 
 	h := NewProfileHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), users, "Columbus Crew")
-	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", http.NoBody)
 	req.SetPathValue("userID", "u1")
 	w := httptest.NewRecorder()
 	h.Get(w, req)
@@ -155,7 +155,7 @@ func TestProfileHandler_RanksLowerStandingsCorrectly(t *testing.T) {
 	h := NewProfileHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), users, "Columbus Crew")
 
 	rankOf := func(userID string) int {
-		req := httptest.NewRequest(http.MethodGet, "/api/profile/"+userID, nil)
+		req := httptest.NewRequest(http.MethodGet, "/api/profile/"+userID, http.NoBody)
 		req.SetPathValue("userID", userID)
 		w := httptest.NewRecorder()
 		h.Get(w, req)
@@ -187,7 +187,7 @@ func TestProfileHandler_RanksLowerStandingsCorrectly(t *testing.T) {
 
 func TestProfileHandler_Returns500WhenGetAllFails(t *testing.T) {
 	h := NewProfileHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), repository.NewErrorGetAllWithExistingUserStore(), "Columbus Crew")
-	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", http.NoBody)
 	req.SetPathValue("userID", "u1")
 	w := httptest.NewRecorder()
 	h.Get(w, req)
@@ -199,7 +199,7 @@ func TestProfileHandler_Returns500WhenGetAllFails(t *testing.T) {
 
 func TestProfileHandler_Returns500WhenUserStoreFails(t *testing.T) {
 	h := NewProfileHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), repository.NewErrorGetByIDUserStore(), "Columbus Crew")
-	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", http.NoBody)
 	req.SetPathValue("userID", "u1")
 	w := httptest.NewRecorder()
 	h.Get(w, req)
@@ -211,7 +211,7 @@ func TestProfileHandler_Returns500WhenUserStoreFails(t *testing.T) {
 
 func TestProfileHandler_Returns404ForUnknownUser(t *testing.T) {
 	h := NewProfileHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), repository.NewMemoryUserStore(), "Columbus Crew")
-	req := httptest.NewRequest(http.MethodGet, "/api/profile/nobody", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/profile/nobody", http.NoBody)
 	req.SetPathValue("userID", "nobody")
 	w := httptest.NewRecorder()
 	h.Get(w, req)
@@ -227,7 +227,7 @@ func TestProfileHandler_ReturnsZeroRankWhenNoScoredPredictions(t *testing.T) {
 	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "NewFan", PredictionCount: 0})
 
 	h := NewProfileHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), users, "Columbus Crew")
-	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", http.NoBody)
 	req.SetPathValue("userID", "u1")
 	w := httptest.NewRecorder()
 	h.Get(w, req)

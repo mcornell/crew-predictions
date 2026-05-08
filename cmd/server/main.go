@@ -1,7 +1,12 @@
+// Package main is the crew-predictions HTTP server entry point. It loads
+// configuration, builds the store/handler dependency graph, registers the
+// HTTP routes, and starts the daily refresh + match-poller goroutines in
+// non-test mode.
 package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"log/slog"
 	"net/http"
@@ -9,11 +14,21 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+
 	"github.com/mcornell/crew-predictions/internal/handlers"
 )
 
 func main() {
-	godotenv.Load()
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+// run is split out from main so deferred cleanups (poller cancel, daily-refresh
+// stop) actually execute on shutdown — log.Fatal/os.Exit skip defers, but
+// returning from run() runs them before the top-level log.Fatal.
+func run() error {
+	_ = godotenv.Load()
 	setupLogging()
 
 	cfg := loadConfig()
@@ -21,7 +36,7 @@ func main() {
 
 	stores, err := buildStores(ctx, cfg)
 	if err != nil {
-		log.Fatalf("buildStores: %v", err)
+		return fmt.Errorf("buildStores: %w", err)
 	}
 
 	verifier := buildVerifier(ctx, cfg)
@@ -40,7 +55,7 @@ func main() {
 	if !cfg.TestMode {
 		etLoc, err := time.LoadLocation("America/New_York")
 		if err != nil {
-			log.Fatalf("failed to load ET timezone: %v", err)
+			return fmt.Errorf("load ET timezone: %w", err)
 		}
 		stop := startDailyRefresh(stores.Match, deps.RefreshFetcher, deps.MatchPoller, deps.TwoOneBot, deps.RecalcFn, etLoc)
 		defer close(stop)
@@ -51,9 +66,7 @@ func main() {
 	}
 
 	slog.Info("server listening", "port", cfg.Port)
-	if err := http.ListenAndServe(":"+cfg.Port, mux); err != nil {
-		log.Fatal(err)
-	}
+	return http.ListenAndServe(":"+cfg.Port, mux)
 }
 
 // setupLogging configures slog to emit JSON that Cloud Logging understands:

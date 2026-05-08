@@ -168,7 +168,7 @@ func TestServeFirebaseConfig_ReturnsJavaScriptWithEnvVars(t *testing.T) {
 	t.Setenv("FIREBASE_PROJECT_ID", "test-project")
 	t.Setenv("FIREBASE_AUTH_DOMAIN", "test-project.firebaseapp.com")
 
-	req := httptest.NewRequest(http.MethodGet, "/auth/config.js", nil)
+	req := httptest.NewRequest(http.MethodGet, "/auth/config.js", http.NoBody)
 	rr := httptest.NewRecorder()
 	serveFirebaseConfig(rr, req)
 
@@ -189,4 +189,3 @@ func TestServeFirebaseConfig_ReturnsJavaScriptWithEnvVars(t *testing.T) {
 		t.Errorf("expected project ID in response, got %q", body)
 	}
 }
-

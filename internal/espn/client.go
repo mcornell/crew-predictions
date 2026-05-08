@@ -1,3 +1,6 @@
+// Package espn fetches Columbus Crew match schedules and summaries from the
+// public ESPN site API. It exposes typed match records and event timelines
+// that the rest of the service consumes.
 package espn
 
 import (
@@ -36,10 +39,10 @@ func (s *scoreField) UnmarshalJSON(data []byte) error {
 // leagueSlugs are the ESPN league identifiers to check for Columbus Crew matches.
 // Friendlies are excluded by omission.
 var leagueSlugs = []string{
-	"usa.1",              // MLS
-	"usa.open",           // US Open Cup
+	"usa.1",                // MLS
+	"usa.open",             // US Open Cup
 	"concacaf.leagues.cup", // Leagues Cup
-	"concacaf.champions", // CONCACAF Champions Cup
+	"concacaf.champions",   // CONCACAF Champions Cup
 }
 
 const teamID = "183"
@@ -200,7 +203,7 @@ func fetchAndParse(url string) ([]matchRecord, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		return nil, nil // league may not have data; skip silently
 	}
@@ -311,7 +314,7 @@ func fetchSummaryFrom(base, matchID string) (models.MatchSummary, error) {
 	if err != nil {
 		return models.MatchSummary{}, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		return models.MatchSummary{}, nil
 	}

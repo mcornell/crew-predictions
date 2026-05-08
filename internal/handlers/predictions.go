@@ -26,7 +26,7 @@ func (h *PredictionsHandler) Submit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
-	r.ParseForm()
+	_ = r.ParseForm()
 	matchID := r.FormValue("match_id")
 	if matchID == "" || r.FormValue("home_goals") == "" || r.FormValue("away_goals") == "" {
 		http.Error(w, "missing fields", http.StatusBadRequest)
@@ -81,7 +81,7 @@ func (h *PredictionsHandler) Submit(w http.ResponseWriter, r *http.Request) {
 	}
 	slog.Info("prediction submitted", "matchID", matchID, "userID", user.UserID, "homeGoals", home, "awayGoals", away)
 	if r.Header.Get("HX-Request") == "true" {
-		fmt.Fprintf(w, `<div data-testid="match-card"><div class="saved-score">%d – %d</div><div class="saved-label">Your Pick</div></div>`, home, away)
+		_, _ = fmt.Fprintf(w, `<div data-testid="match-card"><div class="saved-score">%d – %d</div><div class="saved-label">Your Pick</div></div>`, home, away)
 		return
 	}
 	http.Redirect(w, r, "/matches", http.StatusFound)

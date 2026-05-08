@@ -1,58 +1,187 @@
 <template>
   <div class="page page--match-detail">
-    <RouterLink to="/matches" class="back-link" data-testid="back-link">← All Matches</RouterLink>
+    <RouterLink
+      to="/matches"
+      class="back-link"
+      data-testid="back-link"
+    >
+      ← All Matches
+    </RouterLink>
 
-    <p v-if="loading" data-testid="loading" class="status-msg">Loading…</p>
-    <p v-else-if="error" data-testid="error" class="status-msg status-msg--error">{{ error }}</p>
+    <p
+      v-if="loading"
+      data-testid="loading"
+      class="status-msg"
+    >
+      Loading…
+    </p>
+    <p
+      v-else-if="error"
+      data-testid="error"
+      class="status-msg status-msg--error"
+    >
+      {{ error }}
+    </p>
 
-    <div v-if="match" class="match-detail-header">
-      <div v-if="isLive" class="match-detail-live-bar" data-testid="live-indicator-detail">
-        <span v-if="match.status === 'STATUS_HALFTIME'" class="live-indicator">● HT</span>
-        <span v-else class="live-indicator">● {{ match.displayClock || 'LIVE' }}</span>
+    <div
+      v-if="match"
+      class="match-detail-header"
+    >
+      <div
+        v-if="isLive"
+        class="match-detail-live-bar"
+        data-testid="live-indicator-detail"
+      >
+        <span
+          v-if="match.status === 'STATUS_HALFTIME'"
+          class="live-indicator"
+        >● HT</span>
+        <span
+          v-else
+          class="live-indicator"
+        >● {{ match.displayClock || 'LIVE' }}</span>
       </div>
-      <div class="matchup matchup--input" data-testid="match-score" :class="{ 'matchup--has-form': match.homeRecord || match.awayRecord || match.homeForm || match.awayForm }">
+      <div
+        class="matchup matchup--input"
+        data-testid="match-score"
+        :class="{ 'matchup--has-form': match.homeRecord || match.awayRecord || match.homeForm || match.awayForm }"
+      >
         <span class="team-name team-home">
-          <img v-if="match.homeLogo" :src="match.homeLogo" alt="" class="team-logo" data-testid="home-logo" loading="lazy" />
+          <img
+            v-if="match.homeLogo"
+            :src="match.homeLogo"
+            alt=""
+            class="team-logo"
+            data-testid="home-logo"
+            loading="lazy"
+          >
           <span class="team-label">{{ match.homeTeam }}</span>
         </span>
         <span class="inline-score">{{ match.homeScore || '–' }}</span>
         <span class="vs">vs</span>
         <span class="inline-score">{{ match.awayScore || '–' }}</span>
         <span class="team-name team-away">
-          <img v-if="match.awayLogo" :src="match.awayLogo" alt="" class="team-logo" data-testid="away-logo" loading="lazy" />
+          <img
+            v-if="match.awayLogo"
+            :src="match.awayLogo"
+            alt=""
+            class="team-logo"
+            data-testid="away-logo"
+            loading="lazy"
+          >
           <span class="team-label">{{ match.awayTeam }}</span>
         </span>
-        <div v-if="match.homeRecord || match.homeForm" class="matchup-team-form matchup-team-form--home">
-          <span v-if="match.homeRecord" class="match-record">{{ match.homeRecord }}</span>
-          <span v-if="match.homeForm" class="match-form"><span v-for="(c, i) in match.homeForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
+        <div
+          v-if="match.homeRecord || match.homeForm"
+          class="matchup-team-form matchup-team-form--home"
+        >
+          <span
+            v-if="match.homeRecord"
+            class="match-record"
+          >{{ match.homeRecord }}</span>
+          <span
+            v-if="match.homeForm"
+            class="match-form"
+          ><span
+            v-for="(c, i) in match.homeForm.split('')"
+            :key="i"
+            :class="`form-letter form-letter--${c.toLowerCase()}`"
+          >{{ c }}</span></span>
         </div>
-        <div v-if="match.awayRecord || match.awayForm" class="matchup-team-form matchup-team-form--away">
-          <span v-if="match.awayRecord" class="match-record">{{ match.awayRecord }}</span>
-          <span v-if="match.awayForm" class="match-form"><span v-for="(c, i) in match.awayForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
+        <div
+          v-if="match.awayRecord || match.awayForm"
+          class="matchup-team-form matchup-team-form--away"
+        >
+          <span
+            v-if="match.awayRecord"
+            class="match-record"
+          >{{ match.awayRecord }}</span>
+          <span
+            v-if="match.awayForm"
+            class="match-form"
+          ><span
+            v-for="(c, i) in match.awayForm.split('')"
+            :key="i"
+            :class="`form-letter form-letter--${c.toLowerCase()}`"
+          >{{ c }}</span></span>
         </div>
       </div>
-      <div v-if="match.homeRecord || match.homeForm" class="match-form-row">
+      <div
+        v-if="match.homeRecord || match.homeForm"
+        class="match-form-row"
+      >
         <div class="match-form-team">
-          <span v-if="match.homeRecord" class="match-record" data-testid="home-record">{{ match.homeRecord }}</span>
-          <span v-if="match.homeForm" class="match-form" data-testid="home-form"><span v-for="(c, i) in match.homeForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
+          <span
+            v-if="match.homeRecord"
+            class="match-record"
+            data-testid="home-record"
+          >{{ match.homeRecord }}</span>
+          <span
+            v-if="match.homeForm"
+            class="match-form"
+            data-testid="home-form"
+          ><span
+            v-for="(c, i) in match.homeForm.split('')"
+            :key="i"
+            :class="`form-letter form-letter--${c.toLowerCase()}`"
+          >{{ c }}</span></span>
         </div>
         <div class="match-form-team match-form-team--away">
-          <span v-if="match.awayForm" class="match-form" data-testid="away-form"><span v-for="(c, i) in match.awayForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
-          <span v-if="match.awayRecord" class="match-record" data-testid="away-record">{{ match.awayRecord }}</span>
+          <span
+            v-if="match.awayForm"
+            class="match-form"
+            data-testid="away-form"
+          ><span
+            v-for="(c, i) in match.awayForm.split('')"
+            :key="i"
+            :class="`form-letter form-letter--${c.toLowerCase()}`"
+          >{{ c }}</span></span>
+          <span
+            v-if="match.awayRecord"
+            class="match-record"
+            data-testid="away-record"
+          >{{ match.awayRecord }}</span>
         </div>
       </div>
-      <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
-      <div v-if="match.venue" class="match-meta match-venue" data-testid="match-detail-venue">{{ match.venue }}</div>
-      <div v-if="match.attendance" class="match-meta match-attendance" data-testid="match-detail-attendance">{{ formatAttendance(match.attendance) }}</div>
-      <div v-if="match.referee" class="match-meta match-referee" data-testid="match-referee">Referee: {{ match.referee }}</div>
+      <div class="match-meta">
+        {{ formatKickoff(match.kickoff) }}
+      </div>
+      <div
+        v-if="match.venue"
+        class="match-meta match-venue"
+        data-testid="match-detail-venue"
+      >
+        {{ match.venue }}
+      </div>
+      <div
+        v-if="match.attendance"
+        class="match-meta match-attendance"
+        data-testid="match-detail-attendance"
+      >
+        {{ formatAttendance(match.attendance) }}
+      </div>
+      <div
+        v-if="match.referee"
+        class="match-meta match-referee"
+        data-testid="match-referee"
+      >
+        Referee: {{ match.referee }}
+      </div>
       <button
         v-if="groupedEvents.length > 0"
         class="events-toggle"
         data-testid="events-toggle"
         :aria-expanded="eventsExpanded ? 'true' : 'false'"
         @click="eventsExpanded = !eventsExpanded"
-      >{{ eventsExpanded ? 'Hide events ↑' : 'Show events ↓' }}</button>
-      <div v-if="groupedEvents.length > 0" class="match-events" :class="{ 'match-events--collapsed': !eventsExpanded }" data-testid="match-events">
+      >
+        {{ eventsExpanded ? 'Hide events ↑' : 'Show events ↓' }}
+      </button>
+      <div
+        v-if="groupedEvents.length > 0"
+        class="match-events"
+        :class="{ 'match-events--collapsed': !eventsExpanded }"
+        data-testid="match-events"
+      >
         <div
           v-for="(event, i) in groupedEvents"
           :key="i"
@@ -61,14 +190,30 @@
           data-testid="match-event"
         >
           <div class="event-detail">
-            <span class="event-icon" :aria-label="event.typeID">{{ eventIcon(event.typeID) }}</span>
-            <span v-if="event.typeID === 'substitution' && event.subs" class="event-players event-subs">
-              <span v-for="(pair, j) in event.subs" :key="j" class="sub-pair">
+            <span
+              class="event-icon"
+              :aria-label="event.typeID"
+            >{{ eventIcon(event.typeID) }}</span>
+            <span
+              v-if="event.typeID === 'substitution' && event.subs"
+              class="event-players event-subs"
+            >
+              <span
+                v-for="(pair, j) in event.subs"
+                :key="j"
+                class="sub-pair"
+              >
                 <span class="sub-on">{{ pair.on }}<span class="sub-arrow">↑</span></span>
-                <span v-if="pair.off" class="sub-off">{{ pair.off }}<span class="sub-arrow">↓</span></span>
+                <span
+                  v-if="pair.off"
+                  class="sub-off"
+                >{{ pair.off }}<span class="sub-arrow">↓</span></span>
               </span>
             </span>
-            <span v-else class="event-players">{{ event.players[0] || '' }}</span>
+            <span
+              v-else
+              class="event-players"
+            >{{ event.players[0] || '' }}</span>
           </div>
           <span class="event-clock">{{ event.clock }}</span>
         </div>
@@ -83,85 +228,114 @@
     </div>
 
     <template v-if="sortedPredictions.length > 0">
-      <p v-if="isProjected" class="projected-label" data-testid="projected-label">Projected scores based on current live result</p>
+      <p
+        v-if="isProjected"
+        class="projected-label"
+        data-testid="projected-label"
+      >
+        Projected scores based on current live result
+      </p>
       <div class="lb-mobile-sort">
         <button
           class="lb-sort-btn"
           :class="{ 'lb-sort-btn--active': activeFormat === 'acesRadio' }"
           data-testid="mobile-sort-aces"
           @click="activeFormat = 'acesRadio'"
-        >Aces Radio</button>
+        >
+          Aces Radio
+        </button>
         <button
           class="lb-sort-btn"
           :class="{ 'lb-sort-btn--active': activeFormat === 'upper90Club' }"
           data-testid="mobile-sort-upper90"
           @click="activeFormat = 'upper90Club'"
-        >Upper 90 Club</button>
+        >
+          Upper 90 Club
+        </button>
         <button
           class="lb-sort-btn"
           :class="{ 'lb-sort-btn--active': activeFormat === 'grouchy' }"
           data-testid="mobile-sort-grouchy"
           @click="activeFormat = 'grouchy'"
-        >Grouchy™</button>
+        >
+          Grouchy™
+        </button>
       </div>
 
-    <div class="lb-table lb-5col">
-      <div class="lb-header">
-        <span class="lb-cell lb-rank">RANK</span>
-        <span class="lb-cell lb-handle">PREDICTOR</span>
-        <button
-          class="lb-cell lb-pts lb-sort-btn"
-          :class="{ 'lb-sort-btn--active': activeFormat === 'acesRadio' }"
-          data-testid="sort-aces"
-          @click="activeFormat = 'acesRadio'"
-        >Aces Radio</button>
-        <button
-          class="lb-cell lb-pts lb-sort-btn"
-          :class="{ 'lb-sort-btn--active': activeFormat === 'upper90Club' }"
-          data-testid="sort-upper90"
-          @click="activeFormat = 'upper90Club'"
-        >Upper 90 Club</button>
-        <button
-          class="lb-cell lb-pts lb-sort-btn"
-          :class="{ 'lb-sort-btn--active': activeFormat === 'grouchy' }"
-          data-testid="sort-grouchy"
-          @click="activeFormat = 'grouchy'"
-        >Grouchy™</button>
-      </div>
+      <div class="lb-table lb-5col">
+        <div class="lb-header">
+          <span class="lb-cell lb-rank">RANK</span>
+          <span class="lb-cell lb-handle">PREDICTOR</span>
+          <button
+            class="lb-cell lb-pts lb-sort-btn"
+            :class="{ 'lb-sort-btn--active': activeFormat === 'acesRadio' }"
+            data-testid="sort-aces"
+            @click="activeFormat = 'acesRadio'"
+          >
+            Aces Radio
+          </button>
+          <button
+            class="lb-cell lb-pts lb-sort-btn"
+            :class="{ 'lb-sort-btn--active': activeFormat === 'upper90Club' }"
+            data-testid="sort-upper90"
+            @click="activeFormat = 'upper90Club'"
+          >
+            Upper 90 Club
+          </button>
+          <button
+            class="lb-cell lb-pts lb-sort-btn"
+            :class="{ 'lb-sort-btn--active': activeFormat === 'grouchy' }"
+            data-testid="sort-grouchy"
+            @click="activeFormat = 'grouchy'"
+          >
+            Grouchy™
+          </button>
+        </div>
 
-      <div
-        v-for="(entry, i) in sortedPredictions"
-        :key="entry.userID"
-        class="lb-row"
-        data-testid="prediction-row"
-      >
-        <span class="lb-cell lb-rank" data-testid="prediction-rank">{{ rankFor(i) }}</span>
-        <span class="lb-cell lb-handle">
-          <span class="lb-handle-name">{{ entry.handle }}</span>
-          <span class="lb-pick-sub" data-testid="prediction-score">{{ entry.homeGoals }} – {{ entry.awayGoals }}</span>
-        </span>
-        <span
-          class="lb-cell lb-pts"
-          :class="{ 'lb-pts--active': activeFormat === 'acesRadio' }"
-          data-testid="prediction-aces-points"
-          data-label="Aces Radio"
-        >{{ entry.acesRadioPoints }}</span>
-        <span
-          class="lb-cell lb-pts"
-          :class="{ 'lb-pts--active': activeFormat === 'upper90Club' }"
-          data-testid="prediction-upper90-points"
-          data-label="Upper 90 Club"
-        >{{ entry.upper90ClubPoints }}</span>
-        <span
-          class="lb-cell lb-pts"
-          :class="{ 'lb-pts--active': activeFormat === 'grouchy' }"
-          data-testid="prediction-grouchy-points"
-          data-label="Grouchy™"
-        >{{ entry.grouchyPoints }}</span>
+        <div
+          v-for="(entry, i) in sortedPredictions"
+          :key="entry.userID"
+          class="lb-row"
+          data-testid="prediction-row"
+        >
+          <span
+            class="lb-cell lb-rank"
+            data-testid="prediction-rank"
+          >{{ rankFor(i) }}</span>
+          <span class="lb-cell lb-handle">
+            <span class="lb-handle-name">{{ entry.handle }}</span>
+            <span
+              class="lb-pick-sub"
+              data-testid="prediction-score"
+            >{{ entry.homeGoals }} – {{ entry.awayGoals }}</span>
+          </span>
+          <span
+            class="lb-cell lb-pts"
+            :class="{ 'lb-pts--active': activeFormat === 'acesRadio' }"
+            data-testid="prediction-aces-points"
+            data-label="Aces Radio"
+          >{{ entry.acesRadioPoints }}</span>
+          <span
+            class="lb-cell lb-pts"
+            :class="{ 'lb-pts--active': activeFormat === 'upper90Club' }"
+            data-testid="prediction-upper90-points"
+            data-label="Upper 90 Club"
+          >{{ entry.upper90ClubPoints }}</span>
+          <span
+            class="lb-cell lb-pts"
+            :class="{ 'lb-pts--active': activeFormat === 'grouchy' }"
+            data-testid="prediction-grouchy-points"
+            data-label="Grouchy™"
+          >{{ entry.grouchyPoints }}</span>
+        </div>
       </div>
-    </div>
     </template>
-    <p v-else-if="loaded" class="empty">No predictions were made for this match</p>
+    <p
+      v-else-if="loaded"
+      class="empty"
+    >
+      No predictions were made for this match
+    </p>
   </div>
 </template>
 

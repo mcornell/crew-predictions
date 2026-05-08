@@ -16,7 +16,7 @@ func NewSeedPredictionHandler(store repository.PredictionStore) *SeedPredictionH
 }
 
 func (h *SeedPredictionHandler) Submit(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	_ = r.ParseForm()
 	home, err := strconv.Atoi(r.FormValue("home_goals"))
 	if err != nil {
 		http.Error(w, "home_goals must be an integer", http.StatusBadRequest)
@@ -27,12 +27,15 @@ func (h *SeedPredictionHandler) Submit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "away_goals must be an integer", http.StatusBadRequest)
 		return
 	}
-	h.store.Save(r.Context(), repository.Prediction{
+	if err := h.store.Save(r.Context(), repository.Prediction{
 		MatchID:   r.FormValue("match_id"),
 		UserID:    r.FormValue("user_id"),
 		HomeGoals: home,
 		AwayGoals: away,
-	})
+	}); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -45,13 +48,16 @@ func NewSeedUserHandler(store repository.UserStore) *SeedUserHandler {
 }
 
 func (h *SeedUserHandler) Submit(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	_ = r.ParseForm()
 	userID := r.FormValue("user_id")
 	handle := r.FormValue("handle")
 	if userID == "" {
 		http.Error(w, "user_id is required", http.StatusBadRequest)
 		return
 	}
-	h.store.Upsert(r.Context(), repository.User{UserID: userID, Handle: handle})
+	if err := h.store.Upsert(r.Context(), repository.User{UserID: userID, Handle: handle}); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	w.WriteHeader(http.StatusNoContent)
 }

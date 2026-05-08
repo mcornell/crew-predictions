@@ -12,7 +12,7 @@ import (
 
 func TestSeasonsHandler_ListReturnsAllSeasons(t *testing.T) {
 	sh := handlers.NewSeasonsHandler(repository.NewMemoryConfigStore("2026"))
-	req := httptest.NewRequest(http.MethodGet, "/api/seasons", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/seasons", http.NoBody)
 	w := httptest.NewRecorder()
 	sh.APIList(w, req)
 
@@ -42,4 +42,3 @@ func TestSeasonsHandler_ListReturnsAllSeasons(t *testing.T) {
 		t.Errorf("expected 2027-sprint season to not be current")
 	}
 }
-

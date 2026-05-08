@@ -1,11 +1,19 @@
 <template>
   <div class="page">
-    <h1 class="page-title">Rules</h1>
-    <p class="rules-intro">Three ways to be wrong. Pick your poison — actually, you don't have a choice, you're in all of the contests.</p>
+    <h1 class="page-title">
+      Rules
+    </h1>
+    <p class="rules-intro">
+      Three ways to be wrong. Pick your poison — actually, you don't have a choice, you're in all of the contests.
+    </p>
 
     <section class="rules-section">
-      <h2 class="section-title">Aces Radio</h2>
-      <p class="rules-desc">High risk, high reward. Nail the exact scoreline and you're the smartest person in the room. Get it backwards and you owe everyone a pint.</p>
+      <h2 class="section-title">
+        Aces Radio
+      </h2>
+      <p class="rules-desc">
+        High risk, high reward. Nail the exact scoreline and you're the smartest person in the room. Get it backwards and you owe everyone a pint.
+      </p>
       <div class="rules-table">
         <div class="rules-row rules-row--positive">
           <span class="rules-points">+15</span>
@@ -27,8 +35,12 @@
     </section>
 
     <section class="rules-section">
-      <h2 class="section-title">Upper 90 Club</h2>
-      <p class="rules-desc">Gentler scoring for the optimists. Points stack — nail all three and you're golden.</p>
+      <h2 class="section-title">
+        Upper 90 Club
+      </h2>
+      <p class="rules-desc">
+        Gentler scoring for the optimists. Points stack — nail all three and you're golden.
+      </p>
       <div class="rules-table">
         <div class="rules-row rules-row--positive">
           <span class="rules-points">+1</span>
@@ -43,12 +55,18 @@
           <span class="rules-condition">Exact opponent goal tally — you predicted the right number of goals for the other lot</span>
         </div>
       </div>
-      <p class="rules-note">Points stack. Nail all three and you're at +3.</p>
+      <p class="rules-note">
+        Points stack. Nail all three and you're at +3.
+      </p>
     </section>
 
     <section class="rules-section">
-      <h2 class="section-title">Grouchy™</h2>
-      <p class="rules-desc">The prediction game from the most awful forum in the most awful place to talk soccer since 2000.</p>
+      <h2 class="section-title">
+        Grouchy™
+      </h2>
+      <p class="rules-desc">
+        The prediction game from the most awful forum in the most awful place to talk soccer since 2000.
+      </p>
       <div class="rules-table">
         <div class="rules-row rules-row--positive">
           <span class="rules-points">+1</span>
@@ -75,7 +93,9 @@
           <span class="rules-condition">Wrong category. Touch grass.</span>
         </div>
       </div>
-      <p class="rules-note">Categories are based on Columbus Crew margin. Predict the right bucket and you get the point — exact score doesn't matter.</p>
+      <p class="rules-note">
+        Categories are based on Columbus Crew margin. Predict the right bucket and you get the point — exact score doesn't matter.
+      </p>
     </section>
   </div>
 </template>

@@ -28,7 +28,7 @@ func getMatchDetail(t *testing.T, store repository.MatchStore, fetcher handlers.
 		"Columbus Crew",
 		fetcher,
 	)
-	req := httptest.NewRequest("GET", "/api/matches/"+matchID, nil)
+	req := httptest.NewRequest("GET", "/api/matches/"+matchID, http.NoBody)
 	req.SetPathValue("matchId", matchID)
 	w := httptest.NewRecorder()
 	h.Get(w, req)
@@ -69,7 +69,7 @@ func TestMatchDetailHandler_ReturnsPredictionsWithScores(t *testing.T) {
 
 	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew", nil)
 
-	req := httptest.NewRequest("GET", "/api/matches/m-test", nil)
+	req := httptest.NewRequest("GET", "/api/matches/m-test", http.NoBody)
 	req.SetPathValue("matchId", "m-test")
 	w := httptest.NewRecorder()
 	h.Get(w, req)
@@ -125,7 +125,7 @@ func TestMatchDetailHandler_IncludesGrouchyPoints(t *testing.T) {
 	})
 
 	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, repository.NewMemoryUserStore(), "Columbus Crew", nil)
-	req := httptest.NewRequest("GET", "/api/matches/m-grouchy", nil)
+	req := httptest.NewRequest("GET", "/api/matches/m-grouchy", http.NoBody)
 	req.SetPathValue("matchId", "m-grouchy")
 	w := httptest.NewRecorder()
 	h.Get(w, req)
@@ -150,7 +150,7 @@ func TestMatchDetailHandler_ScoringFormatsIncludesGrouchy(t *testing.T) {
 	}})
 
 	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, repository.NewMemoryUserStore(), "Columbus Crew", nil)
-	req := httptest.NewRequest("GET", "/api/matches/m-fmt", nil)
+	req := httptest.NewRequest("GET", "/api/matches/m-fmt", http.NoBody)
 	req.SetPathValue("matchId", "m-fmt")
 	w := httptest.NewRecorder()
 	h.Get(w, req)
@@ -190,7 +190,7 @@ func TestMatchDetailHandler_UsesCurrentHandleFromUserStore(t *testing.T) {
 
 	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew", nil)
 
-	req := httptest.NewRequest("GET", "/api/matches/m-handle", nil)
+	req := httptest.NewRequest("GET", "/api/matches/m-handle", http.NoBody)
 	req.SetPathValue("matchId", "m-handle")
 	w := httptest.NewRecorder()
 	h.Get(w, req)
@@ -219,7 +219,7 @@ func TestMatchDetailHandler_ShowsEmptyHandleWhenUserNotInStore(t *testing.T) {
 	predStore.Save(ctx, repository.Prediction{MatchID: "m-no-user", UserID: "google:orphan", HomeGoals: 1, AwayGoals: 0})
 
 	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew", nil)
-	req := httptest.NewRequest("GET", "/api/matches/m-no-user", nil)
+	req := httptest.NewRequest("GET", "/api/matches/m-no-user", http.NoBody)
 	req.SetPathValue("matchId", "m-no-user")
 	w := httptest.NewRecorder()
 	h.Get(w, req)
@@ -252,7 +252,7 @@ func TestMatchDetailHandler_LiveMatchProjectsScores(t *testing.T) {
 	predStore.Save(ctx, repository.Prediction{MatchID: "m-live", UserID: "u2", HomeGoals: 1, AwayGoals: 1})
 
 	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew", nil)
-	req := httptest.NewRequest("GET", "/api/matches/m-live", nil)
+	req := httptest.NewRequest("GET", "/api/matches/m-live", http.NoBody)
 	req.SetPathValue("matchId", "m-live")
 	w := httptest.NewRecorder()
 	h.Get(w, req)
@@ -301,7 +301,7 @@ func TestMatchDetailHandler_LiveMatchWithNoScoreDoesNotProject(t *testing.T) {
 	predStore.Save(ctx, repository.Prediction{MatchID: "m-live-noscore", UserID: "u1", HomeGoals: 1, AwayGoals: 0})
 
 	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, repository.NewMemoryUserStore(), "Columbus Crew", nil)
-	req := httptest.NewRequest("GET", "/api/matches/m-live-noscore", nil)
+	req := httptest.NewRequest("GET", "/api/matches/m-live-noscore", http.NoBody)
 	req.SetPathValue("matchId", "m-live-noscore")
 	w := httptest.NewRecorder()
 	h.Get(w, req)
@@ -321,7 +321,7 @@ func TestMatchDetailHandler_Returns404ForUnknownMatch(t *testing.T) {
 
 	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew", nil)
 
-	req := httptest.NewRequest("GET", "/api/matches/no-such-match", nil)
+	req := httptest.NewRequest("GET", "/api/matches/no-such-match", http.NoBody)
 	req.SetPathValue("matchId", "no-such-match")
 	w := httptest.NewRecorder()
 	h.Get(w, req)
@@ -346,7 +346,7 @@ func TestMatchDetailHandler_LiveMatchWithNonNumericScoreDoesNotProject(t *testin
 		"Columbus Crew",
 		nil,
 	)
-	req := httptest.NewRequest("GET", "/api/matches/m-live-nan", nil)
+	req := httptest.NewRequest("GET", "/api/matches/m-live-nan", http.NoBody)
 	req.SetPathValue("matchId", "m-live-nan")
 	w := httptest.NewRecorder()
 	h.Get(w, req)
@@ -375,7 +375,7 @@ func TestMatchDetailHandler_ReturnsEmptyPredictionsWhenNone(t *testing.T) {
 
 	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, repository.NewMemoryUserStore(), "Columbus Crew", nil)
 
-	req := httptest.NewRequest("GET", "/api/matches/m-empty", nil)
+	req := httptest.NewRequest("GET", "/api/matches/m-empty", http.NoBody)
 	req.SetPathValue("matchId", "m-empty")
 	w := httptest.NewRecorder()
 	h.Get(w, req)
@@ -401,7 +401,7 @@ func TestMatchDetailHandler_Returns500WhenMatchStoreFails(t *testing.T) {
 		"Columbus Crew",
 		nil,
 	)
-	req := httptest.NewRequest("GET", "/api/matches/any", nil)
+	req := httptest.NewRequest("GET", "/api/matches/any", http.NoBody)
 	req.SetPathValue("matchId", "any")
 	w := httptest.NewRecorder()
 	h.Get(w, req)
@@ -424,7 +424,7 @@ func TestMatchDetailHandler_Returns500WhenPredictionStoreFails(t *testing.T) {
 		"Columbus Crew",
 		nil,
 	)
-	req := httptest.NewRequest("GET", "/api/matches/m-pred-err", nil)
+	req := httptest.NewRequest("GET", "/api/matches/m-pred-err", http.NoBody)
 	req.SetPathValue("matchId", "m-pred-err")
 	w := httptest.NewRecorder()
 	h.Get(w, req)

@@ -2,6 +2,7 @@ package handlers_test
 
 import (
 	"bytes"
+	"context"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -21,9 +22,9 @@ type failWriter struct {
 	code   int
 }
 
-func newFailWriter() *failWriter { return &failWriter{header: http.Header{}} }
-func (f *failWriter) Header() http.Header      { return f.header }
-func (f *failWriter) WriteHeader(code int)     { f.code = code }
+func newFailWriter() *failWriter           { return &failWriter{header: http.Header{}} }
+func (f *failWriter) Header() http.Header  { return f.header }
+func (f *failWriter) WriteHeader(code int) { f.code = code }
 func (f *failWriter) Write([]byte) (int, error) {
 	return 0, errWriteFailed
 }
@@ -51,7 +52,7 @@ func TestLeaderboardHandler_LogsEncodeError(t *testing.T) {
 		repository.NewMemorySeasonStore(),
 		"Columbus Crew",
 	)
-	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", http.NoBody)
 	got := captureLog(t, func() { h.APIList(newFailWriter(), req) })
 	if !strings.Contains(got, "encode") {
 		t.Errorf("expected encode error logged, got %q", got)
@@ -62,7 +63,7 @@ func TestMatchesHandler_LogsEncodeError(t *testing.T) {
 	matchStore := repository.NewMemoryMatchStore()
 	matchStore.Seed([]models.Match{{ID: "m1", HomeTeam: "Columbus Crew", AwayTeam: "LA Galaxy", Kickoff: time.Now()}})
 	h := handlers.NewMatchesHandler(repository.NewMemoryPredictionStore(), matchStore)
-	req := httptest.NewRequest(http.MethodGet, "/api/matches", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/matches", http.NoBody)
 	got := captureLog(t, func() { h.APIList(newFailWriter(), req) })
 	if !strings.Contains(got, "encode") {
 		t.Errorf("expected encode error logged, got %q", got)
@@ -71,7 +72,7 @@ func TestMatchesHandler_LogsEncodeError(t *testing.T) {
 
 func TestMeHandler_LogsEncodeError(t *testing.T) {
 	h := handlers.NewMeHandler(repository.NewMemoryUserStore())
-	req := httptest.NewRequest(http.MethodGet, "/api/me", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/me", http.NoBody)
 	req.AddCookie(sessionCookie("u1", "TestUser"))
 	got := captureLog(t, func() { h.Get(newFailWriter(), req) })
 	if !strings.Contains(got, "encode") {
@@ -81,21 +82,20 @@ func TestMeHandler_LogsEncodeError(t *testing.T) {
 
 func TestProfileHandler_LogsEncodeError(t *testing.T) {
 	users := repository.NewMemoryUserStore()
-	_ = users.Upsert(nil, repository.User{UserID: "u1", Handle: "Fan"})
+	_ = users.Upsert(context.TODO(), repository.User{UserID: "u1", Handle: "Fan"})
 	h := handlers.NewProfileHandler(
 		repository.NewMemoryPredictionStore(),
 		repository.NewMemoryResultStore(),
 		users,
 		"Columbus Crew",
 	)
-	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/profile/u1", http.NoBody)
 	req.SetPathValue("userID", "u1")
 	got := captureLog(t, func() { h.Get(newFailWriter(), req) })
 	if !strings.Contains(got, "encode") {
 		t.Errorf("expected encode error logged, got %q", got)
 	}
 }
-
 
 func TestMatchDetailHandler_LogsEncodeError(t *testing.T) {
 	matchStore := repository.NewMemoryMatchStore()
@@ -108,7 +108,7 @@ func TestMatchDetailHandler_LogsEncodeError(t *testing.T) {
 		"Columbus Crew",
 		nil,
 	)
-	req := httptest.NewRequest(http.MethodGet, "/api/matches/m1", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/matches/m1", http.NoBody)
 	req.SetPathValue("matchId", "m1")
 	got := captureLog(t, func() { h.Get(newFailWriter(), req) })
 	if !strings.Contains(got, "encode") {

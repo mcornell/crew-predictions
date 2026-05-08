@@ -1,6 +1,9 @@
 <template>
-  <AppHeader :user="currentUser" :loading="authLoading" />
-<RouterView />
+  <AppHeader
+    :user="currentUser"
+    :loading="authLoading"
+  />
+  <RouterView />
 </template>
 
 <script setup lang="ts">

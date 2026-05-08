@@ -26,7 +26,7 @@ func (h *HandleHandler) Update(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
-	r.ParseForm()
+	_ = r.ParseForm()
 	handle := r.FormValue("handle")
 	if handle == "" {
 		http.Error(w, "handle is required", http.StatusBadRequest)

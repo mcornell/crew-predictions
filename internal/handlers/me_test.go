@@ -15,7 +15,7 @@ import (
 
 func TestMeHandler_ReturnsUserID(t *testing.T) {
 	data, _ := json.Marshal(map[string]interface{}{"userID": "firebase:abc", "handle": "Fan"})
-	req := httptest.NewRequest(http.MethodGet, "/api/me", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/me", http.NoBody)
 	req.AddCookie(&http.Cookie{Name: "__session", Value: base64.StdEncoding.EncodeToString(data)})
 	w := httptest.NewRecorder()
 	handlers.NewMeHandler(repository.NewMemoryUserStore()).Get(w, req)
@@ -33,7 +33,7 @@ func TestMeHandler_UpsertsProviderFromSession(t *testing.T) {
 	users := repository.NewMemoryUserStore()
 	h := handlers.NewMeHandler(users)
 	data, _ := json.Marshal(map[string]interface{}{"userID": "google:abc", "handle": "Fan", "provider": "google.com"})
-	req := httptest.NewRequest(http.MethodGet, "/api/me", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/me", http.NoBody)
 	req.AddCookie(&http.Cookie{Name: "__session", Value: base64.StdEncoding.EncodeToString(data)})
 	h.Get(httptest.NewRecorder(), req)
 
@@ -46,7 +46,7 @@ func TestMeHandler_UpsertsProviderFromSession(t *testing.T) {
 func TestMeHandler_UpsertsUserToStoreOnValidSession(t *testing.T) {
 	users := repository.NewMemoryUserStore()
 	h := handlers.NewMeHandler(users)
-	req := httptest.NewRequest(http.MethodGet, "/api/me", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/me", http.NoBody)
 	req.AddCookie(sessionCookie("google:abc123", "BlackAndGold@bsky.mock"))
 	w := httptest.NewRecorder()
 	h.Get(w, req)
@@ -61,7 +61,7 @@ func TestMeHandler_UpsertsUserToStoreOnValidSession(t *testing.T) {
 }
 
 func TestMeHandler_ReturnsUserWhenLoggedIn(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/api/me", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/me", http.NoBody)
 	req.AddCookie(sessionCookie("google:abc123", "BlackAndGold@bsky.mock"))
 	w := httptest.NewRecorder()
 
@@ -82,7 +82,7 @@ func TestMeHandler_ReturnsUserWhenLoggedIn(t *testing.T) {
 }
 
 func TestMeHandler_Returns401WhenNotLoggedIn(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/api/me", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/me", http.NoBody)
 	w := httptest.NewRecorder()
 
 	handlers.NewMeHandler(repository.NewMemoryUserStore()).Get(w, req)
@@ -94,7 +94,7 @@ func TestMeHandler_Returns401WhenNotLoggedIn(t *testing.T) {
 
 func TestMeHandler_StillRespondsWhenLazyUpsertFails(t *testing.T) {
 	h := handlers.NewMeHandler(repository.NewErrorUpsertUserStore())
-	req := httptest.NewRequest(http.MethodGet, "/api/me", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/me", http.NoBody)
 	req.AddCookie(sessionCookie("google:abc", "Fan"))
 	w := httptest.NewRecorder()
 	output := captureLog(t, func() { h.Get(w, req) })
@@ -109,7 +109,7 @@ func TestMeHandler_StillRespondsWhenLazyUpsertFails(t *testing.T) {
 func TestMeHandler_ReturnsEmailVerifiedInResponse(t *testing.T) {
 	data, _ := json.Marshal(map[string]interface{}{"userID": "google:abc", "handle": "Fan", "emailVerified": true})
 	cookie := &http.Cookie{Name: "__session", Value: base64.StdEncoding.EncodeToString(data)}
-	req := httptest.NewRequest(http.MethodGet, "/api/me", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/me", http.NoBody)
 	req.AddCookie(cookie)
 	w := httptest.NewRecorder()
 

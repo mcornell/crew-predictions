@@ -1,14 +1,26 @@
 <template>
   <div class="page">
     <div class="lb-page-header">
-      <h1 class="page-title">Leaderboard</h1>
-      <div v-if="showSwitcher" class="lb-season-switcher" ref="switcherRef">
+      <h1 class="page-title">
+        Leaderboard
+      </h1>
+      <div
+        v-if="showSwitcher"
+        ref="switcherRef"
+        class="lb-season-switcher"
+      >
         <button
           class="lb-season-trigger"
           data-testid="season-selector"
           @click="seasonOpen = !seasonOpen"
-        >{{ activeSeasonLabel }} <span class="lb-season-chevron">▾</span></button>
-        <div v-if="seasonOpen" class="season-flyout" data-testid="season-flyout">
+        >
+          {{ activeSeasonLabel }} <span class="lb-season-chevron">▾</span>
+        </button>
+        <div
+          v-if="seasonOpen"
+          class="season-flyout"
+          data-testid="season-flyout"
+        >
           <a
             href="/leaderboard"
             class="season-flyout-item"
@@ -27,11 +39,28 @@
       </div>
     </div>
 
-    <p v-if="loading" data-testid="loading" class="status-msg">Loading…</p>
-    <p v-else-if="error" data-testid="error" class="status-msg status-msg--error">{{ error }}</p>
+    <p
+      v-if="loading"
+      data-testid="loading"
+      class="status-msg"
+    >
+      Loading…
+    </p>
+    <p
+      v-else-if="error"
+      data-testid="error"
+      class="status-msg status-msg--error"
+    >
+      {{ error }}
+    </p>
 
     <template v-else>
-      <p v-if="sortedEntries.length === 0" class="empty">No predictions scored yet.</p>
+      <p
+        v-if="sortedEntries.length === 0"
+        class="empty"
+      >
+        No predictions scored yet.
+      </p>
 
       <template v-else>
         <div class="lb-mobile-sort">
@@ -40,80 +69,98 @@
             :class="{ 'lb-sort-btn--active': activeSort === 'aces' }"
             data-testid="mobile-sort-aces"
             @click="activeSort = 'aces'"
-          >Aces Radio</button>
+          >
+            Aces Radio
+          </button>
           <button
             class="lb-sort-btn"
             :class="{ 'lb-sort-btn--active': activeSort === 'upper90' }"
             data-testid="mobile-sort-upper90"
             @click="activeSort = 'upper90'"
-          >Upper 90 Club</button>
+          >
+            Upper 90 Club
+          </button>
           <button
             class="lb-sort-btn"
             :class="{ 'lb-sort-btn--active': activeSort === 'grouchy' }"
             data-testid="mobile-sort-grouchy"
             @click="activeSort = 'grouchy'"
-          >Grouchy™</button>
+          >
+            Grouchy™
+          </button>
         </div>
 
         <div class="lb-table lb-5col">
-        <div class="lb-header">
-          <span class="lb-cell lb-rank">RANK</span>
-          <span class="lb-cell lb-handle">PREDICTOR</span>
-          <button
-            class="lb-cell lb-pts lb-sort-btn"
-            :class="{ 'lb-sort-btn--active': activeSort === 'aces' }"
-            data-testid="sort-aces"
-            @click="activeSort = 'aces'"
-          >ACES RADIO</button>
-          <button
-            class="lb-cell lb-pts lb-sort-btn"
-            :class="{ 'lb-sort-btn--active': activeSort === 'upper90' }"
-            data-testid="sort-upper90"
-            @click="activeSort = 'upper90'"
-          >UPPER 90 CLUB</button>
-          <button
-            class="lb-cell lb-pts lb-sort-btn"
-            :class="{ 'lb-sort-btn--active': activeSort === 'grouchy' }"
-            data-testid="sort-grouchy"
-            @click="activeSort = 'grouchy'"
-          >GROUCHY™</button>
-        </div>
+          <div class="lb-header">
+            <span class="lb-cell lb-rank">RANK</span>
+            <span class="lb-cell lb-handle">PREDICTOR</span>
+            <button
+              class="lb-cell lb-pts lb-sort-btn"
+              :class="{ 'lb-sort-btn--active': activeSort === 'aces' }"
+              data-testid="sort-aces"
+              @click="activeSort = 'aces'"
+            >
+              ACES RADIO
+            </button>
+            <button
+              class="lb-cell lb-pts lb-sort-btn"
+              :class="{ 'lb-sort-btn--active': activeSort === 'upper90' }"
+              data-testid="sort-upper90"
+              @click="activeSort = 'upper90'"
+            >
+              UPPER 90 CLUB
+            </button>
+            <button
+              class="lb-cell lb-pts lb-sort-btn"
+              :class="{ 'lb-sort-btn--active': activeSort === 'grouchy' }"
+              data-testid="sort-grouchy"
+              @click="activeSort = 'grouchy'"
+            >
+              GROUCHY™
+            </button>
+          </div>
 
-        <div
-          v-for="(entry, i) in sortedEntries"
-          :key="entry.userID"
-          class="lb-row"
-          data-testid="leaderboard-row"
-        >
-          <span class="lb-cell lb-rank" data-testid="leaderboard-rank">{{ rankFor(i) }}</span>
-          <span class="lb-cell lb-handle">
-            <RouterLink
-              v-if="entry.hasProfile"
-              :to="`/profile/${entry.userID}`"
-              class="lb-handle-link"
-              data-testid="leaderboard-handle"
-            >{{ entry.handle }}</RouterLink>
-            <span v-else data-testid="leaderboard-handle">{{ entry.handle }}</span>
-          </span>
-          <span
-            class="lb-cell lb-pts"
-            :class="{ 'lb-pts--active': activeSort === 'aces' }"
-            data-testid="leaderboard-aces-points"
-            data-label="Aces Radio"
-          >{{ entry.acesRadioPoints }}</span>
-          <span
-            class="lb-cell lb-pts"
-            :class="{ 'lb-pts--active': activeSort === 'upper90' }"
-            data-testid="leaderboard-upper90-points"
-            data-label="Upper 90 Club"
-          >{{ upper90For(entry) }}</span>
-          <span
-            class="lb-cell lb-pts"
-            :class="{ 'lb-pts--active': activeSort === 'grouchy' }"
-            data-testid="leaderboard-grouchy-points"
-            data-label="Grouchy™"
-          >{{ entry.grouchyPoints }}</span>
-        </div>
+          <div
+            v-for="(entry, i) in sortedEntries"
+            :key="entry.userID"
+            class="lb-row"
+            data-testid="leaderboard-row"
+          >
+            <span
+              class="lb-cell lb-rank"
+              data-testid="leaderboard-rank"
+            >{{ rankFor(i) }}</span>
+            <span class="lb-cell lb-handle">
+              <RouterLink
+                v-if="entry.hasProfile"
+                :to="`/profile/${entry.userID}`"
+                class="lb-handle-link"
+                data-testid="leaderboard-handle"
+              >{{ entry.handle }}</RouterLink>
+              <span
+                v-else
+                data-testid="leaderboard-handle"
+              >{{ entry.handle }}</span>
+            </span>
+            <span
+              class="lb-cell lb-pts"
+              :class="{ 'lb-pts--active': activeSort === 'aces' }"
+              data-testid="leaderboard-aces-points"
+              data-label="Aces Radio"
+            >{{ entry.acesRadioPoints }}</span>
+            <span
+              class="lb-cell lb-pts"
+              :class="{ 'lb-pts--active': activeSort === 'upper90' }"
+              data-testid="leaderboard-upper90-points"
+              data-label="Upper 90 Club"
+            >{{ upper90For(entry) }}</span>
+            <span
+              class="lb-cell lb-pts"
+              :class="{ 'lb-pts--active': activeSort === 'grouchy' }"
+              data-testid="leaderboard-grouchy-points"
+              data-label="Grouchy™"
+            >{{ entry.grouchyPoints }}</span>
+          </div>
         </div>
       </template>
     </template>

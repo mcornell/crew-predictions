@@ -1,3 +1,6 @@
+// Package bot provides the TwoOneBot automated predictor that submits a
+// fixed 2-1 prediction (home or away depending on the venue) for every
+// upcoming Crew match before kickoff.
 package bot
 
 import (

@@ -1,3 +1,5 @@
+// Package recalculator rolls every prediction against its match's final
+// result and writes the per-user score totals back onto the user records.
 package recalculator
 
 import (

@@ -17,7 +17,7 @@ func newLeaderboard(users repository.UserStore) *handlers.LeaderboardHandler {
 
 func TestLeaderboardAPIHandler_GetSeason_Returns404ForUnknown(t *testing.T) {
 	lh := newLeaderboard(repository.NewMemoryUserStore())
-	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard/2026", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard/2026", http.NoBody)
 	req.SetPathValue("season", "2026")
 	w := httptest.NewRecorder()
 	lh.APIGetSeason(w, req)
@@ -37,7 +37,7 @@ func TestLeaderboardAPIHandler_GetSeason_ReturnsSnapshotEntries(t *testing.T) {
 		},
 	})
 	lh := handlers.NewLeaderboardHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), repository.NewMemoryUserStore(), seasons, "Columbus Crew")
-	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard/2026", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard/2026", http.NoBody)
 	req.SetPathValue("season", "2026")
 	w := httptest.NewRecorder()
 	lh.APIGetSeason(w, req)
@@ -85,7 +85,7 @@ func TestLeaderboardAPIHandler_UsesPrecomputedPointsFromUserDoc(t *testing.T) {
 	users.UpdateScores(ctx, "u1", 5, 42, 15, 3)
 
 	lh := newLeaderboard(users)
-	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", http.NoBody)
 	w := httptest.NewRecorder()
 	lh.APIList(w, req)
 
@@ -102,7 +102,7 @@ func TestLeaderboardAPIHandler_ReturnsJSON(t *testing.T) {
 	users.UpdateScores(ctx, "u1", 1, 15, 0, 0)
 
 	lh := newLeaderboard(users)
-	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", http.NoBody)
 	w := httptest.NewRecorder()
 	lh.APIList(w, req)
 
@@ -117,7 +117,7 @@ func TestLeaderboardAPIHandler_ReturnsJSON(t *testing.T) {
 
 func TestLeaderboardAPIHandler_Returns500WhenGetAllFails(t *testing.T) {
 	lh := handlers.NewLeaderboardHandler(repository.NewMemoryPredictionStore(), repository.NewMemoryResultStore(), repository.NewErrorGetAllUserStore(), repository.NewMemorySeasonStore(), "Columbus Crew")
-	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", http.NoBody)
 	w := httptest.NewRecorder()
 
 	lh.APIList(w, req)
@@ -134,7 +134,7 @@ func TestLeaderboardAPIHandler_IncludesUpper90Club(t *testing.T) {
 	users.UpdateScores(ctx, "u1", 1, 0, 2, 0)
 
 	lh := newLeaderboard(users)
-	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", http.NoBody)
 	w := httptest.NewRecorder()
 	lh.APIList(w, req)
 
@@ -151,7 +151,7 @@ func TestLeaderboardAPIHandler_UsesHandleFromUserDoc(t *testing.T) {
 	users.UpdateScores(ctx, "firebase:abc", 1, 15, 0, 0)
 
 	lh := newLeaderboard(users)
-	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", http.NoBody)
 	w := httptest.NewRecorder()
 	lh.APIList(w, req)
 
@@ -168,7 +168,7 @@ func TestLeaderboardAPIHandler_IncludesUserID(t *testing.T) {
 	users.UpdateScores(ctx, "firebase:abc", 1, 15, 0, 0)
 
 	lh := newLeaderboard(users)
-	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", http.NoBody)
 	w := httptest.NewRecorder()
 	lh.APIList(w, req)
 
@@ -187,7 +187,7 @@ func TestLeaderboardAPIHandler_ShowsUsersWithUnscoredPredictionsAtZero(t *testin
 	users.UpdateScores(ctx, "u2", 1, 10, 0, 0)
 
 	lh := newLeaderboard(users)
-	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", http.NoBody)
 	w := httptest.NewRecorder()
 	lh.APIList(w, req)
 
@@ -215,7 +215,7 @@ func TestLeaderboardAPIHandler_HasProfileTrue(t *testing.T) {
 	users.UpdateScores(ctx, "firebase:abc", 1, 0, 0, 0)
 
 	lh := newLeaderboard(users)
-	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", http.NoBody)
 	w := httptest.NewRecorder()
 	lh.APIList(w, req)
 
@@ -231,7 +231,7 @@ func TestLeaderboardAPIHandler_ExcludesUsersWithNoPredictions(t *testing.T) {
 	users.Upsert(ctx, repository.User{UserID: "u1", Handle: "NoPredsFan", PredictionCount: 0})
 
 	lh := newLeaderboard(users)
-	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", http.NoBody)
 	w := httptest.NewRecorder()
 	lh.APIList(w, req)
 
@@ -248,7 +248,7 @@ func TestLeaderboardAPIHandler_IncludesGrouchyPoints(t *testing.T) {
 	users.UpdateScores(ctx, "u1", 1, 0, 0, 1)
 
 	lh := newLeaderboard(users)
-	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", http.NoBody)
 	w := httptest.NewRecorder()
 	lh.APIList(w, req)
 
@@ -266,7 +266,7 @@ func TestLeaderboardAPIHandler_GetSeason_Returns500WhenStoreErrors(t *testing.T)
 		repository.NewErrorGetByIDSeasonStore(),
 		"Columbus Crew",
 	)
-	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard/2026", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/leaderboard/2026", http.NoBody)
 	req.SetPathValue("season", "2026")
 	w := httptest.NewRecorder()
 	lh.APIGetSeason(w, req)
