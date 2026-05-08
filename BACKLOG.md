@@ -7,15 +7,15 @@
 - [ ] **Walk every CI tool against current upstream documentation** and apply any simplifications / current-best-practice changes. Each item gets its own focused commit so failures isolate. Two findings already applied separately (Go cache simplification + Vitest `github-actions` reporter); the rest still need to be reviewed:
 
   **Highest impact — review next:**
-  - [ ] `actions/setup-node@v6` — built-in caching pattern (similar to setup-go). Doc: https://github.com/actions/setup-node
-  - [ ] `actions/setup-java@v5` — confirm `temurin` distribution + Java 25 still recommended. Doc: https://github.com/actions/setup-java
-  - [ ] `docker/build-push-action@v6` — buildx cache options have shifted historically. Doc: https://github.com/docker/build-push-action
-  - [ ] `firebase-tools` (pinned 15.15.0 in package.json) — latest is 17+; check release notes for deploy-flag changes. Doc: https://firebase.google.com/docs/cli
+  - [x] `actions/setup-node@v6` — switched to `node-version-file: package.json` with `engines.node: ^24` for single source of truth.
+  - [x] `actions/setup-java@v5` — reviewed; current `temurin` + Java 25 usage is already idiomatic, no change needed.
+  - [x] `docker/build-push-action@v6` — bumped to `@v7`; v7.0.0 only drops deprecated env vars we don't set + Node 24 runtime. Inputs unchanged.
+  - [x] `firebase-tools` — bumped exact pin 15.15.0 → 15.17.0; emulator improvements + hosting cross-project safety fix. No flag/usage changes.
 
   **Medium priority:**
-  - [ ] `google-github-actions/auth@v3` — WIF auth patterns. Doc: https://github.com/google-github-actions/auth
-  - [ ] `google-github-actions/setup-gcloud@v3` — installer. Doc: https://github.com/google-github-actions/setup-gcloud
-  - [ ] `gotestsum` (installed at `latest`) — pin to specific version + review JUnit output options. Doc: https://github.com/gotestyourself/gotestsum
+  - [x] `google-github-actions/auth@v3` — reviewed; already on latest major, indirect WIF + `access_token` for Docker login is idiomatic, permissions/checkout-ordering correct. No change.
+  - [x] `google-github-actions/setup-gcloud@v3` — reviewed; bare usage matches docs' canonical WIF example. Sibling actions (deploy-cloudrun, upload-cloud-storage, etc.) considered but rejected — our deploys have substantial conditional logic that stays in bash regardless. No change.
+  - [x] `gotestsum` — already pinned via go.mod `tool` directive (v1.13.0). Dropped CI install step in favor of `go tool gotestsum`. Added `--junitfile-testcase-classname=relative` for cleaner test report classnames.
   - [ ] `gocover-cobertura` (installed at `latest`) — pin to specific version. Doc: https://github.com/boumenot/gocover-cobertura
 
   **Lower priority — likely no change:**
