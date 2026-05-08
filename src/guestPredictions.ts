@@ -24,7 +24,9 @@ export function writeGuestPredictions(data: Record<string, GuestPrediction>): vo
 export function clearGuestPredictions(): void {
   try {
     localStorage.removeItem(GUEST_KEY)
-  } catch {}
+  } catch {
+    // Safari Private Browsing blocks localStorage; nothing to clean up.
+  }
 }
 
 export async function flushGuestPredictions(): Promise<void> {

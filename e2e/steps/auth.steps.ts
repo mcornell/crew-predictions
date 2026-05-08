@@ -3,7 +3,7 @@ import { expect } from '@playwright/test';
 
 const { Given, When, Then } = createBdd();
 
-Given('I am logged in as {string}', async ({ page, context }, handle: string) => {
+Given('I am logged in as {string}', async ({ context }, handle: string) => {
   // Seed a session cookie directly — bypasses OAuth for testing
   await context.addCookies([{
     name: '__session',

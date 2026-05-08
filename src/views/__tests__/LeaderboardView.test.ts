@@ -35,7 +35,7 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-function makeLeaderboardRouter(path = '/leaderboard') {
+function makeLeaderboardRouter() {
   const r = makeRouter()
   r.addRoute({ path: '/leaderboard/:season', component: LeaderboardView })
   return r

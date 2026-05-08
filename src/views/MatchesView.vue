@@ -1,197 +1,489 @@
 <template>
   <div class="page">
-    <p v-if="loading" data-testid="loading" class="status-msg">Loading…</p>
-    <p v-else-if="error" data-testid="error" class="status-msg status-msg--error">{{ error }}</p>
+    <p
+      v-if="loading"
+      data-testid="loading"
+      class="status-msg"
+    >
+      Loading…
+    </p>
+    <p
+      v-else-if="error"
+      data-testid="error"
+      class="status-msg status-msg--error"
+    >
+      {{ error }}
+    </p>
     <template v-else>
-    <section v-if="nowPlayingMatches.length > 0" data-testid="now-playing-section" class="now-playing-section">
-      <h1 class="page-title">Now Playing</h1>
-      <div class="match-list">
-        <RouterLink
-          v-for="match in nowPlayingMatches"
-          :key="match.id"
-          :to="`/matches/${match.id}`"
-          class="match-card match-card--live match-card--link"
-          :data-match-id="match.id"
-          data-testid="now-playing-card"
-        >
-          <div class="match-info">
-            <span v-if="match.status === 'STATUS_DELAYED'" class="delayed-indicator" data-testid="delayed-indicator">▊ DELAYED</span>
-            <span v-else-if="match.status === 'STATUS_HALFTIME'" class="live-indicator" data-testid="live-indicator">● HT</span>
-            <span v-else class="live-indicator" data-testid="live-indicator">● {{ match.displayClock || 'LIVE' }}</span>
-            <div class="matchup matchup--input" data-testid="matchup" :class="{ 'matchup--has-form': match.homeRecord || match.awayRecord || match.homeForm || match.awayForm }">
-              <span class="team-name team-home">{{ match.homeTeam }}</span>
-              <span class="inline-score">{{ match.homeScore || '0' }}</span>
-              <span class="vs">vs</span>
-              <span class="inline-score">{{ match.awayScore || '0' }}</span>
-              <span class="team-name team-away">{{ match.awayTeam }}</span>
-              <div v-if="match.homeRecord || match.homeForm" class="matchup-team-form matchup-team-form--home">
-                <span v-if="match.homeRecord" class="match-record">{{ match.homeRecord }}</span>
-                <span v-if="match.homeForm" class="match-form"><span v-for="(c, i) in match.homeForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
-              </div>
-              <div v-if="match.awayRecord || match.awayForm" class="matchup-team-form matchup-team-form--away">
-                <span v-if="match.awayRecord" class="match-record">{{ match.awayRecord }}</span>
-                <span v-if="match.awayForm" class="match-form"><span v-for="(c, i) in match.awayForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
-              </div>
-            </div>
-            <div v-if="match.homeRecord || match.homeForm" class="match-form-row">
-              <div class="match-form-team">
-                <span v-if="match.homeRecord" class="match-record" data-testid="home-record">{{ match.homeRecord }}</span>
-                <span v-if="match.homeForm" class="match-form" data-testid="home-form"><span v-for="(c, i) in match.homeForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
-              </div>
-              <div class="match-form-team match-form-team--away">
-                <span v-if="match.awayForm" class="match-form" data-testid="away-form"><span v-for="(c, i) in match.awayForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
-                <span v-if="match.awayRecord" class="match-record" data-testid="away-record">{{ match.awayRecord }}</span>
-              </div>
-            </div>
-            <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
-            <div v-if="match.venue" class="match-meta match-venue" data-testid="match-venue">{{ match.venue }}</div>
-            <div v-if="liveCardEvents(match).length > 0" class="match-events" data-testid="match-events">
+      <section
+        v-if="nowPlayingMatches.length > 0"
+        data-testid="now-playing-section"
+        class="now-playing-section"
+      >
+        <h1 class="page-title">
+          Now Playing
+        </h1>
+        <div class="match-list">
+          <RouterLink
+            v-for="match in nowPlayingMatches"
+            :key="match.id"
+            :to="`/matches/${match.id}`"
+            class="match-card match-card--live match-card--link"
+            :data-match-id="match.id"
+            data-testid="now-playing-card"
+          >
+            <div class="match-info">
+              <span
+                v-if="match.status === 'STATUS_DELAYED'"
+                class="delayed-indicator"
+                data-testid="delayed-indicator"
+              >▊ DELAYED</span>
+              <span
+                v-else-if="match.status === 'STATUS_HALFTIME'"
+                class="live-indicator"
+                data-testid="live-indicator"
+              >● HT</span>
+              <span
+                v-else
+                class="live-indicator"
+                data-testid="live-indicator"
+              >● {{ match.displayClock || 'LIVE' }}</span>
               <div
-                v-for="(event, i) in liveCardEvents(match)"
-                :key="i"
-                class="match-event"
-                :class="[`match-event--${event.typeID}`, `match-event--${eventSide(match, event)}`]"
-                data-testid="match-event"
+                class="matchup matchup--input"
+                data-testid="matchup"
+                :class="{ 'matchup--has-form': match.homeRecord || match.awayRecord || match.homeForm || match.awayForm }"
               >
-                <div class="event-detail">
-                  <span class="event-icon" :aria-label="event.typeID">{{ eventIcon(event.typeID) }}</span>
-                  <span class="event-players">{{ event.players[0] || '' }}</span>
+                <span class="team-name team-home">{{ match.homeTeam }}</span>
+                <span class="inline-score">{{ match.homeScore || '0' }}</span>
+                <span class="vs">vs</span>
+                <span class="inline-score">{{ match.awayScore || '0' }}</span>
+                <span class="team-name team-away">{{ match.awayTeam }}</span>
+                <div
+                  v-if="match.homeRecord || match.homeForm"
+                  class="matchup-team-form matchup-team-form--home"
+                >
+                  <span
+                    v-if="match.homeRecord"
+                    class="match-record"
+                  >{{ match.homeRecord }}</span>
+                  <span
+                    v-if="match.homeForm"
+                    class="match-form"
+                  ><span
+                    v-for="(c, i) in match.homeForm.split('')"
+                    :key="i"
+                    :class="`form-letter form-letter--${c.toLowerCase()}`"
+                  >{{ c }}</span></span>
                 </div>
-                <span class="event-clock">{{ event.clock }}</span>
+                <div
+                  v-if="match.awayRecord || match.awayForm"
+                  class="matchup-team-form matchup-team-form--away"
+                >
+                  <span
+                    v-if="match.awayRecord"
+                    class="match-record"
+                  >{{ match.awayRecord }}</span>
+                  <span
+                    v-if="match.awayForm"
+                    class="match-form"
+                  ><span
+                    v-for="(c, i) in match.awayForm.split('')"
+                    :key="i"
+                    :class="`form-letter form-letter--${c.toLowerCase()}`"
+                  >{{ c }}</span></span>
+                </div>
+              </div>
+              <div
+                v-if="match.homeRecord || match.homeForm"
+                class="match-form-row"
+              >
+                <div class="match-form-team">
+                  <span
+                    v-if="match.homeRecord"
+                    class="match-record"
+                    data-testid="home-record"
+                  >{{ match.homeRecord }}</span>
+                  <span
+                    v-if="match.homeForm"
+                    class="match-form"
+                    data-testid="home-form"
+                  ><span
+                    v-for="(c, i) in match.homeForm.split('')"
+                    :key="i"
+                    :class="`form-letter form-letter--${c.toLowerCase()}`"
+                  >{{ c }}</span></span>
+                </div>
+                <div class="match-form-team match-form-team--away">
+                  <span
+                    v-if="match.awayForm"
+                    class="match-form"
+                    data-testid="away-form"
+                  ><span
+                    v-for="(c, i) in match.awayForm.split('')"
+                    :key="i"
+                    :class="`form-letter form-letter--${c.toLowerCase()}`"
+                  >{{ c }}</span></span>
+                  <span
+                    v-if="match.awayRecord"
+                    class="match-record"
+                    data-testid="away-record"
+                  >{{ match.awayRecord }}</span>
+                </div>
+              </div>
+              <div class="match-meta">
+                {{ formatKickoff(match.kickoff) }}
+              </div>
+              <div
+                v-if="match.venue"
+                class="match-meta match-venue"
+                data-testid="match-venue"
+              >
+                {{ match.venue }}
+              </div>
+              <div
+                v-if="liveCardEvents(match).length > 0"
+                class="match-events"
+                data-testid="match-events"
+              >
+                <div
+                  v-for="(event, i) in liveCardEvents(match)"
+                  :key="i"
+                  class="match-event"
+                  :class="[`match-event--${event.typeID}`, `match-event--${eventSide(match, event)}`]"
+                  data-testid="match-event"
+                >
+                  <div class="event-detail">
+                    <span
+                      class="event-icon"
+                      :aria-label="event.typeID"
+                    >{{ eventIcon(event.typeID) }}</span>
+                    <span class="event-players">{{ event.players[0] || '' }}</span>
+                  </div>
+                  <span class="event-clock">{{ event.clock }}</span>
+                </div>
               </div>
             </div>
-          </div>
-        </RouterLink>
-      </div>
-    </section>
-
-    <section v-if="upcomingMatches.length > 0">
-      <h1 class="page-title" :style="nowPlayingMatches.length > 0 ? 'margin-top:2.5rem' : ''">Upcoming</h1>
-      <div class="match-list">
-        <div
-          v-for="match in upcomingMatches"
-          :key="match.id"
-          class="match-card"
-          :class="{ 'has-prediction': savedPredictions[match.id] }"
-          :data-match-id="match.id"
-          data-testid="match-card"
-        >
-          <div class="match-info">
-            <span class="match-countdown" data-testid="match-countdown">{{ countdowns[match.id] }}</span>
-            <template v-if="savedPredictions[match.id]">
-              <div class="matchup matchup--input" data-testid="matchup" :class="{ 'matchup--has-form': match.homeRecord || match.awayRecord || match.homeForm || match.awayForm }">
-                <span class="team-name team-home">{{ match.homeTeam }}</span>
-                <span class="inline-score">{{ savedPredictions[match.id]!.homeGoals }}</span>
-                <span class="vs">vs</span>
-                <span class="inline-score">{{ savedPredictions[match.id]!.awayGoals }}</span>
-                <span class="team-name team-away">{{ match.awayTeam }}</span>
-                <div v-if="match.homeRecord || match.homeForm" class="matchup-team-form matchup-team-form--home">
-                  <span v-if="match.homeRecord" class="match-record">{{ match.homeRecord }}</span>
-                  <span v-if="match.homeForm" class="match-form"><span v-for="(c, i) in match.homeForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
-                </div>
-                <div v-if="match.awayRecord || match.awayForm" class="matchup-team-form matchup-team-form--away">
-                  <span v-if="match.awayRecord" class="match-record">{{ match.awayRecord }}</span>
-                  <span v-if="match.awayForm" class="match-form"><span v-for="(c, i) in match.awayForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
-                </div>
-              </div>
-              <div v-if="match.homeRecord || match.homeForm" class="match-form-row">
-                <div class="match-form-team">
-                  <span v-if="match.homeRecord" class="match-record" data-testid="home-record">{{ match.homeRecord }}</span>
-                  <span v-if="match.homeForm" class="match-form" data-testid="home-form"><span v-for="(c, i) in match.homeForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
-                </div>
-                <div class="match-form-team match-form-team--away">
-                  <span v-if="match.awayForm" class="match-form" data-testid="away-form"><span v-for="(c, i) in match.awayForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
-                  <span v-if="match.awayRecord" class="match-record" data-testid="away-record">{{ match.awayRecord }}</span>
-                </div>
-              </div>
-              <div class="match-meta">{{ formatKickoff(match.kickoff) }} — <span class="saved-label">🔒</span></div>
-            </template>
-            <template v-else>
-              <div class="matchup matchup--input" data-testid="matchup" :class="{ 'matchup--has-form': match.homeRecord || match.awayRecord || match.homeForm || match.awayForm }">
-                <span class="team-name team-home">{{ match.homeTeam }}</span>
-                <input class="score-input" name="home_goals" type="number" min="0" max="99" v-model="inputs[match.id].home" placeholder="0" />
-                <span class="vs">vs</span>
-                <input class="score-input" name="away_goals" type="number" min="0" max="99" v-model="inputs[match.id].away" placeholder="0" />
-                <span class="team-name team-away">{{ match.awayTeam }}</span>
-                <div v-if="match.homeRecord || match.homeForm" class="matchup-team-form matchup-team-form--home">
-                  <span v-if="match.homeRecord" class="match-record">{{ match.homeRecord }}</span>
-                  <span v-if="match.homeForm" class="match-form"><span v-for="(c, i) in match.homeForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
-                </div>
-                <div v-if="match.awayRecord || match.awayForm" class="matchup-team-form matchup-team-form--away">
-                  <span v-if="match.awayRecord" class="match-record">{{ match.awayRecord }}</span>
-                  <span v-if="match.awayForm" class="match-form"><span v-for="(c, i) in match.awayForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
-                </div>
-              </div>
-              <div v-if="match.homeRecord || match.homeForm" class="match-form-row">
-                <div class="match-form-team">
-                  <span v-if="match.homeRecord" class="match-record" data-testid="home-record">{{ match.homeRecord }}</span>
-                  <span v-if="match.homeForm" class="match-form" data-testid="home-form"><span v-for="(c, i) in match.homeForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
-                </div>
-                <div class="match-form-team match-form-team--away">
-                  <span v-if="match.awayForm" class="match-form" data-testid="away-form"><span v-for="(c, i) in match.awayForm.split('')" :key="i" :class="`form-letter form-letter--${c.toLowerCase()}`">{{ c }}</span></span>
-                  <span v-if="match.awayRecord" class="match-record" data-testid="away-record">{{ match.awayRecord }}</span>
-                </div>
-              </div>
-              <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
-            </template>
-          </div>
-          <div v-if="match.venue" class="match-meta match-venue" data-testid="match-venue">{{ match.venue }}</div>
-          <template v-if="!isLocked(match)">
-            <button v-if="savedPredictions[match.id]" class="btn-lock btn-unlock" @click="unlock(match.id)">Unlock</button>
-            <button v-else class="btn-lock" @click="submit(match.id)">Predict</button>
-          </template>
+          </RouterLink>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <section v-if="completedMatches.length > 0" data-testid="results-section">
-      <h2 class="page-title" style="margin-top:2.5rem">Results</h2>
-      <div class="match-list">
-        <RouterLink
-          v-for="match in completedMatches"
-          :key="match.id"
-          :to="`/matches/${match.id}`"
-          class="match-card match-card--result match-card--link"
-          :data-match-id="match.id"
-          data-testid="result-card"
+      <section v-if="upcomingMatches.length > 0">
+        <h1
+          class="page-title"
+          :style="nowPlayingMatches.length > 0 ? 'margin-top:2.5rem' : ''"
         >
-          <div class="match-info">
-            <div class="matchup matchup--input" data-testid="matchup">
-              <span class="team-name team-home">{{ match.homeTeam }}</span>
-              <span class="inline-score">{{ match.homeScore || '–' }}</span>
-              <span class="vs">vs</span>
-              <span class="inline-score">{{ match.awayScore || '–' }}</span>
-              <span class="team-name team-away">{{ match.awayTeam }}</span>
+          Upcoming
+        </h1>
+        <div class="match-list">
+          <div
+            v-for="match in upcomingMatches"
+            :key="match.id"
+            class="match-card"
+            :class="{ 'has-prediction': savedPredictions[match.id] }"
+            :data-match-id="match.id"
+            data-testid="match-card"
+          >
+            <div class="match-info">
+              <span
+                class="match-countdown"
+                data-testid="match-countdown"
+              >{{ countdowns[match.id] }}</span>
+              <template v-if="savedPredictions[match.id]">
+                <div
+                  class="matchup matchup--input"
+                  data-testid="matchup"
+                  :class="{ 'matchup--has-form': match.homeRecord || match.awayRecord || match.homeForm || match.awayForm }"
+                >
+                  <span class="team-name team-home">{{ match.homeTeam }}</span>
+                  <span class="inline-score">{{ savedPredictions[match.id]!.homeGoals }}</span>
+                  <span class="vs">vs</span>
+                  <span class="inline-score">{{ savedPredictions[match.id]!.awayGoals }}</span>
+                  <span class="team-name team-away">{{ match.awayTeam }}</span>
+                  <div
+                    v-if="match.homeRecord || match.homeForm"
+                    class="matchup-team-form matchup-team-form--home"
+                  >
+                    <span
+                      v-if="match.homeRecord"
+                      class="match-record"
+                    >{{ match.homeRecord }}</span>
+                    <span
+                      v-if="match.homeForm"
+                      class="match-form"
+                    ><span
+                      v-for="(c, i) in match.homeForm.split('')"
+                      :key="i"
+                      :class="`form-letter form-letter--${c.toLowerCase()}`"
+                    >{{ c }}</span></span>
+                  </div>
+                  <div
+                    v-if="match.awayRecord || match.awayForm"
+                    class="matchup-team-form matchup-team-form--away"
+                  >
+                    <span
+                      v-if="match.awayRecord"
+                      class="match-record"
+                    >{{ match.awayRecord }}</span>
+                    <span
+                      v-if="match.awayForm"
+                      class="match-form"
+                    ><span
+                      v-for="(c, i) in match.awayForm.split('')"
+                      :key="i"
+                      :class="`form-letter form-letter--${c.toLowerCase()}`"
+                    >{{ c }}</span></span>
+                  </div>
+                </div>
+                <div
+                  v-if="match.homeRecord || match.homeForm"
+                  class="match-form-row"
+                >
+                  <div class="match-form-team">
+                    <span
+                      v-if="match.homeRecord"
+                      class="match-record"
+                      data-testid="home-record"
+                    >{{ match.homeRecord }}</span>
+                    <span
+                      v-if="match.homeForm"
+                      class="match-form"
+                      data-testid="home-form"
+                    ><span
+                      v-for="(c, i) in match.homeForm.split('')"
+                      :key="i"
+                      :class="`form-letter form-letter--${c.toLowerCase()}`"
+                    >{{ c }}</span></span>
+                  </div>
+                  <div class="match-form-team match-form-team--away">
+                    <span
+                      v-if="match.awayForm"
+                      class="match-form"
+                      data-testid="away-form"
+                    ><span
+                      v-for="(c, i) in match.awayForm.split('')"
+                      :key="i"
+                      :class="`form-letter form-letter--${c.toLowerCase()}`"
+                    >{{ c }}</span></span>
+                    <span
+                      v-if="match.awayRecord"
+                      class="match-record"
+                      data-testid="away-record"
+                    >{{ match.awayRecord }}</span>
+                  </div>
+                </div>
+                <div class="match-meta">
+                  {{ formatKickoff(match.kickoff) }} — <span class="saved-label">🔒</span>
+                </div>
+              </template>
+              <template v-else>
+                <div
+                  class="matchup matchup--input"
+                  data-testid="matchup"
+                  :class="{ 'matchup--has-form': match.homeRecord || match.awayRecord || match.homeForm || match.awayForm }"
+                >
+                  <span class="team-name team-home">{{ match.homeTeam }}</span>
+                  <input
+                    v-model="inputs[match.id].home"
+                    class="score-input"
+                    name="home_goals"
+                    type="number"
+                    min="0"
+                    max="99"
+                    placeholder="0"
+                  >
+                  <span class="vs">vs</span>
+                  <input
+                    v-model="inputs[match.id].away"
+                    class="score-input"
+                    name="away_goals"
+                    type="number"
+                    min="0"
+                    max="99"
+                    placeholder="0"
+                  >
+                  <span class="team-name team-away">{{ match.awayTeam }}</span>
+                  <div
+                    v-if="match.homeRecord || match.homeForm"
+                    class="matchup-team-form matchup-team-form--home"
+                  >
+                    <span
+                      v-if="match.homeRecord"
+                      class="match-record"
+                    >{{ match.homeRecord }}</span>
+                    <span
+                      v-if="match.homeForm"
+                      class="match-form"
+                    ><span
+                      v-for="(c, i) in match.homeForm.split('')"
+                      :key="i"
+                      :class="`form-letter form-letter--${c.toLowerCase()}`"
+                    >{{ c }}</span></span>
+                  </div>
+                  <div
+                    v-if="match.awayRecord || match.awayForm"
+                    class="matchup-team-form matchup-team-form--away"
+                  >
+                    <span
+                      v-if="match.awayRecord"
+                      class="match-record"
+                    >{{ match.awayRecord }}</span>
+                    <span
+                      v-if="match.awayForm"
+                      class="match-form"
+                    ><span
+                      v-for="(c, i) in match.awayForm.split('')"
+                      :key="i"
+                      :class="`form-letter form-letter--${c.toLowerCase()}`"
+                    >{{ c }}</span></span>
+                  </div>
+                </div>
+                <div
+                  v-if="match.homeRecord || match.homeForm"
+                  class="match-form-row"
+                >
+                  <div class="match-form-team">
+                    <span
+                      v-if="match.homeRecord"
+                      class="match-record"
+                      data-testid="home-record"
+                    >{{ match.homeRecord }}</span>
+                    <span
+                      v-if="match.homeForm"
+                      class="match-form"
+                      data-testid="home-form"
+                    ><span
+                      v-for="(c, i) in match.homeForm.split('')"
+                      :key="i"
+                      :class="`form-letter form-letter--${c.toLowerCase()}`"
+                    >{{ c }}</span></span>
+                  </div>
+                  <div class="match-form-team match-form-team--away">
+                    <span
+                      v-if="match.awayForm"
+                      class="match-form"
+                      data-testid="away-form"
+                    ><span
+                      v-for="(c, i) in match.awayForm.split('')"
+                      :key="i"
+                      :class="`form-letter form-letter--${c.toLowerCase()}`"
+                    >{{ c }}</span></span>
+                    <span
+                      v-if="match.awayRecord"
+                      class="match-record"
+                      data-testid="away-record"
+                    >{{ match.awayRecord }}</span>
+                  </div>
+                </div>
+                <div class="match-meta">
+                  {{ formatKickoff(match.kickoff) }}
+                </div>
+              </template>
             </div>
-            <div v-if="savedPredictions[match.id]" class="match-meta" data-testid="your-pick">
-              Your pick: {{ savedPredictions[match.id]!.homeGoals }} – {{ savedPredictions[match.id]!.awayGoals }}
+            <div
+              v-if="match.venue"
+              class="match-meta match-venue"
+              data-testid="match-venue"
+            >
+              {{ match.venue }}
             </div>
-            <div class="match-meta">{{ formatKickoff(match.kickoff) }}</div>
-            <div v-if="match.venue" class="match-meta match-venue" data-testid="match-venue">{{ match.venue }}</div>
+            <template v-if="!isLocked(match)">
+              <button
+                v-if="savedPredictions[match.id]"
+                class="btn-lock btn-unlock"
+                @click="unlock(match.id)"
+              >
+                Unlock
+              </button>
+              <button
+                v-else
+                class="btn-lock"
+                @click="submit(match.id)"
+              >
+                Predict
+              </button>
+            </template>
           </div>
-        </RouterLink>
+        </div>
+      </section>
+
+      <section
+        v-if="completedMatches.length > 0"
+        data-testid="results-section"
+      >
+        <h2
+          class="page-title"
+          style="margin-top:2.5rem"
+        >
+          Results
+        </h2>
+        <div class="match-list">
+          <RouterLink
+            v-for="match in completedMatches"
+            :key="match.id"
+            :to="`/matches/${match.id}`"
+            class="match-card match-card--result match-card--link"
+            :data-match-id="match.id"
+            data-testid="result-card"
+          >
+            <div class="match-info">
+              <div
+                class="matchup matchup--input"
+                data-testid="matchup"
+              >
+                <span class="team-name team-home">{{ match.homeTeam }}</span>
+                <span class="inline-score">{{ match.homeScore || '–' }}</span>
+                <span class="vs">vs</span>
+                <span class="inline-score">{{ match.awayScore || '–' }}</span>
+                <span class="team-name team-away">{{ match.awayTeam }}</span>
+              </div>
+              <div
+                v-if="savedPredictions[match.id]"
+                class="match-meta"
+                data-testid="your-pick"
+              >
+                Your pick: {{ savedPredictions[match.id]!.homeGoals }} – {{ savedPredictions[match.id]!.awayGoals }}
+              </div>
+              <div class="match-meta">
+                {{ formatKickoff(match.kickoff) }}
+              </div>
+              <div
+                v-if="match.venue"
+                class="match-meta match-venue"
+                data-testid="match-venue"
+              >
+                {{ match.venue }}
+              </div>
+            </div>
+          </RouterLink>
+        </div>
+      </section>
+
+      <p
+        v-if="nowPlayingMatches.length === 0 && upcomingMatches.length === 0 && completedMatches.length === 0"
+        class="empty"
+      >
+        No matches found. Check back later.
+      </p>
+
+      <div
+        v-if="showNudge && !currentUser"
+        class="guest-nudge"
+        data-testid="guest-nudge"
+      >
+        <a href="/signup">Create an account</a> to get on the leaderboard.
       </div>
-    </section>
-
-    <p v-if="nowPlayingMatches.length === 0 && upcomingMatches.length === 0 && completedMatches.length === 0" class="empty">No matches found. Check back later.</p>
-
-    <div v-if="showNudge && !currentUser" class="guest-nudge" data-testid="guest-nudge">
-      <a href="/signup">Create an account</a> to get on the leaderboard.
-    </div>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, inject, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { formatCountdown } from '../utils/countdown'
 import { isInActiveWindow, msUntilActiveWindow, POLL_INTERVAL_MS } from '../utils/pollScheduler'
 import { readGuestPredictions, writeGuestPredictions } from '../guestPredictions'
 import type { Ref } from 'vue'
 
 const currentUser = inject<Ref<{ handle: string; emailVerified: boolean } | null>>('currentUser', ref(null))
-const router = useRouter()
 
 interface MatchEvent {
   clock: string

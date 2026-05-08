@@ -1,61 +1,117 @@
 <template>
   <div class="page">
-    <p v-if="loading" data-testid="loading" class="status-msg">Loading…</p>
-    <p v-else-if="loadError" data-testid="error" class="status-msg status-msg--error">{{ loadError }}</p>
-    <div v-else-if="profile" class="profile-page">
-
+    <p
+      v-if="loading"
+      data-testid="loading"
+      class="status-msg"
+    >
+      Loading…
+    </p>
+    <p
+      v-else-if="loadError"
+      data-testid="error"
+      class="status-msg status-msg--error"
+    >
+      {{ loadError }}
+    </p>
+    <div
+      v-else-if="profile"
+      class="profile-page"
+    >
       <div class="profile-header">
-        <h1 class="profile-handle">{{ profile.handle }}</h1>
-        <p v-if="profile.location" class="profile-location">
+        <h1 class="profile-handle">
+          {{ profile.handle }}
+        </h1>
+        <p
+          v-if="profile.location"
+          class="profile-location"
+        >
           <span class="profile-location-icon">▸</span>{{ profile.location }}
         </p>
       </div>
 
       <div class="profile-stats">
         <div class="profile-stat">
-          <span class="profile-stat-value" data-testid="prediction-count">{{ profile.predictionCount }}</span>
+          <span
+            class="profile-stat-value"
+            data-testid="prediction-count"
+          >{{ profile.predictionCount }}</span>
           <span class="profile-stat-label">Predictions</span>
         </div>
         <div class="profile-stat">
-          <span class="profile-stat-value" data-testid="aces-radio-points">{{ profile.acesRadio.rank > 0 ? profile.acesRadio.points : '—' }}</span>
+          <span
+            class="profile-stat-value"
+            data-testid="aces-radio-points"
+          >{{ profile.acesRadio.rank > 0 ? profile.acesRadio.points : '—' }}</span>
           <span class="profile-stat-label">Aces Radio</span>
-          <span v-if="profile.acesRadio.rank > 0" class="profile-stat-rank">#{{ profile.acesRadio.rank }}</span>
+          <span
+            v-if="profile.acesRadio.rank > 0"
+            class="profile-stat-rank"
+          >#{{ profile.acesRadio.rank }}</span>
         </div>
         <div class="profile-stat">
           <span class="profile-stat-value">{{ profile.upper90Club.rank > 0 ? profile.upper90Club.points : '—' }}</span>
           <span class="profile-stat-label">Upper 90 Club</span>
-          <span v-if="profile.upper90Club.rank > 0" class="profile-stat-rank">#{{ profile.upper90Club.rank }}</span>
+          <span
+            v-if="profile.upper90Club.rank > 0"
+            class="profile-stat-rank"
+          >#{{ profile.upper90Club.rank }}</span>
         </div>
         <div class="profile-stat">
-          <span class="profile-stat-value" data-testid="grouchy-points">{{ profile.grouchy.rank > 0 ? profile.grouchy.points : '—' }}</span>
+          <span
+            class="profile-stat-value"
+            data-testid="grouchy-points"
+          >{{ profile.grouchy.rank > 0 ? profile.grouchy.points : '—' }}</span>
           <span class="profile-stat-label">Grouchy™</span>
-          <span v-if="profile.grouchy.rank > 0" class="profile-stat-rank" data-testid="grouchy-rank">#{{ profile.grouchy.rank }}</span>
+          <span
+            v-if="profile.grouchy.rank > 0"
+            class="profile-stat-rank"
+            data-testid="grouchy-rank"
+          >#{{ profile.grouchy.rank }}</span>
         </div>
       </div>
 
-      <div v-if="isOwnProfile" class="profile-edit">
-        <h2 class="profile-edit-title">Edit Profile</h2>
-        <form class="login-form" data-testid="profile-form" @submit.prevent="handleSubmit">
+      <div
+        v-if="isOwnProfile"
+        class="profile-edit"
+      >
+        <h2 class="profile-edit-title">
+          Edit Profile
+        </h2>
+        <form
+          class="login-form"
+          data-testid="profile-form"
+          @submit.prevent="handleSubmit"
+        >
           <input
+            v-model="displayName"
             class="form-input"
             data-testid="display-name-input"
-            v-model="displayName"
             type="text"
             placeholder="Display name"
             required
-          />
+          >
           <input
+            v-model="location"
             class="form-input"
             data-testid="location-input"
-            v-model="location"
             type="text"
             placeholder="Location (e.g. Columbus, OH)"
-          />
-          <p v-if="error" class="form-error">{{ error }}</p>
-          <button class="btn-submit" type="submit">Save</button>
+          >
+          <p
+            v-if="error"
+            class="form-error"
+          >
+            {{ error }}
+          </p>
+          <button
+            class="btn-submit"
+            type="submit"
+          >
+            Save
+          </button>
         </form>
       </div>
-
     </div>
   </div>
 </template>
