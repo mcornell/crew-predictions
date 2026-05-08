@@ -4,7 +4,7 @@
 
 ### CI tool/action documentation audit
 
-- [ ] **Walk every CI tool against current upstream documentation** and apply any simplifications / current-best-practice changes. Each item gets its own focused commit so failures isolate. Two findings already applied separately (Go cache simplification + Vitest `github-actions` reporter); the rest still need to be reviewed:
+- [x] **Walk every CI tool against current upstream documentation** and apply any simplifications / current-best-practice changes. Each item gets its own focused commit so failures isolate. Two findings already applied separately (Go cache simplification + Vitest `github-actions` reporter); the rest still need to be reviewed:
 
   **Highest impact — review next:**
   - [x] `actions/setup-node@v6` — switched to `node-version-file: package.json` with `engines.node: ^24` for single source of truth.
@@ -25,50 +25,6 @@
   - [x] `docker/setup-buildx-action@v3` / `docker/login-action@v3` — both bumped to `@v4`; same Node 24 runtime + ESM switch as build-push-action v7. setup-buildx-action v4 removes deprecated `config`/`config-inline`/`install` inputs which we don't use. login-action v4 keeps our existing `registry`/`username`/`password` inputs as canonical.
   - [x] `dorny/test-reporter@v3` — reviewed; six calls share identical canonical pattern. Already on latest major (v3.0.0 was Node 24 + permissions tightening, no schema change). `java-junit` reporter is correct since gotestsum/vitest/playwright all emit JUnit XML. No change.
   - [x] `playwright-bdd` — already on latest 8.5.0. Migrated `playwright.smoke.ts` and `playwright.prod-smoke.ts` from deprecated Cucumber-style `paths`/`require` to canonical `features`/`steps` (per `CucumberConfigDeprecated` typedef in installed types).
-
-### CI Speedup — switch e2e job to Playwright container
-
-- [ ] **Run the build-and-test job inside `mcr.microsoft.com/playwright:v<VERSION>-noble`** — Playwright's official guidance is explicit that browser binaries should not be cached and that OS deps "need to be installed, which are not cacheable" (https://playwright.dev/docs/ci#caching-browsers). Their recommended pattern is the prebuilt Microsoft container image, which has chromium + every system lib preinstalled — eliminating the `npx playwright install --with-deps` step entirely (~30–90s per CI run today).
-
-  Implementation approach:
-  - Add `container: { image: mcr.microsoft.com/playwright:v<VERSION>-noble }` to the `build-and-test` job.
-  - Drop the cache step on `~/.cache/ms-playwright` and the `playwright install` / `install-deps` steps — the container has both.
-  - Verify `actions/setup-go`, `actions/setup-java`, and `actions/setup-node` all cooperate with the container (they should — they install into writable user paths).
-  - Pin the container version to match the `@playwright/test` version in package.json; bump together when upgrading Playwright.
-  - Free-tier compatible (image pull from MCR is free; runner minutes unchanged).
-
-  Trigger condition: do this **first** in the next infra cleanup batch — every PR pays the install tax today, and savings compound across all CI runs.
-
-### Season History & Year-End Reset
-
-- [ ] **Season archive and leaderboard reset** — At the end of each season, snapshot the final leaderboard standings into a `seasons/{seasonID}` Firestore collection, then zero out user scores for the new season. The leaderboard UI gets a season selector (e.g. "2026", "2027 Short", "2027–28") so anyone can browse historical standings. The current leaderboard always shows the active season.
-
-  Season cadence to plan for:
-  - **2026** — current full MLS season
-  - **2027 Short** — transition season as MLS shifts to fall–spring calendar
-  - **2027–28**, **2028–29**, etc. — full fall–spring seasons going forward
-
-  Key design questions to answer before writing tests:
-  - What triggers a reset? Manual admin call, or automatic on a date?
-  - Does "reset" zero out scores in the `users` collection, or write to a new sub-collection?
-  - How are predictions and results from prior seasons handled — archived or left in place?
-  - What's the URL shape for historical leaderboards: `/leaderboard?season=2026` or `/leaderboard/2026`?
-
-### Infrastructure
-
-
-### Infrastructure (sequenced after current PR + PR4 live-events work)
-
-- [ ] **Refactor `cmd/server/main.go` (currently 269 lines / one giant `main()`)** — `main()` does environment loading, store construction, Firebase setup, handler wiring, route registration, admin/test endpoints, daily refresh, and ListenAndServe in one body. The bulk is wiring rather than logic, so unit-test coverage on the function reads as 0% even though the composition is exercised by e2e. Extract into:
-  - `cmd/server/config.go` — `Config` struct + `loadConfig()` reading env vars
-  - `cmd/server/stores.go` — `Stores` struct + `buildStores(ctx, cfg)` handling Firestore vs Memory branching
-  - `cmd/server/firebase.go` — `buildVerifier(ctx, cfg)` for Firebase Auth wiring
-  - `cmd/server/routes.go` — `registerRoutes(mux, deps)` for production routes
-  - `cmd/server/test_routes.go` — `registerTestRoutes(mux, deps)` for TEST_MODE seeds
-  - `main()` becomes ~50 lines of orchestration
-  Net-zero LoC overall, but each file independently readable and `registerRoutes`/`buildStores` become unit-testable. Bonus: enables `setupServer(testCfg) *http.Server` for programmatic test instances. Estimated 30 min, real refactor risk so e2e regression check matters.
-
-- [ ] **Cache team logos in Firebase Cloud Storage (snapshot at match time)** — current refs+logos PR hot-links to ESPN's CDN (`https://a.espncdn.com/i/teamlogos/soccer/500/<teamID>.png`). Replace with first-encounter caching: when `MatchDetailHandler` lazy-fetches a summary and gets ESPN logo URLs, server downloads bytes once per team, uploads to `gs://crew-predictions.firebasestorage.app/team-logos/<teamID>.png` (publicly readable), stores our Storage URL in `match.HomeLogo` / `AwayLogo`. On subsequent matches with the same team, reuse cached version — never re-download. Gives "logo at time of match" snapshot semantics: ESPN rebrands later don't change our historical match displays. Add `internal/teamlogos/cache.go` with `EnsureCached(ctx, teamID, espnURL) (publicURL, error)`. Migration: one-shot script to walk existing match docs and re-cache any with ESPN URLs. Cost: storage ~1.2MB/year, egress trivially small after Hosting CDN warms.
 
 ### Security
 
@@ -95,6 +51,7 @@
 
 ## Decisions Made / Won't Do
 
+- **Cache team logos in Firebase Cloud Storage** — considered snapshotting ESPN logo URLs to `gs://crew-predictions.firebasestorage.app/team-logos/<teamID>.png` for "logo at time of match" semantics. Decided against: the ESPN CDN is reliable enough, and the snapshot benefit (rebrands not changing historical displays) is too theoretical to justify the storage layer + migration cost. Keep hot-linking `espncdn.com/i/teamlogos/soccer`.
 - **Remove stale `handle` from prediction documents** — field is dead weight in Firestore but Go ignores unknown fields on read; no runtime cost or correctness issue. Leave it; clean up opportunistically if a migration runs for another reason.
 - **Custom domain migration** — Firebase Hosting custom domain + Cloud Run domain mapping. Low priority — may never be needed.
 - **Cloud Scheduler for match refresh** — `POST /admin/refresh-matches` is called manually after deploy. No cron job needed.
@@ -109,6 +66,11 @@
 
 ## Done
 
+- [x] **Season archive and leaderboard reset** — `internal/seasons/closer.go` archives final standings into a `seasons/{seasonID}` Firestore collection at season close; `POST /admin/seasons/close` advances to the next season per `internal/seasons/boundaries.go`. Leaderboard UI has a season selector (chevron menu in [LeaderboardView.vue](src/views/LeaderboardView.vue)) backed by `GET /api/seasons` + `GET /api/leaderboard/:season`. BDD coverage in `e2e/features/season_history.feature`.
+- [x] **Refactor `cmd/server/main.go`** — split the single 269-line `main()` into `config.go` (loadConfig + Config), `stores.go` (buildStores + Stores), `firebase.go` (buildVerifier), `deps.go` (buildDeps + Deps), `routes.go` (registerRoutes), `test_routes.go` (registerTestRoutes). main.go is now 90 lines of orchestration via a `run()` wrapper (the wrapper added by the PR #51 lint pass to fix exitAfterDefer — deferred cleanups now actually execute on shutdown). Each extracted function is independently unit-testable.
+- [x] **Local linters: golangci-lint v2 + ESLint flat config** — `.golangci.yml` (errcheck, staticcheck, gocritic, revive, etc., excluding noisy perf/style nags), `eslint.config.mjs` (typescript-eslint + eslint-plugin-vue, with `no-explicit-any` allowed for test/e2e files only), `npm run lint`/`lint:fix` scripts. Documented in README and CLAUDE.md. Local-only; no CI gate. Initial sweep cleared 54 Go findings → 0 and 770 ESLint problems → 0. Shipped in PR #51.
+- [x] **CI tooling audit** — every CI action and CLI tool walked against current upstream docs. Notable changes: `actions/setup-node` reads version from `package.json` `engines.node`; `docker/build-push-action`/`setup-buildx-action`/`login-action` bumped to v7/v4; `firebase-tools` 15.15.0 → 15.17.0; `gotestsum`/`gocover-cobertura` pinned via go.mod `tool` directive and run as `go tool ...` (no install step); `actions/upload-artifact` `if-no-files-found: error` on must-exist artifacts; smoke configs migrated from deprecated `paths`/`require` to canonical `features`/`steps`; `cmd/validate-summary` gated behind `manual` build tag (excluded from default builds, tests, coverage). Shipped across PRs #49 and #50.
+- [x] **Playwright container for CI** — `build-and-test`, `smoke-staging`, and `smoke-prod` all run inside `mcr.microsoft.com/playwright:v1.59.1-noble`. Eliminated the `~/.cache/ms-playwright` cache step and `npx playwright install --with-deps` (~30–90s saved per run). Container tag pinned to the `@playwright/test` version with a bump-together comment in `ci.yml`. Shipped in PR #49.
 - [x] **Firestore security rules + indexes in the repo** — `firestore.rules` (deny-all, audited 5/5 via `/firestore-security-rules-auditor` 2026-05-07) and `firestore.indexes.json` (empty) checked in and referenced from both `firebase.json` and `firebase.staging.json`. CI deploys to staging on push to develop and to prod on merge to main. 21-probe Vitest suite via `@firebase/rules-unit-testing` validates deny-all behavior against the emulator (auth/unauth × read/write × every collection + recursive subcollections). `internal/CLAUDE.md` documents the deny-all posture and the workflow for any future rules change. Required IAM grants on both projects for the GitHub Actions SA: `roles/serviceusage.serviceUsageConsumer`, `roles/firebaserules.admin`, `roles/datastore.indexAdmin`.
 
 - [x] **Restructure CI: build-and-test job** — renamed `test` → `build-and-test`; step order: Go unit tests → Vue unit tests → coverage → typecheck → `npm run build` → `CGO_ENABLED=0 go build -o server` → Firebase emulators → integration tests → e2e → upload `dist/` + `server` binary as GitHub Actions artifacts. `deploy-staging` downloads pre-built artifacts; Docker image is now single-stage (`debian:bookworm-slim`, just `COPY server .`). `playwright.config.ts` CI-aware: uses `./server` + `vite preview` in CI, `go run` + `vite build && vite preview` locally. Artifacts only uploaded after all tests pass.
