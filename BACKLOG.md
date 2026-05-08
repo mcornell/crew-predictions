@@ -22,9 +22,9 @@
   **Lower priority — likely no change:**
   - [x] `actions/checkout@v6` — reviewed; six bare uses match docs' canonical examples. Already on latest major (v6 credential storage moved to `$RUNNER_TEMP`, transparent). No change.
   - [x] `actions/upload-artifact@v7` / `actions/download-artifact@v7` — already on latest major. Added `if-no-files-found: error` to `frontend-dist` and `server-binary` uploads (must-exist artifacts for downstream deploy jobs); other uploads correctly leave the default since their files are conditional.
-  - [ ] `docker/setup-buildx-action@v3` / `docker/login-action@v3` — stable. Docs: https://github.com/docker/setup-buildx-action / https://github.com/docker/login-action
-  - [ ] `dorny/test-reporter@v3` — third-party, works today. Doc: https://github.com/dorny/test-reporter
-  - [ ] `playwright-bdd` (`bddgen`) — scan CHANGELOG for CI guidance. Doc: https://github.com/vitalets/playwright-bdd
+  - [x] `docker/setup-buildx-action@v3` / `docker/login-action@v3` — both bumped to `@v4`; same Node 24 runtime + ESM switch as build-push-action v7. setup-buildx-action v4 removes deprecated `config`/`config-inline`/`install` inputs which we don't use. login-action v4 keeps our existing `registry`/`username`/`password` inputs as canonical.
+  - [x] `dorny/test-reporter@v3` — reviewed; six calls share identical canonical pattern. Already on latest major (v3.0.0 was Node 24 + permissions tightening, no schema change). `java-junit` reporter is correct since gotestsum/vitest/playwright all emit JUnit XML. No change.
+  - [x] `playwright-bdd` — already on latest 8.5.0. Migrated `playwright.smoke.ts` and `playwright.prod-smoke.ts` from deprecated Cucumber-style `paths`/`require` to canonical `features`/`steps` (per `CucumberConfigDeprecated` typedef in installed types).
 
 ### CI Speedup — switch e2e job to Playwright container
 

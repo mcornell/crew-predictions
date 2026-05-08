@@ -2,8 +2,8 @@ import { defineConfig } from '@playwright/test'
 import { defineBddConfig } from 'playwright-bdd'
 
 const testDir = defineBddConfig({
-  paths: ['e2e/features/*.feature', 'e2e/smoke/features/health.feature'],
-  require: ['e2e/steps/*.ts', 'e2e/smoke/steps/health.steps.ts'],
+  features: ['e2e/features/*.feature', 'e2e/smoke/features/health.feature'],
+  steps: ['e2e/steps/*.ts', 'e2e/smoke/steps/health.steps.ts'],
   tags: '@smoke',
 })
 
