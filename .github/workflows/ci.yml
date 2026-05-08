@@ -59,9 +59,6 @@ jobs:
       - run: npm ci
       - run: go mod download
 
-      - name: Install gocover-cobertura
-        run: go install github.com/boumenot/gocover-cobertura@latest
-
       - name: Go unit tests
         run: |
           echo "## Go Tests" >> $GITHUB_STEP_SUMMARY
@@ -95,7 +92,7 @@ jobs:
       - name: Coverage summary
         if: always()
         run: |
-          gocover-cobertura < go-coverage.out > go-coverage.xml
+          go tool gocover-cobertura < go-coverage.out > go-coverage.xml
           python3 - <<'EOF'
           import xml.etree.ElementTree as ET, os
 

@@ -26,6 +26,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.56.0 // indirect
 	github.com/MicahParks/keyfunc v1.9.0 // indirect
 	github.com/bitfield/gotestdox v0.2.2 // indirect
+	github.com/boumenot/gocover-cobertura v1.4.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20260202195803-dba9d589def2 // indirect
 	github.com/dnephin/pflag v1.0.7 // indirect
@@ -74,4 +75,7 @@ require (
 	gotest.tools/gotestsum v1.13.0 // indirect
 )
 
-tool gotest.tools/gotestsum
+tool (
+	github.com/boumenot/gocover-cobertura
+	gotest.tools/gotestsum
+)

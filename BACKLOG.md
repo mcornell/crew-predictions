@@ -16,7 +16,8 @@
   - [x] `google-github-actions/auth@v3` — reviewed; already on latest major, indirect WIF + `access_token` for Docker login is idiomatic, permissions/checkout-ordering correct. No change.
   - [x] `google-github-actions/setup-gcloud@v3` — reviewed; bare usage matches docs' canonical WIF example. Sibling actions (deploy-cloudrun, upload-cloud-storage, etc.) considered but rejected — our deploys have substantial conditional logic that stays in bash regardless. No change.
   - [x] `gotestsum` — already pinned via go.mod `tool` directive (v1.13.0). Dropped CI install step in favor of `go tool gotestsum`. Added `--junitfile-testcase-classname=relative` for cleaner test report classnames.
-  - [ ] `gocover-cobertura` (installed at `latest`) — pin to specific version. Doc: https://github.com/boumenot/gocover-cobertura
+  - [x] `gocover-cobertura` — pinned via go.mod tool directive at v1.4.0; CI install step dropped in favor of `go tool gocover-cobertura`.
+  - [ ] **gocover-cobertura `-strict` flag** — when v1.5+ ships, bump the tool directive and add `-strict` to the invocation in `.github/workflows/ci.yml`. The flag fails the build if any coverage profiles are silently skipped due to missing package/module info. Currently in upstream main only (https://github.com/boumenot/gocover-cobertura).
 
   **Lower priority — likely no change:**
   - [ ] `actions/checkout@v6` — sanity check. Doc: https://github.com/actions/checkout
