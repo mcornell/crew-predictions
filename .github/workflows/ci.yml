@@ -135,7 +135,10 @@ jobs:
         run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o server ./cmd/server
 
       - name: Start Firebase emulators
-        run: npx firebase emulators:start --only auth,firestore --project crew-predictions &
+        run: |
+          nohup npx firebase emulators:start --only auth,firestore --project crew-predictions \
+            > /tmp/emulators.log 2>&1 &
+          echo $! > /tmp/emulators.pid
         env:
           FIREBASE_PROJECT_ID: crew-predictions
 
@@ -189,6 +192,18 @@ jobs:
           fail-on-error: false
           fail-on-empty: false
 
+      - name: Capture emulator diagnostics
+        if: always()
+        run: |
+          echo "=== emulator process status ==="
+          ps -p "$(cat /tmp/emulators.pid 2>/dev/null)" -o pid,stat,etime,cmd 2>/dev/null || echo "parent dead"
+          echo "=== port listeners (9099 / 8081) ==="
+          ss -ltnp 2>/dev/null | grep -E ':(9099|8081)' || echo "no listeners"
+          echo "=== dmesg tail (OOM?) ==="
+          dmesg 2>/dev/null | tail -50 || echo "dmesg unavailable"
+          echo "=== emulator log ==="
+          cat /tmp/emulators.log 2>/dev/null || echo "no log file"
+
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v7
@@ -198,6 +213,15 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 3
+
+      - name: Upload emulator log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: emulator-log
+          path: /tmp/emulators.log
+          retention-days: 3
+          if-no-files-found: ignore
 
       - name: Upload frontend artifact
         uses: actions/upload-artifact@v7
