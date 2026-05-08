@@ -62,6 +62,21 @@ npm run test:smoke     # post-deploy smoke suite against staging
 
 ---
 
+## Lint Commands
+
+Linters are local-only — no CI gate today. Run on demand or before opening a PR for a code-quality pass.
+
+```bash
+golangci-lint run ./...           # Go: errcheck, staticcheck, gocritic, revive, etc.
+golangci-lint fmt ./...           # Go: auto-apply gofmt + goimports
+npm run lint                      # Vue/TS: eslint + eslint-plugin-vue + typescript-eslint
+npm run lint:fix                  # Vue/TS: auto-fix formatting + simple errors
+```
+
+Configs: [`.golangci.yml`](.golangci.yml), [`eslint.config.mjs`](eslint.config.mjs). golangci-lint requires v2+ built with a Go runtime ≥ the project's `go.mod` toolchain. The configs intentionally skip stylistic nags that don't catch bugs: Go drops `hugeParam`/`rangeValCopy`/`paramTypeCombine`/`QF1001`; ESLint allows `no-explicit-any` inside `e2e/` and test files only.
+
+---
+
 ## Subdirectory Guidance
 
 - [`e2e/CLAUDE.md`](e2e/CLAUDE.md) — BDD dual-loop TDD detail, feature file conventions, @reset isolation, environment notes
