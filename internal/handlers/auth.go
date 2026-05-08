@@ -1,3 +1,6 @@
+// Package handlers exposes the HTTP handlers that serve the JSON, HTMX, and
+// admin endpoints. Handlers are constructed in cmd/server and wired to the
+// repository layer via interfaces.
 package handlers
 
 import (

@@ -25,7 +25,7 @@ type TokenVerifier interface {
 type NoopTokenVerifier struct{}
 
 func (NoopTokenVerifier) VerifyIDToken(ctx context.Context, idToken string) (*FirebaseToken, error) {
-	return nil, fmt.Errorf("Firebase Auth not configured")
+	return nil, fmt.Errorf("firebase auth not configured")
 }
 
 type SessionHandler struct {
@@ -38,7 +38,7 @@ func NewSessionHandler(v TokenVerifier, users repository.UserStore) *SessionHand
 }
 
 func (h *SessionHandler) Create(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	_ = r.ParseForm()
 	idToken := r.FormValue("idToken")
 	if idToken == "" {
 		http.Error(w, "missing idToken", http.StatusBadRequest)

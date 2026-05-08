@@ -1,3 +1,6 @@
+// Package models defines the shared domain types passed across the server,
+// repository, and scoring layers — primarily Match, MatchSummary, and the
+// associated event/result structs.
 package models
 
 import "time"

@@ -1,3 +1,6 @@
+// Package poll runs the live-match polling loop that fetches updated scores
+// and events from ESPN on a fixed cadence and writes finished results to the
+// result store.
 package poll
 
 import (
@@ -9,9 +12,9 @@ import (
 )
 
 var terminalStatuses = map[string]bool{
-	"STATUS_FULL_TIME":  true,
-	"STATUS_FINAL_AET":  true,
-	"STATUS_FINAL_PEN":  true,
+	"STATUS_FULL_TIME": true,
+	"STATUS_FINAL_AET": true,
+	"STATUS_FINAL_PEN": true,
 }
 
 func PollOnce(ctx context.Context, matchStore repository.MatchStore, resultStore repository.ResultStore, fetcher func() ([]models.Match, error)) error {

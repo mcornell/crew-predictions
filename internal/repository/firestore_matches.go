@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/firestore"
+
 	"github.com/mcornell/crew-predictions/internal/models"
 )
 
@@ -34,7 +35,7 @@ func (s *FirestoreMatchStore) SaveAll(matches []models.Match) error {
 				"players": e.Players,
 			}
 		}
-		batch.Set(ref, map[string]any{
+		_, _ = batch.Set(ref, map[string]any{
 			"homeTeam":     m.HomeTeam,
 			"awayTeam":     m.AwayTeam,
 			"kickoff":      m.Kickoff,

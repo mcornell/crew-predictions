@@ -33,4 +33,3 @@ func TestHandleHandler_Returns500WhenUpsertFails(t *testing.T) {
 		t.Errorf("expected 500, got %d", w.Code)
 	}
 }
-

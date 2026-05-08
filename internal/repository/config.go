@@ -1,3 +1,6 @@
+// Package repository defines the storage interfaces used across the server
+// and provides both in-memory and Firestore-backed implementations for
+// matches, predictions, results, users, seasons, and global config state.
 package repository
 
 import (

@@ -102,7 +102,7 @@ func TestSessionHandler_HandleIsDisplayNameWhenSet(t *testing.T) {
 	h.Create(w, req)
 
 	resp := w.Result()
-	req2 := httptest.NewRequest(http.MethodGet, "/", nil)
+	req2 := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 	for _, c := range resp.Cookies() {
 		req2.AddCookie(c)
 	}
@@ -124,7 +124,7 @@ func TestSessionHandler_HandleFallsBackToEmailWhenNoDisplayName(t *testing.T) {
 	h.Create(w, req)
 
 	resp := w.Result()
-	req2 := httptest.NewRequest(http.MethodGet, "/", nil)
+	req2 := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 	for _, c := range resp.Cookies() {
 		req2.AddCookie(c)
 	}
@@ -146,7 +146,7 @@ func TestSessionHandler_SessionContainsEmailVerifiedTrue(t *testing.T) {
 	h.Create(w, req)
 
 	resp := w.Result()
-	req2 := httptest.NewRequest(http.MethodGet, "/", nil)
+	req2 := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 	for _, c := range resp.Cookies() {
 		req2.AddCookie(c)
 	}
@@ -168,7 +168,7 @@ func TestSessionHandler_SessionContainsFirebaseUID(t *testing.T) {
 	h.Create(w, req)
 
 	resp := w.Result()
-	req2 := httptest.NewRequest(http.MethodGet, "/", nil)
+	req2 := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 	for _, c := range resp.Cookies() {
 		req2.AddCookie(c)
 	}

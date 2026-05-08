@@ -154,4 +154,3 @@ func TestTwoOneBot_RegistersUserInUserStore(t *testing.T) {
 		t.Errorf("expected location 'From the Upper 90 Club', got %q", u.Location)
 	}
 }
-

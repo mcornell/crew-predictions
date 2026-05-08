@@ -9,14 +9,14 @@ import (
 )
 
 func TestUserFromSession_NoCookie(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 	if got := UserFromSession(req); got != nil {
 		t.Errorf("expected nil, got %+v", got)
 	}
 }
 
 func TestUserFromSession_InvalidBase64(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 	req.AddCookie(&http.Cookie{Name: "__session", Value: "not-valid-base64!!!"})
 	if got := UserFromSession(req); got != nil {
 		t.Errorf("expected nil for bad base64, got %+v", got)
@@ -24,7 +24,7 @@ func TestUserFromSession_InvalidBase64(t *testing.T) {
 }
 
 func TestUserFromSession_InvalidJSON(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 	req.AddCookie(&http.Cookie{Name: "__session", Value: base64.StdEncoding.EncodeToString([]byte("not json"))})
 	if got := UserFromSession(req); got != nil {
 		t.Errorf("expected nil for bad JSON, got %+v", got)
@@ -37,7 +37,7 @@ func TestUserFromSession_ReturnsUser(t *testing.T) {
 		"handle":   "BlackAndGold@bsky.mock",
 		"provider": "google",
 	})
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 	req.AddCookie(&http.Cookie{Name: "__session", Value: base64.StdEncoding.EncodeToString(data)})
 	got := UserFromSession(req)
 	if got == nil {

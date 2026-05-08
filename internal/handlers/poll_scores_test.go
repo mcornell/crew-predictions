@@ -25,7 +25,7 @@ func TestPollScoresHandler_CallsRecalcFnAfterSuccessfulPoll(t *testing.T) {
 	called := 0
 	recalcFn := func(_ context.Context) { called++ }
 	h := handlers.NewPollScoresHandler(matchStore, repository.NewMemoryResultStore(), fetcher, recalcFn)
-	req := httptest.NewRequest(http.MethodPost, "/admin/poll-scores", nil)
+	req := httptest.NewRequest(http.MethodPost, "/admin/poll-scores", http.NoBody)
 	w := httptest.NewRecorder()
 	h.Poll(w, req)
 
@@ -39,7 +39,7 @@ func TestPollScoresHandler_DoesNotCallRecalcFnOnFetcherFailure(t *testing.T) {
 	recalcFn := func(_ context.Context) { called++ }
 	fetcher := func() ([]models.Match, error) { return nil, fmt.Errorf("espn down") }
 	h := handlers.NewPollScoresHandler(repository.NewMemoryMatchStore(), repository.NewMemoryResultStore(), fetcher, recalcFn)
-	req := httptest.NewRequest(http.MethodPost, "/admin/poll-scores", nil)
+	req := httptest.NewRequest(http.MethodPost, "/admin/poll-scores", http.NoBody)
 	w := httptest.NewRecorder()
 	h.Poll(w, req)
 	if called != 0 {
@@ -53,7 +53,7 @@ func TestPollScoresHandler_Returns500WhenFetcherFails(t *testing.T) {
 	fetcher := func() ([]models.Match, error) { return nil, fmt.Errorf("espn down") }
 
 	h := handlers.NewPollScoresHandler(matchStore, resultStore, fetcher, func(_ context.Context) {})
-	req := httptest.NewRequest(http.MethodPost, "/admin/poll-scores", nil)
+	req := httptest.NewRequest(http.MethodPost, "/admin/poll-scores", http.NoBody)
 	w := httptest.NewRecorder()
 	h.Poll(w, req)
 
@@ -75,7 +75,7 @@ func TestPollScoresHandler_CallsFetcherAndWritesResult(t *testing.T) {
 	fetcher := func() ([]models.Match, error) { return matchStore.GetAll() }
 
 	h := handlers.NewPollScoresHandler(matchStore, resultStore, fetcher, func(_ context.Context) {})
-	req := httptest.NewRequest(http.MethodPost, "/admin/poll-scores", nil)
+	req := httptest.NewRequest(http.MethodPost, "/admin/poll-scores", http.NoBody)
 	w := httptest.NewRecorder()
 
 	h.Poll(w, req)

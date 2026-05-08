@@ -77,8 +77,11 @@ func buildStores(ctx context.Context, cfg Config) (Stores, error) {
 	if stored, err := fsMatches.GetAll(); err != nil {
 		slog.Warn("could not load matches from Firestore", "error", err)
 	} else if len(stored) > 0 {
-		memMatch.SaveAll(stored)
-		slog.Info("startup: matches loaded from Firestore", "count", len(stored))
+		if err := memMatch.SaveAll(stored); err != nil {
+			slog.Warn("could not warm match cache from Firestore", "error", err)
+		} else {
+			slog.Info("startup: matches loaded from Firestore", "count", len(stored))
+		}
 	}
 	slog.Info("store: Firestore", "project", cfg.FirestoreProject)
 

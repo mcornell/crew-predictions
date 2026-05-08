@@ -1,3 +1,6 @@
+// Package seasons defines MLS season boundaries, helpers for resolving the
+// season a given date falls in, and the season-close workflow that archives
+// standings before advancing to the next season.
 package seasons
 
 import "time"

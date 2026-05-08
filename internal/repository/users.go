@@ -6,15 +6,15 @@ import (
 )
 
 type User struct {
-	UserID           string
-	Handle           string
-	Provider         string
-	Location         string
-	EmailVerified    bool
-	AcesRadioPoints  int
-	Upper90Points    int
-	GrouchyPoints    int
-	PredictionCount  int
+	UserID          string
+	Handle          string
+	Provider        string
+	Location        string
+	EmailVerified   bool
+	AcesRadioPoints int
+	Upper90Points   int
+	GrouchyPoints   int
+	PredictionCount int
 }
 
 type UserStore interface {

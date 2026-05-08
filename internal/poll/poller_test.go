@@ -131,9 +131,9 @@ func TestPollOnce_ReturnsErrorWhenSaveAllFails(t *testing.T) {
 
 type errMatchStore struct{}
 
-func (e *errMatchStore) GetAll() ([]models.Match, error)    { return nil, nil }
-func (e *errMatchStore) SaveAll(_ []models.Match) error     { return fmt.Errorf("store failed") }
-func (e *errMatchStore) Reset()                             {}
+func (e *errMatchStore) GetAll() ([]models.Match, error) { return nil, nil }
+func (e *errMatchStore) SaveAll(_ []models.Match) error  { return fmt.Errorf("store failed") }
+func (e *errMatchStore) Reset()                          {}
 
 func TestSaveResult_SkipsNonNumericHomeScore(t *testing.T) {
 	matchStore := repository.NewMemoryMatchStore()

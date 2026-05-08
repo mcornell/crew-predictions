@@ -85,7 +85,7 @@ func TestMemoryUserStore_UpsertPreservesScoringFields(t *testing.T) {
 	ctx := context.Background()
 
 	s.Upsert(ctx, repository.User{UserID: "u1", Handle: "fan"})
-	s.UpdateScores(ctx, "u1", 2, 15, 3, 1) // recalculator sets scores
+	s.UpdateScores(ctx, "u1", 2, 15, 3, 1)                      // recalculator sets scores
 	s.Upsert(ctx, repository.User{UserID: "u1", Handle: "fan"}) // auth handler upsert — no scoring fields
 
 	got, _ := s.GetByID(ctx, "u1")

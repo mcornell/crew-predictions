@@ -9,8 +9,8 @@ import (
 )
 
 type ResultsHandler struct {
-	store     repository.ResultStore
-	recalcFn  func(context.Context)
+	store    repository.ResultStore
+	recalcFn func(context.Context)
 }
 
 func NewResultsHandler(store repository.ResultStore, recalcFn func(context.Context)) *ResultsHandler {
@@ -18,7 +18,7 @@ func NewResultsHandler(store repository.ResultStore, recalcFn func(context.Conte
 }
 
 func (h *ResultsHandler) Submit(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	_ = r.ParseForm()
 	matchID := r.FormValue("match_id")
 	if matchID == "" {
 		http.Error(w, "match_id is required", http.StatusBadRequest)

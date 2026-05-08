@@ -47,7 +47,7 @@ func TestSubmitPrediction_Returns500WhenFetcherFails(t *testing.T) {
 }
 
 func TestSubmitPrediction_RejectsUnauthenticated(t *testing.T) {
-	req := httptest.NewRequest(http.MethodPost, "/predictions", nil)
+	req := httptest.NewRequest(http.MethodPost, "/predictions", http.NoBody)
 	w := httptest.NewRecorder()
 	newHandler().Submit(w, req)
 	if w.Code != http.StatusUnauthorized {

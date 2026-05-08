@@ -1,3 +1,5 @@
+// Package scoring implements the prediction scoring formats used by the
+// app: Aces Radio, Grouchy, and helpers shared between them.
 package scoring
 
 type Result struct{ Home, Away int }

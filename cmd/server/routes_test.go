@@ -85,7 +85,7 @@ func TestRegisterRoutes_RateLimiterAttachedInProduction(t *testing.T) {
 	// no-op, every request returns 200.
 	got429 := false
 	for range 200 {
-		req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", nil)
+		req := httptest.NewRequest(http.MethodGet, "/api/leaderboard", http.NoBody)
 		req.RemoteAddr = "10.0.0.1:1234"
 		rr := httptest.NewRecorder()
 		mux.ServeHTTP(rr, req)

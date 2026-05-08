@@ -18,7 +18,7 @@ func cookieWithPayload(payload map[string]string) *http.Cookie {
 }
 
 func TestUserFromSession_ReturnsNilForEmptyUserID(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 	req.AddCookie(cookieWithPayload(map[string]string{"userID": "", "handle": "fan@bsky.mock"}))
 	if got := handlers.UserFromSession(req); got != nil {
 		t.Errorf("expected nil for empty userID, got %+v", got)
@@ -26,7 +26,7 @@ func TestUserFromSession_ReturnsNilForEmptyUserID(t *testing.T) {
 }
 
 func TestUserFromSession_ReturnsNilForEmptyHandle(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 	req.AddCookie(cookieWithPayload(map[string]string{"userID": "google:abc", "handle": ""}))
 	if got := handlers.UserFromSession(req); got != nil {
 		t.Errorf("expected nil for empty handle, got %+v", got)
@@ -37,7 +37,7 @@ func TestUserFromSession_RejectsUnsignedCookieWhenSecretSet(t *testing.T) {
 	handlers.SetSessionSecret([]byte("test-secret"))
 	t.Cleanup(func() { handlers.SetSessionSecret(nil) })
 
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 	req.AddCookie(cookieWithPayload(map[string]string{"userID": "u1", "handle": "fan"}))
 	if got := handlers.UserFromSession(req); got != nil {
 		t.Error("expected nil for unsigned cookie when secret is set")
@@ -55,7 +55,7 @@ func TestUserFromSession_AcceptsValidSignedCookie(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.Create(w, req)
 
-	req2 := httptest.NewRequest(http.MethodGet, "/", nil)
+	req2 := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 	for _, c := range w.Result().Cookies() {
 		req2.AddCookie(c)
 	}
@@ -89,7 +89,7 @@ func TestUserFromSession_RejectsTamperedPayload(t *testing.T) {
 	payload[len(payload)-1] ^= 0x01
 	tampered := string(payload) + "." + parts[1]
 
-	req2 := httptest.NewRequest(http.MethodGet, "/", nil)
+	req2 := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 	req2.AddCookie(&http.Cookie{Name: "__session", Value: tampered})
 	if got := handlers.UserFromSession(req2); got != nil {
 		t.Error("expected nil for tampered payload")
@@ -97,7 +97,7 @@ func TestUserFromSession_RejectsTamperedPayload(t *testing.T) {
 }
 
 func TestLogout_ClearsSessionCookieAndRedirects(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/auth/logout", nil)
+	req := httptest.NewRequest(http.MethodGet, "/auth/logout", http.NoBody)
 	req.AddCookie(&http.Cookie{Name: "__session", Value: "somevalue"})
 	w := httptest.NewRecorder()
 
