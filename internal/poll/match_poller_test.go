@@ -486,3 +486,90 @@ func TestMatchPoller_Run_ExitsOnContextCancel(t *testing.T) {
 		t.Error("Run did not exit after context cancellation")
 	}
 }
+
+func TestMatchPoller_Reset_KeepsInProgressMatchActive(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	resultStore := repository.NewMemoryResultStore()
+
+	live := models.Match{
+		ID: "m-live", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",
+		Status: "STATUS_IN_PROGRESS", State: "in",
+		Kickoff: time.Now().Add(-1 * time.Hour),
+	}
+	p := newPoller(matchStore, resultStore, []models.Match{live}, immediateTimer)
+	p.Schedule([]models.Match{live})
+
+	if p.ActiveCount() != 1 {
+		t.Fatalf("precondition: expected 1 active match, got %d", p.ActiveCount())
+	}
+
+	// Refresh sees the same in-progress match. Switch to capturingTimer
+	// so we can distinguish "stayed in active" from "re-fired immediately".
+	delays := new([]time.Duration)
+	p.SetTimerFunc(capturingTimer(delays))
+	p.Reset([]models.Match{live})
+
+	if p.ActiveCount() != 1 {
+		t.Errorf("soft Reset: in-progress match should stay active, got ActiveCount=%d", p.ActiveCount())
+	}
+	if len(*delays) != 0 {
+		t.Errorf("soft Reset: should not re-schedule in-progress match, got %d new timer(s)", len(*delays))
+	}
+}
+
+func TestMatchPoller_Reset_DropsMatchNotInNewList(t *testing.T) {
+	// If a previously-active match is no longer in the refresh result
+	// (rare — e.g. ESPN dropped it), Reset should drop it from active.
+	matchStore := repository.NewMemoryMatchStore()
+	resultStore := repository.NewMemoryResultStore()
+
+	live := models.Match{
+		ID: "m-gone", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",
+		Status: "STATUS_IN_PROGRESS", State: "in",
+		Kickoff: time.Now().Add(-1 * time.Hour),
+	}
+	p := newPoller(matchStore, resultStore, []models.Match{live}, immediateTimer)
+	p.Schedule([]models.Match{live})
+
+	if p.ActiveCount() != 1 {
+		t.Fatalf("precondition: expected 1 active match, got %d", p.ActiveCount())
+	}
+
+	// Reset with empty list — m-gone should drop.
+	p.SetTimerFunc(capturingTimer(new([]time.Duration)))
+	p.Reset([]models.Match{})
+
+	if p.ActiveCount() != 0 {
+		t.Errorf("Reset with empty list: expected ActiveCount=0, got %d", p.ActiveCount())
+	}
+}
+
+func TestMatchPoller_Reset_DropsTerminalMatch(t *testing.T) {
+	// If a previously-in-progress match has reached terminal status in the
+	// refresh result, Reset should drop it from active.
+	matchStore := repository.NewMemoryMatchStore()
+	resultStore := repository.NewMemoryResultStore()
+
+	live := models.Match{
+		ID: "m-ended", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas",
+		Status: "STATUS_IN_PROGRESS", State: "in",
+		Kickoff: time.Now().Add(-2 * time.Hour),
+	}
+	p := newPoller(matchStore, resultStore, []models.Match{live}, immediateTimer)
+	p.Schedule([]models.Match{live})
+
+	if p.ActiveCount() != 1 {
+		t.Fatalf("precondition: expected 1 active match, got %d", p.ActiveCount())
+	}
+
+	// Reset with the same match but now finished — should drop from active.
+	ended := live
+	ended.Status = "STATUS_FULL_TIME"
+	ended.State = "post"
+	p.SetTimerFunc(capturingTimer(new([]time.Duration)))
+	p.Reset([]models.Match{ended})
+
+	if p.ActiveCount() != 0 {
+		t.Errorf("terminal match in Reset: expected ActiveCount=0, got %d", p.ActiveCount())
+	}
+}

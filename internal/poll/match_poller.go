@@ -97,12 +97,35 @@ func (p *MatchPoller) Schedule(matches []models.Match) {
 	}
 }
 
-// Reset cancels all active pollers, clears state, and reschedules from matches.
+// Reset reconciles poller state to a fresh match list. Soft semantics:
+// in-progress matches that re-appear in the new list keep their active
+// status (no race window where polling drops them) and are NOT re-scheduled
+// (the timer would re-fire immediately, duplicating polls). Matches that
+// are absent from the new list, or present with terminal status, drop from
+// active/scheduled. Net effect during refresh-while-in-progress: an
+// undisturbed continuation for live matches, plus seeding for any newly
+// scheduled pre matches.
 func (p *MatchPoller) Reset(matches []models.Match) {
+	keep := make(map[string]bool, len(matches))
+	for _, m := range matches {
+		if !terminalStatuses[m.Status] {
+			keep[m.ID] = true
+		}
+	}
+
 	p.mu.Lock()
-	p.active = make(map[string]bool)
-	p.scheduled = make(map[string]bool)
+	for id := range p.active {
+		if !keep[id] {
+			delete(p.active, id)
+		}
+	}
+	for id := range p.scheduled {
+		if !keep[id] {
+			delete(p.scheduled, id)
+		}
+	}
 	p.mu.Unlock()
+
 	p.Schedule(matches)
 }
 
