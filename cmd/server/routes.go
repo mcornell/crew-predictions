@@ -64,9 +64,15 @@ func registerRoutes(mux *http.ServeMux, deps Deps) {
 		deps.RecalcFn(context.Background())
 	}
 	rmh := handlers.NewRefreshMatchesHandler(stores.Match, fetchers.refresh, onRefresh)
+	if deps.Enqueuer != nil {
+		rmh = rmh.WithEnqueuer(deps.Enqueuer)
+	}
 	mux.HandleFunc("POST /admin/refresh-matches", handlers.AdminAuth(rmh.Refresh))
 
 	psh := handlers.NewPollScoresHandler(stores.Match, stores.Result, fetchers.refresh, deps.RecalcFn)
+	if deps.Enqueuer != nil {
+		psh = psh.WithEnqueuer(deps.Enqueuer)
+	}
 	mux.HandleFunc("POST /admin/poll-scores", handlers.AdminAuth(psh.Poll))
 
 	// Auth + session endpoints
