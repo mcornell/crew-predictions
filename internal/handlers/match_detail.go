@@ -5,11 +5,21 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/mcornell/crew-predictions/internal/models"
 	"github.com/mcornell/crew-predictions/internal/repository"
 	"github.com/mcornell/crew-predictions/internal/scoring"
 )
+
+// formatLastPollAt renders the LastPollAt time as RFC3339 for the API. Zero
+// time is rendered as "" so omitempty drops the field for unpolled matches.
+func formatLastPollAt(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+	return t.UTC().Format(time.RFC3339)
+}
 
 type SummaryFetcher func(matchID string) (models.MatchSummary, error)
 
@@ -56,6 +66,7 @@ type matchDetailMatch struct {
 	Attendance   int                 `json:"attendance,omitempty"`
 	Referee      string              `json:"referee,omitempty"`
 	Events       []models.MatchEvent `json:"events,omitempty"`
+	LastPollAt   string              `json:"lastPollAt,omitempty"`
 }
 
 func (h *MatchDetailHandler) Get(w http.ResponseWriter, r *http.Request) {
@@ -101,6 +112,7 @@ func (h *MatchDetailHandler) Get(w http.ResponseWriter, r *http.Request) {
 				Attendance:   m.Attendance,
 				Referee:      m.Referee,
 				Events:       m.Events,
+				LastPollAt:   formatLastPollAt(m.LastPollAt),
 			}
 			break
 		}

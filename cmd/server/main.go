@@ -41,6 +41,7 @@ func run() error {
 
 	verifier := buildVerifier(ctx, cfg)
 	deps := buildDeps(cfg, stores, verifier)
+	defer deps.Close()
 
 	if cfg.SessionSecret != "" {
 		handlers.SetSessionSecret([]byte(cfg.SessionSecret))

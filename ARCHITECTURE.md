@@ -72,19 +72,25 @@ Entry point: `cmd/server/main.go`
 | `GET` | `/api/matches` | optional | Upcoming matches + caller's predictions |
 | `GET` | `/api/matches/:matchId` | none | Match detail: match info + all predictions with per-format scores + `scoringFormats` array; when live returns `state`, `displayClock`, and `isProjected: true` with scores computed from current live result |
 | `POST` | `/api/predictions` | required | Submit a score prediction (form data) |
-| `GET` | `/api/leaderboard` | none | `{entries: [{userID, handle, acesRadioPoints, upper90ClubPoints, grouchyPoints, hasProfile}]}` sorted by Aces Radio desc; reads precomputed points from `UserStore` — O(U) reads; only users with `PredictionCount > 0` appear |
+| `GET` | `/api/leaderboard` | none | Active-season leaderboard: `{entries: [{userID, handle, acesRadioPoints, upper90ClubPoints, grouchyPoints, hasProfile}]}` sorted by Aces Radio desc; reads precomputed points from `UserStore` — O(U) reads; only users with `PredictionCount > 0` appear |
+| `GET` | `/api/leaderboard/{season}` | none | Frozen historical leaderboard for an archived season; reads from `seasons/{seasonID}` |
+| `GET` | `/api/seasons` | none | List of all known seasons + which is active; powers the season-selector chevron in `LeaderboardView.vue` |
 | `GET` | `/api/me` | optional | Current session user `{userID, handle}` or 401; lazily upserts user to `UserStore` |
 | `GET` | `/api/profile/:userID` | required | Public profile: handle, location, predictionCount, Aces Radio + Upper 90 Club + Grouchy™ standing (points + rank); reads precomputed points from `UserStore` |
 | `POST` | `/auth/handle` | required | Update display name + location; upserts to `UserStore`, rewrites session cookie |
 | `POST` | `/auth/session` | — | Exchange Firebase ID token for session cookie (form data) |
 | `GET` | `/auth/logout` | — | Clear session cookie, redirect to /matches |
 | `GET` | `/auth/config.js` | — | Firebase client config as JS (`window.__firebaseConfig`) |
-| `POST` | `/admin/refresh-matches` | — | Fetch matches from ESPN, populate match cache, reschedule pollers |
-| `POST` | `/admin/poll-scores` | — | Trigger a score poll immediately (fetch ESPN, update store, write terminal results) |
-| `DELETE` | `/admin/reset` | — | Reset in-memory stores (TEST_MODE=1 only) |
-| `POST` | `/admin/results` | — | Record a final match result for scoring |
-| `POST` | `/admin/seed-match` | — | Inject a fixture match (TEST_MODE=1 only) |
-| `POST` | `/admin/seed-prediction` | — | Inject a fixture prediction (TEST_MODE=1 only) |
+| `POST` | `/admin/refresh-matches` | admin key | Fetch matches from ESPN, populate match cache, reschedule pollers |
+| `POST` | `/admin/poll-scores` | admin key | Trigger a score poll immediately (fetch ESPN, update store, write terminal results) |
+| `POST` | `/admin/results` | admin key | Record a final match result for scoring |
+| `POST` | `/admin/seasons/close` | admin key | Archive the active season's standings into `seasons/{seasonID}` and advance the active season pointer |
+| `DELETE` | `/admin/reset` | TEST_MODE | Reset in-memory stores |
+| `POST` | `/admin/seed-match` | TEST_MODE | Inject a fixture match |
+| `POST` | `/admin/seed-match-events` | TEST_MODE | Inject fixture events for a seeded match |
+| `POST` | `/admin/seed-prediction` | TEST_MODE | Inject a fixture prediction |
+| `POST` | `/admin/seed-user` | TEST_MODE | Inject a fixture user |
+| `POST` | `/admin/seed-season` | TEST_MODE | Inject a fixture archived season |
 
 **Form data convention:** `POST /api/predictions` and `POST /auth/session` use `application/x-www-form-urlencoded` (Go's `r.ParseForm()`). Send via `URLSearchParams`, not JSON.
 
@@ -190,6 +196,7 @@ users/{userID}
   handle:          string   // current display name (source of truth)
   provider:        string   // "google.com", "password", etc.
   location:        string   // optional, user-supplied (e.g. "Columbus, OH")
+  hasProfile:      bool     // true once /auth/handle has been called; gates profile-link enablement
   acesRadioPoints: int      // precomputed by Recalculate()
   upper90Points:   int      // precomputed by Recalculate()
   grouchyPoints:   int      // precomputed by Recalculate()
@@ -204,6 +211,13 @@ matches/{matchID}
   awayScore:    string
   state:        string   // "pre" / "in" / "post"
   displayClock: string   // e.g. "48'", "HT" — live match clock from ESPN
+
+seasons/{seasonID}
+  // Frozen leaderboard snapshot, written by /admin/seasons/close. Read-only once written.
+  id:        string       // matches the doc ID
+  name:      string       // human-readable season name (e.g. "2026", "2027 Short")
+  closedAt:  timestamp
+  entries:   array        // sorted SeasonEntry list (handle, points per format, rank)
 ```
 
 ---

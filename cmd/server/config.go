@@ -15,6 +15,15 @@ type Config struct {
 	AdminKey         string // ADMIN_KEY — required in production, used for AdminAuth middleware
 	SessionSecret    string // SESSION_SECRET — required in production, used to HMAC the session cookie
 	TargetTeam       string // hardcoded "Columbus Crew" for now; not env-driven
+
+	// Cloud Tasks routing — when all four are set, the server enqueues
+	// chain tasks for live-match polling (see docs/match-polling-architecture.md).
+	// Unset (any blank) → no chain enqueueing, falls back to the in-process
+	// MatchPoller goroutine only.
+	CloudTasksProject  string // CLOUD_TASKS_PROJECT, usually == FirestoreProject
+	CloudTasksLocation string // CLOUD_TASKS_LOCATION, e.g. "us-east5"
+	CloudTasksQueue    string // CLOUD_TASKS_QUEUE, e.g. "match-polling"
+	CloudTasksTarget   string // CLOUD_TASKS_TARGET_URL, public URL of /admin/poll-scores on this Cloud Run service
 }
 
 func loadConfig() Config {
@@ -24,9 +33,13 @@ func loadConfig() Config {
 		FirestoreProject: os.Getenv("GOOGLE_CLOUD_PROJECT"),
 		FirebaseProject:  os.Getenv("FIREBASE_PROJECT_ID"),
 		AuthEmulatorHost: os.Getenv("FIREBASE_AUTH_EMULATOR_HOST"),
-		AdminKey:         os.Getenv("ADMIN_KEY"),
-		SessionSecret:    os.Getenv("SESSION_SECRET"),
-		TargetTeam:       "Columbus Crew",
+		AdminKey:           os.Getenv("ADMIN_KEY"),
+		SessionSecret:      os.Getenv("SESSION_SECRET"),
+		TargetTeam:         "Columbus Crew",
+		CloudTasksProject:  os.Getenv("CLOUD_TASKS_PROJECT"),
+		CloudTasksLocation: os.Getenv("CLOUD_TASKS_LOCATION"),
+		CloudTasksQueue:    os.Getenv("CLOUD_TASKS_QUEUE"),
+		CloudTasksTarget:   os.Getenv("CLOUD_TASKS_TARGET_URL"),
 	}
 	if cfg.Port == "" {
 		cfg.Port = "8080"

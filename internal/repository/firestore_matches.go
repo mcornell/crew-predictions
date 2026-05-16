@@ -53,7 +53,10 @@ func (s *FirestoreMatchStore) SaveAll(matches []models.Match) error {
 			"awayLogo":     m.AwayLogo,
 			"attendance":   m.Attendance,
 			"referee":      m.Referee,
-			"events":       events,
+			"events":         events,
+			"lastPollAt":     m.LastPollAt,
+			"chainSeededFor": m.ChainSeededFor,
+			"abandonedAt":    m.AbandonedAt,
 		})
 	}
 	batch.Flush()
@@ -97,8 +100,11 @@ func toMatch(snap *firestore.DocumentSnapshot) (models.Match, error) {
 		HomeLogo     string    `firestore:"homeLogo"`
 		AwayLogo     string    `firestore:"awayLogo"`
 		Attendance   int64     `firestore:"attendance"`
-		Referee      string    `firestore:"referee"`
-		Events       []struct {
+		Referee        string    `firestore:"referee"`
+		LastPollAt     time.Time `firestore:"lastPollAt"`
+		ChainSeededFor time.Time `firestore:"chainSeededFor"`
+		AbandonedAt    time.Time `firestore:"abandonedAt"`
+		Events         []struct {
 			Clock   string   `firestore:"clock"`
 			TypeID  string   `firestore:"typeID"`
 			Team    string   `firestore:"team"`
@@ -135,7 +141,10 @@ func toMatch(snap *firestore.DocumentSnapshot) (models.Match, error) {
 		HomeLogo:     doc.HomeLogo,
 		AwayLogo:     doc.AwayLogo,
 		Attendance:   int(doc.Attendance),
-		Referee:      doc.Referee,
-		Events:       events,
+		Referee:        doc.Referee,
+		LastPollAt:     doc.LastPollAt,
+		ChainSeededFor: doc.ChainSeededFor,
+		AbandonedAt:    doc.AbandonedAt,
+		Events:         events,
 	}, nil
 }

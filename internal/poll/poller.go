@@ -6,6 +6,7 @@ package poll
 import (
 	"context"
 	"strconv"
+	"time"
 
 	"github.com/mcornell/crew-predictions/internal/models"
 	"github.com/mcornell/crew-predictions/internal/repository"
@@ -21,6 +22,11 @@ func PollOnce(ctx context.Context, matchStore repository.MatchStore, resultStore
 	matches, err := fetcher()
 	if err != nil {
 		return err
+	}
+
+	now := time.Now().UTC()
+	for i := range matches {
+		matches[i].LastPollAt = now
 	}
 
 	if err := matchStore.SaveAll(matches); err != nil {

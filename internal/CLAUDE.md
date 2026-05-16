@@ -33,12 +33,12 @@ service cloud.firestore {
 }
 ```
 
-Audited 2026-05-07 via `/firestore-security-rules-auditor` — score 5/5. The only finding was operational: rules are not yet checked into the repo, so they can drift between prod and staging without a PR trail. Tracked in BACKLOG.
+Audited 2026-05-07 via `/firestore-security-rules-auditor` — score 5/5. `firestore.rules` and `firestore.indexes.json` are checked into the repo and deployed to both projects from CI on every push. A 21-probe Vitest suite (`@firebase/rules-unit-testing`) validates deny-all behavior against the emulator on every CI run.
 
 **When you change Firestore rules:**
-1. Edit `firestore.rules` in the repo (once it lands — see BACKLOG).
+1. Edit `firestore.rules` in the repo.
 2. Run `/firestore-security-rules-auditor` against the diff. Address findings before deploy.
-3. Verify deployed rules with `firebase deploy --only firestore:rules` and read back via Firebase MCP `firebase_get_security_rules` to confirm the deploy took.
+3. CI deploys to staging on push to develop and to prod on merge to main. Verify the deploy took via Firebase MCP `firebase_get_security_rules`.
 4. Prod and staging rules must be identical unless there is a documented reason in the PR description.
 
 **If a frontend Firestore SDK call is ever introduced** (e.g., real-time listeners), the deny-all rule will silently block it. Either re-architect the rules to support that specific access pattern (with a fresh audit), or refactor back to an HTTP endpoint that the Go server proxies. Do not relax deny-all without an audit.

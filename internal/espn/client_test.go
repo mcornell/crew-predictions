@@ -433,11 +433,11 @@ func TestFetchCrewMatchesFrom_ReturnsCrewMatchesFromFixtures(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case strings.Contains(r.URL.Path, "schedule"):
-			w.Write(schedule)
+			_, _ = w.Write(schedule)
 		case strings.Contains(r.URL.Path, "scoreboard"):
-			w.Write(scoreboard)
+			_, _ = w.Write(scoreboard)
 		default:
-			w.Write([]byte(`{"events":[]}`))
+			_, _ = w.Write([]byte(`{"events":[]}`))
 
 		}
 	}))
@@ -454,5 +454,111 @@ func TestFetchCrewMatchesFrom_ReturnsCrewMatchesFromFixtures(t *testing.T) {
 		if m.HomeTeam != "Columbus Crew" && m.AwayTeam != "Columbus Crew" {
 			t.Errorf("non-Crew match returned: %q vs %q", m.HomeTeam, m.AwayTeam)
 		}
+	}
+}
+
+// TestFetchCrewMatchesFrom_PerCompetitionRealFixtures verifies the schedule/
+// scoreboard parser handles each ESPN competition's response shape using
+// real captured Crew matches that span the four leagues we monitor. Each case
+// scopes the mock so only the named league returns the fixture; other leagues
+// get an empty events list. Re-fetch fixtures with:
+//
+//	curl -s 'https://site.api.espn.com/apis/site/v2/sports/soccer/<league>/scoreboard?dates=YYYYMMDD' \
+//	  > internal/espn/testdata/<fixture>.json
+func TestFetchCrewMatchesFrom_PerCompetitionRealFixtures(t *testing.T) {
+	cases := []struct {
+		league      string
+		fixturePath string
+		label       string
+		wantID      string
+		wantHome    string
+		wantAway    string
+		wantVenue   string
+	}{
+		{
+			league:      "usa.1",
+			fixturePath: "testdata/mls_2023_cup_final.json",
+			label:       "MLS Cup 2023 Final",
+			wantID:      "690611",
+			wantHome:    "Columbus Crew",
+			wantAway:    "LAFC",
+			wantVenue:   "ScottsMiracle-Gro Field",
+		},
+		{
+			league:      "concacaf.champions",
+			fixturePath: "testdata/concacaf_champions_2024_final.json",
+			label:       "CONCACAF Champions Cup 2024 Final (Crew away)",
+			wantID:      "702333",
+			wantHome:    "Pachuca",
+			wantAway:    "Columbus Crew",
+			wantVenue:   "Estadio Hidalgo",
+		},
+		{
+			league:      "concacaf.leagues.cup",
+			fixturePath: "testdata/concacaf_leagues_cup_2024_final.json",
+			label:       "Leagues Cup 2024 Final",
+			wantID:      "719874",
+			wantHome:    "Columbus Crew",
+			wantAway:    "LAFC",
+			wantVenue:   "ScottsMiracle-Gro Field",
+		},
+		{
+			league:      "usa.open",
+			fixturePath: "testdata/usa_open_2026_knoxville.json",
+			label:       "USOC vs Knoxville (multi-event scoreboard)",
+			wantID:      "401869714",
+			wantHome:    "Columbus Crew",
+			wantAway:    "One Knoxville",
+			wantVenue:   "ScottsMiracle-Gro Field",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.label, func(t *testing.T) {
+			payload, err := os.ReadFile(tc.fixturePath)
+			if err != nil {
+				t.Fatalf("reading fixture: %v", err)
+			}
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if strings.Contains(r.URL.Path, "/"+tc.league+"/scoreboard") {
+					_, _ = w.Write(payload)
+					return
+				}
+				_, _ = w.Write([]byte(`{"events":[]}`))
+			}))
+			defer srv.Close()
+
+			matches, err := fetchCrewMatchesFrom(srv.URL)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			foundIdx := -1
+			for i := range matches {
+				if matches[i].ID == tc.wantID {
+					foundIdx = i
+					break
+				}
+			}
+			if foundIdx == -1 {
+				t.Fatalf("expected match %s not found in %d returned matches", tc.wantID, len(matches))
+			}
+			m := matches[foundIdx]
+			if m.HomeTeam != tc.wantHome {
+				t.Errorf("HomeTeam: got %q, want %q", m.HomeTeam, tc.wantHome)
+			}
+			if m.AwayTeam != tc.wantAway {
+				t.Errorf("AwayTeam: got %q, want %q", m.AwayTeam, tc.wantAway)
+			}
+			if m.Venue != tc.wantVenue {
+				t.Errorf("Venue: got %q, want %q", m.Venue, tc.wantVenue)
+			}
+			if m.State != "post" {
+				t.Errorf("State: got %q, want %q (status was STATUS_FULL_TIME)", m.State, "post")
+			}
+			if m.HomeTeam != "Columbus Crew" && m.AwayTeam != "Columbus Crew" {
+				t.Errorf("expected Columbus Crew in matchup, got %q vs %q", m.HomeTeam, m.AwayTeam)
+			}
+		})
 	}
 }

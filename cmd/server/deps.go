@@ -11,6 +11,7 @@ import (
 	"github.com/mcornell/crew-predictions/internal/models"
 	"github.com/mcornell/crew-predictions/internal/poll"
 	"github.com/mcornell/crew-predictions/internal/recalculator"
+	"github.com/mcornell/crew-predictions/internal/tasks"
 )
 
 // Deps is the bag of dependencies passed into route registration and
@@ -25,6 +26,19 @@ type Deps struct {
 	RecalcFn       func(ctx context.Context)
 	TwoOneBot      *bot.TwoOneBot
 	MatchPoller    *poll.MatchPoller // nil in test mode (no background polling)
+	Enqueuer       tasks.Enqueuer    // nil in test mode without explicit fake; real Cloud Tasks in prod when configured
+	enqueuerCloser func() error      // optional shutdown hook for the real Cloud Tasks client
+}
+
+// Close releases any process-lifetime resources held by Deps (Cloud Tasks
+// gRPC client, etc.). Safe to call on a zero-value Deps or when no
+// closers were registered. Intended for `defer deps.Close()` in main.
+func (d Deps) Close() {
+	if d.enqueuerCloser != nil {
+		if err := d.enqueuerCloser(); err != nil {
+			slog.Warn("deps.Close: enqueuer close failed", "error", err)
+		}
+	}
 }
 
 // buildDeps wires the runtime dependencies that bridge stores and handlers:
@@ -61,9 +75,45 @@ func buildDeps(cfg Config, stores Stores, verifier handlers.TokenVerifier) Deps 
 		)
 		deps.MatchPoller.SetSummaryFetcher(summaryFetcher)
 		deps.MatchPoller.SetOnResultSaved(recalcFn)
+
+		// Real Cloud Tasks enqueuer when all routing env vars are set.
+		// Missing vars → no chain enqueueing (falls back to in-process poller
+		// only). Logged once at startup so an incomplete config is obvious.
+		if e, closer := buildCloudTasksEnqueuer(cfg); e != nil {
+			deps.Enqueuer = e
+			deps.enqueuerCloser = closer
+		}
 	}
 
 	return deps
+}
+
+// buildCloudTasksEnqueuer constructs the real Cloud Tasks enqueuer when
+// every CLOUD_TASKS_* env var is present, or returns (nil, nil) so the
+// server falls back to in-process polling. Returns a closer function so the
+// caller can release the gRPC client on shutdown.
+func buildCloudTasksEnqueuer(cfg Config) (tasks.Enqueuer, func() error) {
+	if cfg.CloudTasksProject == "" || cfg.CloudTasksLocation == "" || cfg.CloudTasksQueue == "" || cfg.CloudTasksTarget == "" {
+		slog.Info("cloud tasks: routing config incomplete, chain enqueueing disabled",
+			"project", cfg.CloudTasksProject, "location", cfg.CloudTasksLocation,
+			"queue", cfg.CloudTasksQueue, "targetURL", cfg.CloudTasksTarget)
+		return nil, nil
+	}
+	e, err := tasks.NewCloudTasksEnqueuer(context.Background(), tasks.CloudTasksConfig{
+		ProjectID: cfg.CloudTasksProject,
+		Location:  cfg.CloudTasksLocation,
+		QueueID:   cfg.CloudTasksQueue,
+		TargetURL: cfg.CloudTasksTarget,
+		AdminKey:  cfg.AdminKey,
+	})
+	if err != nil {
+		slog.Error("cloud tasks: enqueuer init failed; chain enqueueing disabled", "error", err)
+		return nil, nil
+	}
+	slog.Info("cloud tasks: enqueuer ready",
+		"project", cfg.CloudTasksProject, "location", cfg.CloudTasksLocation,
+		"queue", cfg.CloudTasksQueue)
+	return e, e.Close
 }
 
 // chooseSummaryFetcher returns the live ESPN summary fetcher in production
