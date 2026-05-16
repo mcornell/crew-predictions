@@ -17,6 +17,13 @@ import (
 // stays current.
 const pollChainInterval = 2 * time.Minute
 
+// pollChainMaxAge bounds how long a chain may run for one match. Longest
+// legitimate soccer match (90 + ET 30 + PKs + buffer) is well under 4h; if
+// we're still polling past this threshold, ESPN data has likely gone weird
+// and the chain should bail out so the next 4am/12pm/6pm refresh can
+// re-evaluate. The bail-out writes Match.AbandonedAt for diagnostic visibility.
+const pollChainMaxAge = 4 * time.Hour
+
 // terminalStatuses mirrors internal/poll.terminalStatuses plus the "won't
 // resume today" states. Chain ends on any of these; the next 4am/12pm/6pm
 // refresh picks up rescheduled kickoffs and seeds a fresh chain if needed.
@@ -69,22 +76,33 @@ func (h *PollScoresHandler) Poll(w http.ResponseWriter, r *http.Request) {
 
 // maybeEnqueueNext consults the freshly-polled store for the named match and
 // schedules a follow-up task at now + pollChainInterval if the match is
-// still in a non-terminal state. A missing match or a terminal status ends
-// the chain (no enqueue).
+// still in a non-terminal state. A missing match, a terminal status, or
+// a pollChainMaxAge-exceeded match ends the chain (no enqueue). The
+// max-age path additionally marks the match Abandoned for diagnostic
+// visibility.
 func (h *PollScoresHandler) maybeEnqueueNext(ctx context.Context, matchID string) {
 	matches, err := h.matchStore.GetAll()
 	if err != nil {
 		slog.Error("poll_scores: chain continuation read failed", "matchID", matchID, "error", err)
 		return
 	}
-	for _, m := range matches {
+	now := time.Now().UTC()
+	for i, m := range matches {
 		if m.ID != matchID {
 			continue
 		}
 		if terminalStatuses[m.Status] {
 			return
 		}
-		runAt := time.Now().UTC().Add(pollChainInterval)
+		if !m.Kickoff.IsZero() && now.Sub(m.Kickoff) > pollChainMaxAge {
+			matches[i].AbandonedAt = now
+			if err := h.matchStore.SaveAll(matches); err != nil {
+				slog.Error("poll_scores: AbandonedAt persist failed", "matchID", matchID, "error", err)
+			}
+			slog.Warn("poll_scores: chain safety bailout", "matchID", matchID, "kickoff", m.Kickoff, "ageSeconds", int(now.Sub(m.Kickoff).Seconds()))
+			return
+		}
+		runAt := now.Add(pollChainInterval)
 		if err := h.enqueuer.EnqueuePoll(ctx, matchID, runAt); err != nil {
 			slog.Error("poll_scores: chain enqueue failed", "matchID", matchID, "error", err)
 		}

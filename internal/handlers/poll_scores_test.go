@@ -152,3 +152,77 @@ func TestPollScoresHandler_DoesNotEnqueueWhenMatchIsTerminal(t *testing.T) {
 		t.Errorf("expected no enqueue for terminal match, got %d call(s)", got)
 	}
 }
+
+func TestPollScoresHandler_SafetyBailoutMarksAbandonedAfter4h(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	matchStore.Seed([]models.Match{{
+		ID: "m-runaway", HomeTeam: "Columbus Crew", AwayTeam: "LAFC",
+		// 5h ago — past the 4h ceiling
+		Kickoff: time.Now().Add(-5 * time.Hour), Status: "STATUS_IN_PROGRESS", State: "in",
+	}})
+	fetcher := func() ([]models.Match, error) { return matchStore.GetAll() }
+	enqueuer := tasks.NewFakeEnqueuer()
+
+	h := handlers.NewPollScoresHandler(matchStore, repository.NewMemoryResultStore(), fetcher, func(_ context.Context) {}).
+		WithEnqueuer(enqueuer)
+
+	req := httptest.NewRequest(http.MethodPost, "/admin/poll-scores?matchID=m-runaway", http.NoBody)
+	w := httptest.NewRecorder()
+	before := time.Now()
+	h.Poll(w, req)
+	after := time.Now()
+
+	if w.Code != http.StatusNoContent {
+		t.Fatalf("expected 204, got %d", w.Code)
+	}
+	if got := len(enqueuer.Calls()); got != 0 {
+		t.Errorf("safety bailout: expected NO chain enqueue, got %d", got)
+	}
+
+	stored, _ := matchStore.GetAll()
+	var found *models.Match
+	for i, m := range stored {
+		if m.ID == "m-runaway" {
+			found = &stored[i]
+			break
+		}
+	}
+	if found == nil {
+		t.Fatal("expected m-runaway in store")
+	}
+	if found.AbandonedAt.IsZero() {
+		t.Errorf("safety bailout: expected AbandonedAt to be set, got zero")
+	}
+	if found.AbandonedAt.Before(before) || found.AbandonedAt.After(after) {
+		t.Errorf("safety bailout: AbandonedAt %v outside expected window [%v, %v]", found.AbandonedAt, before, after)
+	}
+}
+
+func TestPollScoresHandler_NoBailoutWithin4h(t *testing.T) {
+	// Sanity check: a match 3.5h past kickoff (still within safety window)
+	// should still get a chain enqueue, NOT be marked abandoned.
+	matchStore := repository.NewMemoryMatchStore()
+	matchStore.Seed([]models.Match{{
+		ID: "m-extra-time", HomeTeam: "Columbus Crew", AwayTeam: "LAFC",
+		Kickoff: time.Now().Add(-3*time.Hour - 30*time.Minute), Status: "STATUS_IN_PROGRESS", State: "in",
+	}})
+	fetcher := func() ([]models.Match, error) { return matchStore.GetAll() }
+	enqueuer := tasks.NewFakeEnqueuer()
+
+	h := handlers.NewPollScoresHandler(matchStore, repository.NewMemoryResultStore(), fetcher, func(_ context.Context) {}).
+		WithEnqueuer(enqueuer)
+
+	req := httptest.NewRequest(http.MethodPost, "/admin/poll-scores?matchID=m-extra-time", http.NoBody)
+	w := httptest.NewRecorder()
+	h.Poll(w, req)
+
+	if got := len(enqueuer.Calls()); got != 1 {
+		t.Errorf("within 4h: expected 1 chain enqueue, got %d", got)
+	}
+	stored, _ := matchStore.GetAll()
+	for _, m := range stored {
+		if m.ID == "m-extra-time" && !m.AbandonedAt.IsZero() {
+			t.Errorf("within 4h: AbandonedAt should be zero, got %v", m.AbandonedAt)
+		}
+	}
+}
