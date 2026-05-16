@@ -104,7 +104,9 @@ ESPN data is fetched via `internal/espn.FetchCrewMatches`, which hits four leagu
 
 **Daily refresh:** `startDailyRefresh` fires at 4am ET on startup and every subsequent 24h. It fetches ESPN, updates `MatchStore` (writing through to Firestore), calls `poller.Backfill(matches)` to catch results that finalised while no poller was active (e.g. after a Cloud Run recycle), runs `Recalculate()`, and calls `poller.Reset(matches)` to reschedule all match pollers from fresh data.
 
-**Score polling:** `internal/poll.MatchPoller` schedules a `time.AfterFunc` at each match's kickoff time. When the timer fires, the match enters the active set and `Tick()` polls ESPN every 2 minutes. On a terminal status (`STATUS_FULL_TIME` / `STATUS_FINAL_AET` / `STATUS_FINAL_PEN`), the result is written to `ResultStore`, the match is deactivated, and the `SetOnResultSaved` callback fires — which triggers `Recalculate()`. Matches with unknown/postponed status stay active until the next 4am reset clears them. Matches loaded from Firestore with a past kickoff are scheduled at zero delay (immediate catch-up polling).
+**External-trigger chain (durability layer):** the in-process daily-refresh goroutine + match poller goroutine die when the Cloud Run container is recycled for idle. To keep polling working when no user traffic warms the container, three Cloud Scheduler crons (4am / noon / 6pm ET) POST to `/admin/refresh-matches`. Each refresh fetches ESPN as before, then walks a state-rule table and seeds a Cloud Tasks chain for any upcoming or stale-in-progress match. Each chain task is one POST to `/admin/poll-scores?matchID=<id>`; `/admin/poll-scores` polls ESPN, writes `LastPollAt` on the match, and if the status is non-terminal enqueues the next task 2 min ahead. Cloud Tasks delivery retries handle container cold-start, so a sleeping container wakes for each tick. Terminal status (`STATUS_FULL_TIME` / `STATUS_FINAL_AET` / `STATUS_FINAL_PEN` / `STATUS_POSTPONED` / `STATUS_CANCELED` / `STATUS_ABANDONED`) ends the chain; a 4h safety bailout writes `Match.AbandonedAt` and ends the chain if ESPN data wedges. The in-process poller stays as a fast-path optimization — both paths converge to the same store, polling is idempotent. Full design + rollback in [docs/match-polling-architecture.md](docs/match-polling-architecture.md).
+
+**Score polling (in-process fast path):** `internal/poll.MatchPoller` schedules a `time.AfterFunc` at each match's kickoff time. When the timer fires, the match enters the active set and `Tick()` polls ESPN every 2 minutes. On a terminal status (`STATUS_FULL_TIME` / `STATUS_FINAL_AET` / `STATUS_FINAL_PEN`), the result is written to `ResultStore`, the match is deactivated, and the `SetOnResultSaved` callback fires — which triggers `Recalculate()`. Matches with unknown/postponed status stay active until the next 4am reset clears them. Matches loaded from Firestore with a past kickoff are scheduled at zero delay (immediate catch-up polling). `Reset()` is *soft* — in-progress matches that re-appear in the new list stay in the active set undisturbed, so a refresh-during-match doesn't race the active polling goroutine.
 
 **Score recalculation:** `internal/recalculator.Recalculate()` is a from-scratch recompute: fetches all predictions, fetches all results (one read per unique match), computes AcesRadio + Upper90Club + Grouchy totals and prediction count per user, and upserts all user docs in `UserStore`. Triggered after every match final (via `MatchPoller.SetOnResultSaved`) and on startup (after `Backfill`). Leaderboard and profile handlers read these precomputed values directly — O(U) reads instead of O(P×R) per request.
 
@@ -203,14 +205,17 @@ users/{userID}
   predictionCount: int      // precomputed by Recalculate(); 0 = excluded from leaderboard
 
 matches/{matchID}
-  homeTeam:     string
-  awayTeam:     string
-  kickoff:      timestamp
-  status:       string
-  homeScore:    string
-  awayScore:    string
-  state:        string   // "pre" / "in" / "post"
-  displayClock: string   // e.g. "48'", "HT" — live match clock from ESPN
+  homeTeam:       string
+  awayTeam:       string
+  kickoff:        timestamp
+  status:         string
+  homeScore:      string
+  awayScore:      string
+  state:          string   // "pre" / "in" / "post"
+  displayClock:   string   // e.g. "48'", "HT" — live match clock from ESPN
+  lastPollAt:     timestamp // written by every /admin/poll-scores; refresh uses it for chain-liveness detection
+  chainSeededFor: timestamp // refresh dedup key: if == Kickoff, a chain task is already queued for this kickoff
+  abandonedAt:    timestamp // set by the /admin/poll-scores 4h safety bailout for diagnostic visibility
 
 seasons/{seasonID}
   // Frozen leaderboard snapshot, written by /admin/seasons/close. Read-only once written.
@@ -360,6 +365,12 @@ gcloud secrets add-iam-policy-binding <secret-name> --project=crew-predictions-s
 | `FIREBASE_PROJECT_ID` | Firebase Admin SDK init |
 | `FIREBASE_API_KEY` | Served to browser via `/auth/config.js` |
 | `FIREBASE_AUTH_DOMAIN` | Served to browser via `/auth/config.js` |
+| `CLOUD_TASKS_PROJECT` | GCP project hosting the `match-polling` queue. Usually == `GOOGLE_CLOUD_PROJECT`. |
+| `CLOUD_TASKS_LOCATION` | Queue region — `us-east4` (Cloud Tasks doesn't ship in `us-east5`). |
+| `CLOUD_TASKS_QUEUE` | Queue name — `match-polling`. |
+| `CLOUD_TASKS_TARGET_URL` | Public URL of this service's `/admin/poll-scores` endpoint. Chain tasks POST to this. |
+
+The four `CLOUD_TASKS_*` vars must all be set for chain enqueueing to activate. Any blank → `buildCloudTasksEnqueuer` returns nil and the handlers fall back to in-process polling only (graceful degradation, no errors).
 
 ---
 

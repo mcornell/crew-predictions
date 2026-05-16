@@ -1,8 +1,8 @@
 # Match Polling — External Trigger Architecture
 
-Design doc for replacing the in-process goroutine-based match poller with externally-triggered Cloud Tasks chains, plus externally-triggered daily refreshes via Cloud Scheduler.
+Replaces reliance on the in-process goroutine-based match poller with externally-triggered Cloud Tasks chains, plus externally-triggered daily refreshes via Cloud Scheduler. The in-process poller remains as a fast-path optimization when the container happens to be warm.
 
-Status: planned, not yet implemented. Tracked in BACKLOG.
+Status: shipped via PR #52 (2026-05-16). Live in both staging and prod.
 
 ---
 
@@ -66,7 +66,7 @@ Auth: existing `AdminAuth` middleware (`X-Admin-Key` header).
 
 ### Cloud Tasks (1 queue)
 
-- Queue: `match-polling`, region `us-east5`, both projects
+- Queue: `match-polling`, region `us-east4` (Cloud Tasks doesn't ship in `us-east5` where Cloud Run lives — `us-east4` is the closest east-coast region for the queue; cross-region HTTP target is fine), both projects
 - Free tier: 1M ops/month (expected usage: ~1k ops/month)
 - Built-in retries on delivery failure (exponential backoff, default up to ~1h) — handles container cold-start transparently
 - Task target: `POST /admin/poll-scores?matchID={id}` with admin-key header
