@@ -34,6 +34,23 @@ When('the admin triggers a score poll', async ({ request }) => {
   expect(resp.status()).toBe(204);
 });
 
+When('the admin triggers a score poll for match {string}', async ({ request }, matchID: string) => {
+  const resp = await request.post(`/admin/poll-scores?matchID=${matchID}`);
+  expect(resp.status()).toBe(204);
+});
+
+Then('the match detail for {string} reports a lastPollAt within the last {int} seconds', async ({ request }, matchID: string, windowSec: number) => {
+  const resp = await request.get(`/api/matches/${matchID}`);
+  expect(resp.status()).toBe(200);
+  const body = await resp.json();
+  expect(body.match, 'response should have a match object').toBeTruthy();
+  expect(body.match.lastPollAt, 'lastPollAt should be present on the match detail response').toBeTruthy();
+  const polledAt = new Date(body.match.lastPollAt).getTime();
+  expect(Number.isFinite(polledAt), `lastPollAt should parse as a date, got: ${body.match.lastPollAt}`).toBe(true);
+  const ageSec = (Date.now() - polledAt) / 1000;
+  expect(ageSec, `lastPollAt age was ${ageSec}s, expected < ${windowSec}s`).toBeLessThan(windowSec);
+});
+
 Then('the matches API includes match {string}', async ({ request }, matchId: string) => {
   const resp = await request.get('/api/matches');
   const body = await resp.json();

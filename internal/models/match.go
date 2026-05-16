@@ -25,6 +25,11 @@ type Match struct {
 	Attendance   int
 	Referee      string
 	Events       []MatchEvent
+
+	// LastPollAt is set by every /admin/poll-scores call. The 4am/12pm/6pm
+	// refresh inspects it to detect dead polling chains (state=in but
+	// LastPollAt is stale) and revives them. Zero value means never polled.
+	LastPollAt time.Time
 }
 
 type MatchEvent struct {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/mcornell/crew-predictions/internal/models"
 	"github.com/mcornell/crew-predictions/internal/poll"
@@ -210,5 +211,38 @@ func TestPollOnce_IsIdempotent(t *testing.T) {
 	result, _ := resultStore.GetResult(context.Background(), "m-done")
 	if result == nil || result.HomeGoals != 1 || result.AwayGoals != 0 {
 		t.Errorf("expected idempotent result, got %+v", result)
+	}
+}
+
+func TestPollOnce_StampsLastPollAtOnAllMatches(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	resultStore := repository.NewMemoryResultStore()
+
+	matches := []models.Match{
+		{ID: "m-live", HomeTeam: "Columbus Crew", AwayTeam: "LAFC", Status: "STATUS_IN_PROGRESS", State: "in"},
+		{ID: "m-done", HomeTeam: "Columbus Crew", AwayTeam: "FC Dallas", Status: "STATUS_FULL_TIME", State: "post", HomeScore: "2", AwayScore: "0"},
+	}
+	fetcher := func() ([]models.Match, error) { return matches, nil }
+
+	before := time.Now()
+	if err := poll.PollOnce(context.Background(), matchStore, resultStore, fetcher); err != nil {
+		t.Fatalf("PollOnce: %v", err)
+	}
+	after := time.Now()
+
+	stored, err := matchStore.GetAll()
+	if err != nil {
+		t.Fatalf("GetAll: %v", err)
+	}
+	if len(stored) != 2 {
+		t.Fatalf("expected 2 stored matches, got %d", len(stored))
+	}
+	for _, m := range stored {
+		if m.LastPollAt.IsZero() {
+			t.Errorf("match %s: expected LastPollAt to be set, got zero value", m.ID)
+		}
+		if m.LastPollAt.Before(before) || m.LastPollAt.After(after) {
+			t.Errorf("match %s: LastPollAt %v outside expected window [%v, %v]", m.ID, m.LastPollAt, before, after)
+		}
 	}
 }

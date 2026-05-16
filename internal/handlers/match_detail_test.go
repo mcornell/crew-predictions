@@ -713,3 +713,47 @@ func TestMatchDetailHandler_IncludesRecordsAndForm(t *testing.T) {
 		t.Errorf("AwayForm: got %q, want %q", resp.Match.AwayForm, "LWDWL")
 	}
 }
+
+func TestMatchDetailHandler_IncludesLastPollAt(t *testing.T) {
+	predStore := repository.NewMemoryPredictionStore()
+	resultStore := repository.NewMemoryResultStore()
+	matchStore := repository.NewMemoryMatchStore()
+	userStore := repository.NewMemoryUserStore()
+
+	polledAt := time.Date(2026, 5, 13, 23, 50, 0, 0, time.UTC)
+	matchStore.Seed([]models.Match{{
+		ID: "m-poll", HomeTeam: "Columbus Crew", AwayTeam: "LAFC",
+		Kickoff: polledAt.Add(-20 * time.Minute), Status: "STATUS_IN_PROGRESS", State: "in",
+		LastPollAt: polledAt,
+	}})
+
+	h := handlers.NewMatchDetailHandler(predStore, resultStore, matchStore, userStore, "Columbus Crew", nil)
+	req := httptest.NewRequest("GET", "/api/matches/m-poll", http.NoBody)
+	req.SetPathValue("matchId", "m-poll")
+	w := httptest.NewRecorder()
+	h.Get(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var resp map[string]any
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatalf("could not decode response: %v", err)
+	}
+	matchObj, ok := resp["match"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected response.match to be an object, got: %T", resp["match"])
+	}
+	got, ok := matchObj["lastPollAt"].(string)
+	if !ok || got == "" {
+		t.Fatalf("expected response.match.lastPollAt to be a non-empty string, got: %v", matchObj["lastPollAt"])
+	}
+	parsed, err := time.Parse(time.RFC3339, got)
+	if err != nil {
+		t.Fatalf("expected lastPollAt to parse as RFC3339, got %q (err: %v)", got, err)
+	}
+	if !parsed.Equal(polledAt) {
+		t.Errorf("expected lastPollAt to round-trip as %v, got %v", polledAt, parsed)
+	}
+}
