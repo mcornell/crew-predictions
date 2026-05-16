@@ -246,3 +246,40 @@ func TestPollOnce_StampsLastPollAtOnAllMatches(t *testing.T) {
 		}
 	}
 }
+
+func TestPollOnce_PreservesChainSeededForFromExistingStore(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	seededFor := time.Date(2026, 5, 16, 23, 30, 0, 0, time.UTC)
+	abandonedAt := time.Date(2026, 5, 14, 3, 30, 0, 0, time.UTC)
+	matchStore.Seed([]models.Match{{
+		ID: "m-live", Status: "STATUS_IN_PROGRESS", State: "in",
+		Kickoff: seededFor,
+		// These three were set by /admin/refresh-matches and a prior poll.
+		ChainSeededFor: seededFor,
+		AbandonedAt:    abandonedAt,
+		LastPollAt:     time.Date(2026, 5, 16, 23, 28, 0, 0, time.UTC),
+	}})
+	// Fresh ESPN data doesn't have any of the chain-tracking fields.
+	fetcher := func() ([]models.Match, error) {
+		return []models.Match{
+			{ID: "m-live", Status: "STATUS_IN_PROGRESS", State: "in", Kickoff: seededFor},
+		}, nil
+	}
+
+	if err := poll.PollOnce(context.Background(), matchStore, repository.NewMemoryResultStore(), fetcher); err != nil {
+		t.Fatalf("PollOnce: %v", err)
+	}
+	stored, _ := matchStore.GetAll()
+	if len(stored) != 1 {
+		t.Fatalf("expected 1 stored match, got %d", len(stored))
+	}
+	if !stored[0].ChainSeededFor.Equal(seededFor) {
+		t.Errorf("ChainSeededFor wiped: got %v, want %v", stored[0].ChainSeededFor, seededFor)
+	}
+	if !stored[0].AbandonedAt.Equal(abandonedAt) {
+		t.Errorf("AbandonedAt wiped: got %v, want %v", stored[0].AbandonedAt, abandonedAt)
+	}
+	if stored[0].LastPollAt.IsZero() {
+		t.Errorf("LastPollAt should be stamped, got zero")
+	}
+}

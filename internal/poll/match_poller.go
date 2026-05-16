@@ -151,6 +151,18 @@ func (p *MatchPoller) Tick(ctx context.Context) {
 		return
 	}
 
+	// Preserve chain-tracking fields (LastPollAt, ChainSeededFor, AbandonedAt)
+	// from the existing store — fresh ESPN data carries none of them. Without
+	// this, every Tick would wipe what the chain (/admin/poll-scores) and the
+	// refresh handler set.
+	matches = MergeChainFields(p.matchStore, matches)
+	// Tick IS polling — stamp LastPollAt now so the in-process path also
+	// counts as recent activity for the refresh's chain-liveness check.
+	now := time.Now().UTC()
+	for i := range matches {
+		matches[i].LastPollAt = now
+	}
+
 	byID := make(map[string]models.Match, len(matches))
 	for _, m := range matches {
 		byID[m.ID] = m
