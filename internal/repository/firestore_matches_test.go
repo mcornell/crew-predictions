@@ -297,3 +297,34 @@ func TestFirestoreMatchStore_SaveAllOverwritesExisting(t *testing.T) {
 		}
 	}
 }
+
+func TestFirestoreMatchStore_RoundTripsLastPollAt(t *testing.T) {
+	store := firestoreMatchStoreOrSkip(t)
+
+	polledAt := time.Date(2026, 5, 13, 23, 50, 0, 0, time.UTC)
+	want := models.Match{
+		ID: "fs-match-lastpollat", HomeTeam: "Columbus Crew", AwayTeam: "NYRB",
+		Kickoff: time.Date(2026, 5, 13, 23, 30, 0, 0, time.UTC), Status: "STATUS_IN_PROGRESS", State: "in",
+		LastPollAt: polledAt,
+	}
+	if err := store.SaveAll([]models.Match{want}); err != nil {
+		t.Fatalf("SaveAll: %v", err)
+	}
+	got, err := store.GetAll()
+	if err != nil {
+		t.Fatalf("GetAll: %v", err)
+	}
+	var found *models.Match
+	for i, m := range got {
+		if m.ID == "fs-match-lastpollat" {
+			found = &got[i]
+			break
+		}
+	}
+	if found == nil {
+		t.Fatal("expected fs-match-lastpollat to be present")
+	}
+	if !found.LastPollAt.Equal(polledAt) {
+		t.Errorf("LastPollAt round-trip: got %v, want %v", found.LastPollAt, polledAt)
+	}
+}
