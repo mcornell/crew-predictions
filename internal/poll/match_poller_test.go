@@ -573,3 +573,69 @@ func TestMatchPoller_Reset_DropsTerminalMatch(t *testing.T) {
 		t.Errorf("terminal match in Reset: expected ActiveCount=0, got %d", p.ActiveCount())
 	}
 }
+
+func TestMatchPoller_Tick_StampsLastPollAt(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	resultStore := repository.NewMemoryResultStore()
+
+	live := models.Match{
+		ID: "m-live", HomeTeam: "Columbus Crew", AwayTeam: "LAFC",
+		Status: "STATUS_IN_PROGRESS", State: "in",
+		Kickoff: time.Now().Add(-30 * time.Minute),
+	}
+	p := newPoller(matchStore, resultStore, []models.Match{live}, immediateTimer)
+	p.Schedule([]models.Match{live})
+	if p.ActiveCount() != 1 {
+		t.Fatalf("precondition: expected 1 active, got %d", p.ActiveCount())
+	}
+
+	before := time.Now().UTC()
+	p.Tick(context.Background())
+	after := time.Now().UTC()
+
+	stored, _ := matchStore.GetAll()
+	if len(stored) != 1 {
+		t.Fatalf("expected 1 stored match, got %d", len(stored))
+	}
+	if stored[0].LastPollAt.IsZero() {
+		t.Error("Tick should stamp LastPollAt; got zero")
+	}
+	if stored[0].LastPollAt.Before(before) || stored[0].LastPollAt.After(after) {
+		t.Errorf("Tick LastPollAt %v outside [%v, %v]", stored[0].LastPollAt, before, after)
+	}
+}
+
+func TestMatchPoller_Tick_PreservesChainSeededForAndAbandonedAt(t *testing.T) {
+	matchStore := repository.NewMemoryMatchStore()
+	resultStore := repository.NewMemoryResultStore()
+
+	seededFor := time.Date(2026, 5, 16, 23, 30, 0, 0, time.UTC)
+	abandonedAt := time.Date(2026, 5, 14, 3, 30, 0, 0, time.UTC)
+	// Seed with chain-tracking fields already set (as if /admin/refresh-matches
+	// and a prior chain tick had run).
+	matchStore.Seed([]models.Match{{
+		ID: "m-live", HomeTeam: "Columbus Crew", AwayTeam: "LAFC",
+		Status: "STATUS_IN_PROGRESS", State: "in",
+		Kickoff:        seededFor,
+		ChainSeededFor: seededFor,
+		AbandonedAt:    abandonedAt,
+	}})
+	// Fetcher returns fresh ESPN data without the chain fields.
+	live := models.Match{
+		ID: "m-live", HomeTeam: "Columbus Crew", AwayTeam: "LAFC",
+		Status: "STATUS_IN_PROGRESS", State: "in",
+		Kickoff: seededFor,
+	}
+	p := newPoller(matchStore, resultStore, []models.Match{live}, immediateTimer)
+	p.Schedule([]models.Match{live})
+
+	p.Tick(context.Background())
+
+	stored, _ := matchStore.GetAll()
+	if !stored[0].ChainSeededFor.Equal(seededFor) {
+		t.Errorf("Tick wiped ChainSeededFor: got %v, want %v", stored[0].ChainSeededFor, seededFor)
+	}
+	if !stored[0].AbandonedAt.Equal(abandonedAt) {
+		t.Errorf("Tick wiped AbandonedAt: got %v, want %v", stored[0].AbandonedAt, abandonedAt)
+	}
+}

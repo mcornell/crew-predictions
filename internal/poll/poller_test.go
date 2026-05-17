@@ -283,3 +283,47 @@ func TestPollOnce_PreservesChainSeededForFromExistingStore(t *testing.T) {
 		t.Errorf("LastPollAt should be stamped, got zero")
 	}
 }
+
+func TestMergeChainFields_HandlesMatchNotInExistingStore(t *testing.T) {
+	// Newly-discovered match comes through fetcher — has no existing record.
+	// MergeChainFields should leave it unchanged (no prev to copy from).
+	store := repository.NewMemoryMatchStore()
+	store.Seed([]models.Match{{ID: "m-old", LastPollAt: time.Now().Add(-1 * time.Minute)}})
+	fresh := []models.Match{
+		{ID: "m-old", Status: "STATUS_IN_PROGRESS"},
+		{ID: "m-new", Status: "STATUS_SCHEDULED"},
+	}
+	out := poll.MergeChainFields(store, fresh)
+	if len(out) != 2 {
+		t.Fatalf("expected 2 matches, got %d", len(out))
+	}
+	// m-old should have LastPollAt merged from existing store
+	if out[0].ID != "m-old" || out[0].LastPollAt.IsZero() {
+		t.Errorf("m-old: expected LastPollAt copied from existing, got zero")
+	}
+	// m-new should remain unchanged (no existing record)
+	if out[1].ID != "m-new" || !out[1].LastPollAt.IsZero() {
+		t.Errorf("m-new: expected LastPollAt zero (no existing), got %v", out[1].LastPollAt)
+	}
+}
+
+func TestMergeChainFields_ReturnsFreshOnStoreReadError(t *testing.T) {
+	// If the store's GetAll fails, MergeChainFields should soft-fail (return
+	// the fresh input unchanged) so the caller can still proceed.
+	store := &errGetAllMatchStore{}
+	fresh := []models.Match{
+		{ID: "m-1", Status: "STATUS_IN_PROGRESS"},
+	}
+	out := poll.MergeChainFields(store, fresh)
+	if len(out) != 1 || out[0].ID != "m-1" {
+		t.Errorf("expected fresh returned unchanged on store error, got %+v", out)
+	}
+}
+
+type errGetAllMatchStore struct{}
+
+func (e *errGetAllMatchStore) GetAll() ([]models.Match, error) {
+	return nil, fmt.Errorf("store read failed")
+}
+func (e *errGetAllMatchStore) SaveAll(_ []models.Match) error { return nil }
+func (e *errGetAllMatchStore) Reset()                         {}

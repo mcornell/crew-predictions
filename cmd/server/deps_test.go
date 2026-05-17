@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -125,4 +126,56 @@ func TestBuildDeps_RecalcFnDoesNotPanicOnEmptyStores(t *testing.T) {
 	}
 	deps := buildDeps(cfg, stores, handlers.NoopTokenVerifier{})
 	deps.RecalcFn(t.Context()) // empty stores: should be a no-op, not a panic
+}
+
+func TestDeps_Close_NoopWhenNoEnqueuer(t *testing.T) {
+	// Zero-value Deps and Deps without a registered closer should both
+	// be safe to Close. The main path defers deps.Close() unconditionally.
+	(Deps{}).Close()
+	(Deps{Cfg: Config{TestMode: true}}).Close()
+}
+
+func TestDeps_Close_InvokesRegisteredCloser(t *testing.T) {
+	called := 0
+	d := Deps{enqueuerCloser: func() error { called++; return nil }}
+	d.Close()
+	if called != 1 {
+		t.Errorf("expected enqueuerCloser called once, got %d", called)
+	}
+}
+
+func TestDeps_Close_SwallowsCloserError(t *testing.T) {
+	// A closer error should be logged (via slog) but not panic or block
+	// shutdown. We can't easily assert on slog output here; this test just
+	// verifies the call doesn't panic and the closer is still invoked.
+	called := 0
+	d := Deps{enqueuerCloser: func() error { called++; return fmt.Errorf("close failed") }}
+	d.Close()
+	if called != 1 {
+		t.Errorf("expected closer invoked even when returning error, got %d", called)
+	}
+}
+
+func TestBuildCloudTasksEnqueuer_NilWhenConfigIncomplete(t *testing.T) {
+	cases := []struct {
+		name string
+		cfg  Config
+	}{
+		{"all blank", Config{}},
+		{"missing project", Config{CloudTasksLocation: "us-east4", CloudTasksQueue: "match-polling", CloudTasksTarget: "https://x/p"}},
+		{"missing location", Config{CloudTasksProject: "p", CloudTasksQueue: "match-polling", CloudTasksTarget: "https://x/p"}},
+		{"missing queue", Config{CloudTasksProject: "p", CloudTasksLocation: "us-east4", CloudTasksTarget: "https://x/p"}},
+		{"missing target", Config{CloudTasksProject: "p", CloudTasksLocation: "us-east4", CloudTasksQueue: "match-polling"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			e, closer := buildCloudTasksEnqueuer(tc.cfg)
+			if e != nil {
+				t.Errorf("expected nil enqueuer for incomplete config, got %T", e)
+			}
+			if closer != nil {
+				t.Errorf("expected nil closer for incomplete config, got non-nil")
+			}
+		})
+	}
 }
