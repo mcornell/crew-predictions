@@ -425,15 +425,18 @@ jobs:
           if [ -z "$SHA" ]; then
             echo "DEPLOY_IMAGE=${IMAGE}:latest" >> $GITHUB_ENV
             echo "::warning::DEVELOP_SHA empty (squash/rebase merge?) — falling back to :latest"
-          elif DESCRIBE_OUT=$(gcloud artifacts docker images describe ${IMAGE}:sha-${SHA} --quiet 2>&1); then
+          # `tags list` only needs artifactregistry.tags.list (already granted).
+          # `images describe` queries Container Analysis (containeranalysis.occurrences.list)
+          # which the deploy SA doesn't have — and the perm denial surfaces as a misleading
+          # "Image not found" error. Use tags list to avoid that trap.
+          elif TAGS_OUT=$(gcloud artifacts docker tags list "${IMAGE}" --filter="tag:sha-${SHA}" --format="value(tag)" 2>&1) && echo "$TAGS_OUT" | grep -qx "sha-${SHA}"; then
             echo "DEPLOY_IMAGE=${IMAGE}:sha-${SHA}" >> $GITHUB_ENV
             echo "Deploying image sha-${SHA}"
           else
-            DESCRIBE_EXIT=$?
             echo "DEPLOY_IMAGE=${IMAGE}:latest" >> $GITHUB_ENV
-            echo "::warning::sha-${SHA} describe exit=${DESCRIBE_EXIT} — falling back to :latest"
-            echo "describe output:"
-            echo "$DESCRIBE_OUT"
+            echo "::warning::sha-${SHA} not resolvable — falling back to :latest"
+            echo "tags list output:"
+            echo "$TAGS_OUT"
           fi
 
       - name: Resolve frontend zip
