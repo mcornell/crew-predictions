@@ -422,12 +422,24 @@ jobs:
         run: |
           IMAGE=us-east5-docker.pkg.dev/crew-predictions/crew-predictions/crew-predictions
           SHA="${{ env.DEVELOP_SHA }}"
-          if [ -n "$SHA" ] && gcloud artifacts docker images describe ${IMAGE}:sha-${SHA} --quiet 2>/dev/null; then
-            echo "DEPLOY_IMAGE=${IMAGE}:sha-${SHA}" >> $GITHUB_ENV
-            echo "Deploying image sha-${SHA}"
-          else
+          if [ -z "$SHA" ]; then
             echo "DEPLOY_IMAGE=${IMAGE}:latest" >> $GITHUB_ENV
-            echo "::warning::sha-${SHA} not found in Artifact Registry — falling back to latest"
+            echo "::warning::DEVELOP_SHA empty (squash/rebase merge?) — falling back to :latest"
+          else
+            # Capture combined stdout+stderr so we can surface the actual gcloud
+            # error when describe fails. Diagnostic for the recurring
+            # "sha-X not found" warning that's tracked in BACKLOG.
+            DESCRIBE_OUT=$(gcloud artifacts docker images describe ${IMAGE}:sha-${SHA} --quiet 2>&1)
+            DESCRIBE_EXIT=$?
+            if [ $DESCRIBE_EXIT -eq 0 ]; then
+              echo "DEPLOY_IMAGE=${IMAGE}:sha-${SHA}" >> $GITHUB_ENV
+              echo "Deploying image sha-${SHA}"
+            else
+              echo "DEPLOY_IMAGE=${IMAGE}:latest" >> $GITHUB_ENV
+              echo "::warning::sha-${SHA} describe exit=${DESCRIBE_EXIT} — falling back to :latest"
+              echo "describe output:"
+              echo "$DESCRIBE_OUT"
+            fi
           fi
 
       - name: Resolve frontend zip
