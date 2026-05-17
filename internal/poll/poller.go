@@ -5,6 +5,7 @@ package poll
 
 import (
 	"context"
+	"log/slog"
 	"strconv"
 	"time"
 
@@ -18,12 +19,43 @@ var terminalStatuses = map[string]bool{
 	"STATUS_FINAL_PEN": true,
 }
 
+// MergeChainFields copies LastPollAt / ChainSeededFor / AbandonedAt from the
+// existing matches in `store` onto matches in `fresh`, matched by ID. Called
+// before SaveAll on any path that overwrites the match store with fresh ESPN
+// data (which doesn't carry those fields). Without this merge, every fetch
+// would silently wipe the chain-tracking state — refresh would think every
+// in-progress chain is dead and seed duplicate revival tasks, and the API
+// `lastPollAt` field would always come back zero.
+//
+// On read error: returns `fresh` unchanged and logs. Worst case is a one-tick
+// regression on those fields; the next merge cycle restores them.
+func MergeChainFields(store repository.MatchStore, fresh []models.Match) []models.Match {
+	existing, err := store.GetAll()
+	if err != nil {
+		slog.Error("MergeChainFields: existing store read failed; chain fields may briefly reset", "error", err)
+		return fresh
+	}
+	byID := make(map[string]models.Match, len(existing))
+	for _, m := range existing {
+		byID[m.ID] = m
+	}
+	for i, m := range fresh {
+		if prev, ok := byID[m.ID]; ok {
+			fresh[i].LastPollAt = prev.LastPollAt
+			fresh[i].ChainSeededFor = prev.ChainSeededFor
+			fresh[i].AbandonedAt = prev.AbandonedAt
+		}
+	}
+	return fresh
+}
+
 func PollOnce(ctx context.Context, matchStore repository.MatchStore, resultStore repository.ResultStore, fetcher func() ([]models.Match, error)) error {
 	matches, err := fetcher()
 	if err != nil {
 		return err
 	}
 
+	matches = MergeChainFields(matchStore, matches)
 	now := time.Now().UTC()
 	for i := range matches {
 		matches[i].LastPollAt = now
